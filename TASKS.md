@@ -414,6 +414,7 @@ After P4-10: open the app, add a habit ("Gym 4x/week") and 2 tasks. Tap the gym 
 
 ### End-of-Phase Admin
 - [ ] Mark completed tasks.
+- [ ] Git commit: `feat(p4): core loop — tasks, habits, tab bar, quick-add, undo snackbar, detail sheets`
 
 ---
 
@@ -464,6 +465,7 @@ After P5-3: add a task to the backlog. Navigate to This Week — confirm it's no
 
 ### End-of-Phase Admin
 - [ ] Mark completed tasks.
+- [ ] Git commit: `feat(p5): backlog screen, promote-to-this-week, collapsible theme groups`
 
 ---
 
@@ -613,6 +615,7 @@ After P6-6: create a primary goal "Land first paid DJ gig" with target date 6 mo
 
 ### End-of-Phase Admin
 - [ ] Mark completed tasks.
+- [ ] Git commit: `feat(p6): goals CRUD, goal action drawer, add goal form, primary goal milestone hero`
 
 ---
 
@@ -674,6 +677,7 @@ After P7-4: complete 2 tasks, increment gym to 3/4. Open Stats — confirm fract
 
 ### End-of-Phase Admin
 - [ ] Mark completed tasks.
+- [ ] Git commit: `feat(p7): stats screen — current week fractions, habit streaks, past weeks history`
 
 ---
 
@@ -821,6 +825,7 @@ After P8-7: simulate a week flip (manually set carry_over_ritual status to pendi
 ### End-of-Phase Admin
 - [ ] Mark completed tasks.
 - [ ] Test actual Sunday timing once (or simulate with timezone offset).
+- [ ] Git commit: `feat(p8): sunday rollover, carry-over ritual — recap, triage, pull screens`
 
 ---
 
@@ -912,6 +917,7 @@ After P9-4: tap mic, say "add go to the gym 4 times this week". Confirm draft ca
 ### End-of-Phase Admin
 - [ ] Mark completed tasks.
 - [ ] Confirm AI capture logs row written in Supabase.
+- [ ] Git commit: `feat(p9): voice input, AI capture endpoint, quick-add prefill, low-confidence chips`
 
 ---
 
@@ -967,6 +973,7 @@ After P10-6: create a task with voice capture "remind me in 2 minutes to check t
 
 ### End-of-Phase Admin
 - [ ] Mark completed tasks.
+- [ ] Git commit: `feat(p10): push notifications, reminder dispatch job, habit danger-zone nudges`
 
 ---
 
@@ -1017,6 +1024,7 @@ After P11-2: tap "🪄 Coach me on a goal". Have a conversation about a goal. Co
 
 ### End-of-Phase Admin
 - [ ] Mark completed tasks.
+- [ ] Git commit: `feat(p11): AI goal coach — conversation, conclusion, pre-filled goal form`
 
 ---
 
@@ -1082,6 +1090,7 @@ After P12-7: full end-to-end daily use test. Add goals, tasks, habits. Complete 
 
 ### End-of-Phase Admin
 - [ ] Mark completed tasks.
+- [ ] Git commit: `feat(p12): settings, theme management, error states, skeletons, unit tests`
 - [ ] Record any deferred items for post-v1.
 - [ ] Update `docs/env.md` with any new env vars discovered.
 - [ ] Tag git commit as `v1-complete`.
