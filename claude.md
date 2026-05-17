@@ -16,7 +16,7 @@ At the start of a new Claude Code session:
 
 1. Read this file.
 2. Read `TASKS.md` to understand current progress.
-3. Read any project documents relevant to the next incomplete task.
+3. Read any project documents relevant to the next incomplete task and the phase.
 4. Continue from the next incomplete task unless the user gives different instructions.
 
 If the user says “continue”, use `TASKS.md` as the source for what to do next.

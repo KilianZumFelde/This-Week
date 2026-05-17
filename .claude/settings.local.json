@@ -1,3 +1,11 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(curl -s http://localhost:3000/health)",
+      "Bash(git rm *)",
+      "Bash(git commit *)"
+    ]
+  },
   "prefersReducedMotion": true
 }
