@@ -172,7 +172,12 @@ Examples:
 Do not repeatedly ask whether a setup step is done. Check `TASKS.md` first.
 
 ## Credentials and environment
-For credentials (either tokens, or user credentials or whate have you) create in the docs folder a env.md file, and a credentials.md file. 
+For credentials (either tokens, or user credentials or whatever) create in the docs folder:
+
+- `credentials.md` — the actual secret values (API keys, passwords, tokens). **Never committed.** Listed in `.gitignore`.
+- `env.md` — the variable names, where to set them, and instructions. Safe to commit. No actual secret values.
+
+When adding new credentials: put the value in `credentials.md`, put the variable name and usage instructions in `env.md`.
 
 ---
 

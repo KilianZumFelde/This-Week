@@ -47,21 +47,22 @@
   - Based on: TECHSTACK.md § Configuration; CLAUDE.md § Credentials and environment.
   - Validate: files exist and contain all required variable names.
 
-- [ ] **P0-6** **[User setup]** Create Supabase project at supabase.com.
+- [x] **P0-6** **[User setup]** Create Supabase project at supabase.com.
   - Project name: "weekly-focus-dev", region: nearest.
   - Copy URL, anon key, service role key into `docs/credentials.md`.
-  - Validate: Supabase dashboard accessible; credentials recorded.
+  - Validate: Supabase dashboard accessible; credentials recorded. ✓
 
-- [ ] **P0-7** Wire environment variables into backend and app.
+- [x] **P0-7** Wire environment variables into backend and app.
   - `/backend/.env`: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`, `BACKEND_PUBLIC_URL`.
   - `/app/.env` (or `app.config.js`): `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
   - Add `.env` to `.gitignore`.
   - Based on: TECHSTACK.md § Configuration.
-  - Validate: backend can read `process.env.SUPABASE_URL` at startup without error.
+  - Validate: backend reads `process.env.SUPABASE_URL` at startup without error. ✓
+  - Note: `ANTHROPIC_API_KEY` left as `<FILL IN>` — needed for Phase 5 AI features only.
 
 ### End-of-Phase Admin
-- [ ] Mark completed tasks above.
-- [ ] Note any deferred items.
+- [x] Mark completed tasks above. All P0 tasks complete.
+- [x] Deferred: `ANTHROPIC_API_KEY` — user to fill in from console.anthropic.com before Phase 5.
 
 ---
 
