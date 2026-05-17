@@ -287,7 +287,7 @@ After P1-6: open app → sign in → confirm This Week screen loads. Confirm 4 d
   - Based on: `docs/ui/screens-primary.jsx` (`ThisWeek`, `ThisWeekEmpty`); `docs/ui/components.jsx`; `docs/ui/styles.css`; `docs/ui/NAVIGATION.md` §01.
   - Validate: Run Expo Go, compare side-by-side with prototype. Check: milestone radial-gradient visible; ring animates on tap; task strikethrough on complete + moves to Done; Done collapses by default; `ThisWeekEmpty` layout matches on first launch.
 
-- [ ] **P4-7** Undo snackbar (global Zustand state).
+- [x] **P4-7** Undo snackbar (global Zustand state).
   - `src/stores/undo-store.ts`: stores last reversible action (type + reversal function + 6s timer).
   - Component `UndoSnackbar` rendered in root layout, appears for 6s on any destructive action.
   - Actions wired: task complete, task delete, habit increment.
@@ -296,7 +296,7 @@ After P1-6: open app → sign in → confirm This Week screen loads. Confirm 4 d
   - Based on: requirements-lens § General Undo; domain-lens § Habit lifecycle.
   - Validate: complete a task, undo it within 6s, task reappears as open.
 
-- [ ] **P4-8** Quick-Add Draft Card modal (`app/(modals)/quick-add.tsx`).
+- [x] **P4-8** Quick-Add Draft Card modal (`app/(modals)/quick-add.tsx`).
   - Prototype reference: `docs/ui/screens-modals.jsx` → `QuickAddDraftInline` (Task variant) and `QuickAddHabitInline` (Habit variant).
   - Prototype reference: `docs/ui/styles.css` → `.modal-head`, `.qa-chips`, `.qa-chip`, `.qa-chip.low-conf`.
   - Manual entry only (+ FAB) for this phase; voice transcript header shown only in Phase 9.
@@ -333,7 +333,7 @@ After P1-6: open app → sign in → confirm This Week screen loads. Confirm 4 d
   - Based on: `docs/ui/screens-modals.jsx` (`QuickAddDraftInline`, `QuickAddHabitInline`); `docs/ui/styles.css` (`.qa-chip`, `.modal-head`); `docs/ui/NAVIGATION.md` §06.
   - Validate: Tap +, fill title + theme + effort via inline picker, tap Save → task appears in This Week. Tap + → select Habit type → weekly count grid appears → save → habit appears. Side-by-side compare with prototype inline-picker interaction.
 
-- [ ] **P4-9** Task Detail / Edit bottom sheet (`app/(sheets)/task-detail.tsx`).
+- [x] **P4-9** Task Detail / Edit bottom sheet (`app/(sheets)/task-detail.tsx`).
   - Prototype reference: `docs/ui/screens-modals.jsx` → `TaskDetail` function and `SheetBackdrop` function.
   - Prototype reference: `docs/ui/styles.css` → `.sheet`, `.sheet .grip`.
   - Opened by tapping task body on This Week or Backlog.
@@ -374,7 +374,7 @@ After P1-6: open app → sign in → confirm This Week screen loads. Confirm 4 d
   - Based on: `docs/ui/screens-modals.jsx` (`TaskDetail`, `SheetBackdrop`); `docs/ui/styles.css` (`.sheet`); `docs/ui/NAVIGATION.md` §17.
   - Validate: Tap a task body → sheet slides up over blurred This Week. Verify grip, title serif, chip row, reminder row, action buttons. Change effort chip → save → effort chip updates on task card in list.
 
-- [ ] **P4-10** Habit Detail / Edit bottom sheet (`app/(sheets)/habit-detail.tsx`).
+- [x] **P4-10** Habit Detail / Edit bottom sheet (`app/(sheets)/habit-detail.tsx`).
   - Prototype reference: `docs/ui/screens-modals.jsx` → `HabitDetail` function.
   - Prototype reference: `docs/ui/styles.css` → `.sheet`, `.sheet .grip`.
   - Opened by tapping habit body (name + chips area — NOT the ring).
@@ -413,8 +413,8 @@ After P1-6: open app → sign in → confirm This Week screen loads. Confirm 4 d
 After P4-10: open the app, add a habit ("Gym 4x/week") and 2 tasks. Tap the gym ring 2x — confirm count shows 2/4. Complete a task — confirm it moves to Done section. Undo the completion — confirm it moves back. Inspect on second device or Supabase dashboard that data persisted.
 
 ### End-of-Phase Admin
-- [ ] Mark completed tasks.
-- [ ] Git commit: `feat(p4): core loop — tasks, habits, tab bar, quick-add, undo snackbar, detail sheets`
+- [x] Mark completed tasks.
+- [x] Git commit: `feat(p4): core loop — tasks, habits, tab bar, quick-add, undo snackbar, detail sheets`
 
 ---
 

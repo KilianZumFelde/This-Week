@@ -27,9 +27,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
       <View style={styles.fabPair} pointerEvents="box-none">
         <TouchableOpacity
           style={styles.fabSmall}
-          onPress={() => {
-            // Quick-add modal — wired in Phase 4 P4-8
-          }}
+          onPress={() => router.push('/quick-add')}
           activeOpacity={0.85}
         >
           <Icon name="plus" size={20} color={colors.text} />

@@ -9,11 +9,14 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import { colors, radius } from '../../lib/tokens';
-import { useThisWeekTasks, useCompleteTask, useReopenTask } from '../../lib/hooks/useTasks';
-import { useHabits, useHabitWeekRecords, useIncrementHabit } from '../../lib/hooks/useHabits';
+import { useThisWeekTasks, useCompleteTask, useReopenTask, useDeleteTask, Task } from '../../lib/hooks/useTasks';
+import { useHabits, useHabitWeekRecords, useIncrementHabit, Habit } from '../../lib/hooks/useHabits';
+import { useUndoStore } from '../../lib/stores/undo-store';
 import { useThemes, Theme } from '../../lib/hooks/useThemes';
 import { Ring } from '../components/Ring';
 import { Icon } from '../components/Icon';
+import { TaskDetailSheet } from '../components/TaskDetailSheet';
+import { HabitDetailSheet } from '../components/HabitDetailSheet';
 import { getCurrentWeekStartDate, formatWeekLabel } from '../../lib/week';
 
 // ─── Theme chip ──────────────────────────────────────────────────────────────
@@ -156,6 +159,8 @@ export default function ThisWeek() {
   const insets = useSafeAreaInsets();
   const [sort, setSort] = useState<'rec' | 'theme'>('rec');
   const [doneOpen, setDoneOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
 
   const { data: tasks, isLoading: tasksLoading } = useThisWeekTasks();
   const { data: habits, isLoading: habitsLoading } = useHabits();
@@ -163,7 +168,9 @@ export default function ThisWeek() {
   const { data: themes } = useThemes();
   const completeTask = useCompleteTask();
   const reopenTask = useReopenTask();
+  const deleteTask = useDeleteTask();
   const incrementHabit = useIncrementHabit();
+  const showUndo = useUndoStore((s) => s.show);
 
   const recordMap = Object.fromEntries(
     (weekRecords ?? []).map((r) => [r.habit_id, r]),
@@ -263,7 +270,7 @@ export default function ThisWeek() {
                     completedCount={completedCount}
                     theme={themeMap[habit.theme_id]}
                     onIncrement={() => incrementHabit.mutate(habit.id)}
-                    onPressBody={() => {/* open habit detail */}}
+                    onPressBody={() => setSelectedHabit(habit)}
                   />
                 );
               })}
@@ -309,8 +316,14 @@ export default function ThisWeek() {
                       key={task.id}
                       task={task}
                       theme={themeMap[task.theme_id]}
-                      onToggle={() => completeTask.mutate(task.id)}
-                      onPressBody={() => {/* open task detail */}}
+                      onToggle={() => {
+                        completeTask.mutate(task.id);
+                        showUndo({
+                          label: `"${task.title}" marked done`,
+                          undo: () => reopenTask.mutate(task.id),
+                        });
+                      }}
+                      onPressBody={() => setSelectedTask(task)}
                     />
                   ))}
                 </View>
@@ -349,6 +362,19 @@ export default function ThisWeek() {
           )}
         </ScrollView>
       )}
+
+      {/* Detail sheets */}
+      <TaskDetailSheet
+        task={selectedTask}
+        themes={themes ?? []}
+        onClose={() => setSelectedTask(null)}
+      />
+      <HabitDetailSheet
+        habit={selectedHabit}
+        weekRecord={selectedHabit ? recordMap[selectedHabit.id] : undefined}
+        themes={themes ?? []}
+        onClose={() => setSelectedHabit(null)}
+      />
     </View>
   );
 }
