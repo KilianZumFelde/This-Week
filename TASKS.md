@@ -29,20 +29,17 @@
   - Based on: TECHSTACK.md § Repository Structure.
   - Validate: directories exist.
 
-- [~] **P0-2** Initialize Expo app in `/app` with TypeScript template.
-  - `cd app && npx create-expo-app . --template expo-template-blank-typescript`
-  - Install: NativeWind, Expo Router, TanStack Query, Zustand, React Hook Form, Zod, date-fns.
-  - Configure NativeWind (tailwind.config.js, babel.config.js, global.css).
-  - Configure Expo Router (set `"main": "expo-router/entry"` in package.json).
-  - Based on: TECHSTACK.md § Frontend.
-  - Validate: `npx expo start` launches without errors; app loads on Android via Expo Go.
-  - **BLOCKED: user must run create-expo-app and install commands (see session notes below).**
+- [x] **P0-2** Initialize Expo app in `/app` with TypeScript template.
+  - Configured Expo Router, NativeWind, babel, metro, tailwind, global.css.
+  - Using EAS dev build instead of Expo Go (Expo Go only supports SDK 54; project is SDK 55).
+  - Added expo-dev-client, react-native-worklets (required peer dep for reanimated 4.x), eas.json.
+  - Validate: app loads on Android via dev client showing "This Week" screen. ✓
 
 - [~] **P0-3** Initialize Fastify backend in `/backend` with TypeScript.
   - `tsconfig.json`, `src/index.ts` with health check route created. Dependencies listed in package.json.
-  - **BLOCKED: user must run `pnpm install` in /backend.**
+  - **BLOCKED: user must run `npm install` in /backend.**
   - Based on: TECHSTACK.md § Backend.
-  - Validate: `pnpm dev` starts; `curl http://localhost:3000/health` returns `{"ok":true}`.
+  - Validate: `npm run dev` starts; `curl http://localhost:3000/health` returns `{"ok":true}`.
 
 - [~] **P0-4** Initialize shared package in `/packages/shared`.
   - `package.json`, `tsconfig.json`, `src/index.ts` created.
