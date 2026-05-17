@@ -193,7 +193,7 @@ After P1-6: open app → sign in → confirm This Week screen loads. Confirm 4 d
 
 #### Backend
 
-- [ ] **P4-1** Themes CRUD endpoints.
+- [x] **P4-1** Themes CRUD endpoints.
   - `GET /themes` — list user's active themes.
   - `POST /themes` — create theme.
   - `PATCH /themes/:id` — update name/color/icon/sort_order.
@@ -201,7 +201,7 @@ After P1-6: open app → sign in → confirm This Week screen loads. Confirm 4 d
   - Based on: DATABASE_DESIGN.md § themes; domain-lens § Lifecycles.
   - Validate: create theme, read it back, update name, delete it via curl.
 
-- [ ] **P4-2** Tasks CRUD endpoints.
+- [x] **P4-2** Tasks CRUD endpoints.
   - `GET /tasks?week_assignment=this_week&week_start_date=YYYY-MM-DD` — list this week's open tasks.
   - `POST /tasks` — create task (default `week_assignment=this_week`, `week_start_date=current_sunday`).
   - `PATCH /tasks/:id` — update any field.
@@ -211,7 +211,7 @@ After P1-6: open app → sign in → confirm This Week screen loads. Confirm 4 d
   - Based on: DATABASE_DESIGN.md § tasks; requirements-lens § Definition of done; domain-lens § Lifecycles.
   - Validate: create task, complete it, reopen it, delete it.
 
-- [ ] **P4-3** Habits CRUD endpoints.
+- [x] **P4-3** Habits CRUD endpoints.
   - `GET /habits?status=active` — list active habits.
   - `POST /habits` — create habit (also creates this week's `habit_week_records` row).
   - `PATCH /habits/:id` — update fields.
@@ -220,7 +220,7 @@ After P1-6: open app → sign in → confirm This Week screen loads. Confirm 4 d
   - Based on: DATABASE_DESIGN.md § habits, habit_week_records; domain-lens § Lifecycles.
   - Validate: create habit, increment count 3x, check `completed_count=3`.
 
-- [ ] **P4-4** Current week resolution helper (shared backend utility).
+- [x] **P4-4** Current week resolution helper (shared backend utility).
   - Given a `timezone` string, compute the current `week_start_date` (most recent Sunday in that timezone).
   - Used by tasks and habits endpoints.
   - Based on: DATABASE_DESIGN.md § Week Definition.
@@ -228,7 +228,7 @@ After P1-6: open app → sign in → confirm This Week screen loads. Confirm 4 d
 
 #### Frontend
 
-- [ ] **P4-5** Bottom tab bar navigation shell.
+- [x] **P4-5** Bottom tab bar navigation shell.
   - File: `app/(tabs)/_layout.tsx`.
   - Prototype reference: `docs/ui/components.jsx` → `TabBar` + `FabPair` components; `docs/ui/styles.css` → `.tabbar`, `.fab`, `.fab.small`, `.fab-pair` rules.
   - **Tab bar** — implement exactly as `TabBar` in components.jsx:
@@ -246,7 +246,7 @@ After P1-6: open app → sign in → confirm This Week screen loads. Confirm 4 d
   - Based on: `docs/ui/components.jsx` (`TabBar`, `FabPair`); `docs/ui/styles.css` (`.tabbar`, `.fab`); `docs/ui/NAVIGATION.md` § Cross-cutting.
   - Validate: Open in Expo Go — tab bar floats with blur glass effect, does NOT fill full width. Active tab accent-strong tint on icon + label. FABs at correct position (not bottom-right edge of screen but 22px in, 92px up). Side-by-side compare with prototype.
 
-- [ ] **P4-6** This Week screen (`app/(tabs)/index.tsx`).
+- [x] **P4-6** This Week screen (`app/(tabs)/index.tsx`).
   - Prototype reference: `docs/ui/screens-primary.jsx` → `ThisWeek` (populated) and `ThisWeekEmpty` (first-launch empty state).
   - Prototype reference: `docs/ui/components.jsx` → `Task`, `Habit`, `Ring`, `ThemeChip`, `EffortChip`, `ReturnChip`, `GoalChip`.
   - Prototype reference: `docs/ui/styles.css` → `.page-head`, `.milestone`, `.section-label`, `.habit`, `.task`, `.theme-group`, `.done-bar`, `.seg`.

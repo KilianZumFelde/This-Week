@@ -3,6 +3,9 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { meRoutes } from './routes/me.js';
 import { bootstrapRoutes } from './routes/bootstrap.js';
+import { themesRoutes } from './routes/themes.js';
+import { tasksRoutes } from './routes/tasks.js';
+import { habitsRoutes } from './routes/habits.js';
 
 const app = Fastify({ logger: true });
 
@@ -19,6 +22,9 @@ app.get('/health', async () => {
 
 await app.register(meRoutes);
 await app.register(bootstrapRoutes);
+await app.register(themesRoutes);
+await app.register(tasksRoutes);
+await app.register(habitsRoutes);
 
 const port = Number(process.env.PORT) || 3000;
 const host = process.env.HOST || '0.0.0.0';
