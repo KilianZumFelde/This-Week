@@ -63,6 +63,7 @@
 ### End-of-Phase Admin
 - [x] Mark completed tasks above. All P0 tasks complete.
 - [x] Deferred: `ANTHROPIC_API_KEY` — user to fill in from console.anthropic.com before Phase 5.
+- [x] Git commit: `feat(p0): monorepo scaffold, Expo app, Fastify backend, shared package, env setup`
 
 ---
 
@@ -115,6 +116,7 @@ After P1-6: open app → sign in → confirm This Week screen loads. Confirm 4 d
 ### End-of-Phase Admin
 - [x] Mark completed tasks. All P1-1 through P1-6 complete (implemented in prior session, recovered by code inspection).
 - [x] Deviation: P1-4 uses `supabase.auth.getUser(token)` instead of a JWT library — simpler and equally valid.
+- [x] Git commit: `feat(p1): Supabase auth, sign-in screen, auth guard, JWT middleware, bootstrap endpoint`
 
 ---
 
@@ -150,6 +152,7 @@ After P1-6: open app → sign in → confirm This Week screen loads. Confirm 4 d
 - [x] Mark completed tasks. P2-2 through P2-7 complete. P2-1 skipped (no CLI; SQL editor used).
 - [x] Schema confirmed applied — Supabase SQL Editor returned success with no errors.
 - Note: Future migrations should be applied the same way — paste into Supabase Dashboard SQL Editor.
+- [x] Git commit: `feat(p2): SQL migrations for all tables, RLS policies, indexes, and triggers`
 
 ---
 
@@ -159,24 +162,26 @@ After P1-6: open app → sign in → confirm This Week screen loads. Confirm 4 d
 
 ### Tasks
 
-- [ ] **P3-1** Define all enums in `/packages/shared/src/enums.ts`.
+- [x] **P3-1** Define all enums in `/packages/shared/src/enums.ts`.
   - `GoalType`, `GoalStatus`, `TaskStatus`, `TaskWeekAssignment`, `EffortLevel`, `ReturnLevel`, `HabitStatus`, `ReminderStatus`, `ReminderKind`, `CarryOverRitualStatus`, `CarryOverDecision`, `NotificationPlatform`.
   - Based on: DATABASE_DESIGN.md § Enums.
-  - Validate: `tsc --noEmit` passes in `/packages/shared`.
+  - Validate: `tsc --noEmit` passes in `/packages/shared`. ✓
 
-- [ ] **P3-2** Define Zod schemas and TypeScript types for all entities.
-  - `Theme`, `Goal`, `Task`, `Habit`, `HabitWeekRecord`, `WeekRecord`, `Reminder`, `CarryOverRitual`, `CarryOverTaskDecision`, `NotificationToken`, `UserSettings`.
+- [x] **P3-2** Define Zod schemas and TypeScript types for all entities.
+  - `Theme`, `Goal`, `Task`, `Habit`, `HabitWeekRecord`, `WeekRecord`, `Reminder`, `CarryOverRitual`, `CarryOverTaskDecision`, `NotificationToken`, `UserSettings`, `Profile`.
   - Export from `src/index.ts`.
   - Based on: DATABASE_DESIGN.md § Tables.
-  - Validate: schemas compile; inferred types match table shapes.
+  - Validate: schemas compile; inferred types match table shapes. ✓
 
-- [ ] **P3-3** Define request/response Zod schemas for all API endpoints (to be used by backend routes and app API clients).
-  - E.g., `CreateTaskRequest`, `UpdateTaskRequest`, `CreateHabitRequest`, etc.
+- [x] **P3-3** Define request/response Zod schemas for all API endpoints (to be used by backend routes and app API clients).
+  - `CreateTaskRequest`, `UpdateTaskRequest`, `ListTasksQuery`, `CreateHabitRequest`, `UpdateHabitRequest`, `CreateThemeRequest`, `UpdateThemeRequest`, `CreateGoalRequest`, `UpdateGoalRequest`, `CreateReminderRequest`, `UpdateReminderRequest`, `SubmitCarryOverDecisionRequest`, `UpdateUserSettingsRequest`, `RegisterNotificationTokenRequest`.
   - Based on: DATABASE_DESIGN.md; requirements-lens.
-  - Validate: `tsc --noEmit` passes.
+  - Validate: `tsc --noEmit` passes. ✓
 
 ### End-of-Phase Admin
-- [ ] Mark completed tasks.
+- [x] Mark completed tasks. All P3-1 through P3-3 complete.
+- Files: `packages/shared/src/enums.ts`, `packages/shared/src/schemas.ts`, `packages/shared/src/api.ts`. All re-exported from `src/index.ts`.
+- [x] Git commit: `feat(p3): shared enums, entity schemas, and API request/response types`
 
 ---
 
