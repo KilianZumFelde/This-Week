@@ -35,17 +35,11 @@
   - Added expo-dev-client, react-native-worklets (required peer dep for reanimated 4.x), eas.json.
   - Validate: app loads on Android via dev client showing "This Week" screen. ✓
 
-- [~] **P0-3** Initialize Fastify backend in `/backend` with TypeScript.
-  - `tsconfig.json`, `src/index.ts` with health check route created. Dependencies listed in package.json.
-  - **BLOCKED: user must run `npm install` in /backend.**
-  - Based on: TECHSTACK.md § Backend.
-  - Validate: `npm run dev` starts; `curl http://localhost:3000/health` returns `{"ok":true}`.
+- [x] **P0-3** Initialize Fastify backend in `/backend` with TypeScript.
+  - Validate: `npm run dev` starts; `curl http://localhost:3000/health` returns `{"ok":true}`. ✓
 
-- [~] **P0-4** Initialize shared package in `/packages/shared`.
-  - `package.json`, `tsconfig.json`, `src/index.ts` created.
-  - **BLOCKED: user must run `pnpm install` in /packages/shared.**
-  - Based on: TECHSTACK.md § Repository Structure.
-  - Validate: `tsc --noEmit` passes in `/packages/shared`.
+- [x] **P0-4** Initialize shared package in `/packages/shared`.
+  - `package.json`, `tsconfig.json`, `src/index.ts` created. npm install done. ✓
 
 - [x] **P0-5** Create `/docs/credentials.md` and `/docs/env.md`.
   - `credentials.md`: template for Supabase project URL, anon key, service role key, Anthropic API key, Expo push credentials.
