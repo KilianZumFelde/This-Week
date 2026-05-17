@@ -24,31 +24,33 @@
 
 ### Tasks
 
-- [ ] **P0-1** Create monorepo folder structure: `/app`, `/backend`, `/packages/shared`, `/supabase`, `/docs` (docs already exists).
+- [x] **P0-1** Create monorepo folder structure: `/app`, `/backend`, `/packages/shared`, `/supabase`, `/docs` (docs already exists).
   - Run `mkdir app backend packages/shared supabase` at project root.
   - Based on: TECHSTACK.md § Repository Structure.
   - Validate: directories exist.
 
-- [ ] **P0-2** Initialize Expo app in `/app` with TypeScript template.
+- [~] **P0-2** Initialize Expo app in `/app` with TypeScript template.
   - `cd app && npx create-expo-app . --template expo-template-blank-typescript`
   - Install: NativeWind, Expo Router, TanStack Query, Zustand, React Hook Form, Zod, date-fns.
   - Configure NativeWind (tailwind.config.js, babel.config.js, global.css).
   - Configure Expo Router (set `"main": "expo-router/entry"` in package.json).
   - Based on: TECHSTACK.md § Frontend.
   - Validate: `npx expo start` launches without errors; app loads on Android via Expo Go.
+  - **BLOCKED: user must run create-expo-app and install commands (see session notes below).**
 
-- [ ] **P0-3** Initialize Fastify backend in `/backend` with TypeScript.
-  - `cd backend && pnpm init`, install fastify, typescript, tsx, @types/node, zod, dotenv, @supabase/supabase-js.
-  - Add `tsconfig.json`, `src/index.ts` with a health check route (`GET /health → { ok: true }`).
+- [~] **P0-3** Initialize Fastify backend in `/backend` with TypeScript.
+  - `tsconfig.json`, `src/index.ts` with health check route created. Dependencies listed in package.json.
+  - **BLOCKED: user must run `pnpm install` in /backend.**
   - Based on: TECHSTACK.md § Backend.
   - Validate: `pnpm dev` starts; `curl http://localhost:3000/health` returns `{"ok":true}`.
 
-- [ ] **P0-4** Initialize shared package in `/packages/shared`.
-  - `cd packages/shared && pnpm init`, add TypeScript, export shared types/enums from `src/index.ts`.
+- [~] **P0-4** Initialize shared package in `/packages/shared`.
+  - `package.json`, `tsconfig.json`, `src/index.ts` created.
+  - **BLOCKED: user must run `pnpm install` in /packages/shared.**
   - Based on: TECHSTACK.md § Repository Structure.
   - Validate: `tsc --noEmit` passes in `/packages/shared`.
 
-- [ ] **P0-5** Create `/docs/credentials.md` and `/docs/env.md`.
+- [x] **P0-5** Create `/docs/credentials.md` and `/docs/env.md`.
   - `credentials.md`: template for Supabase project URL, anon key, service role key, Anthropic API key, Expo push credentials.
   - `env.md`: lists all required env vars per TECHSTACK.md § Configuration, with instructions for where to set them (`.env` in `/backend`, `app.config.js` or `.env` in `/app`).
   - Based on: TECHSTACK.md § Configuration; CLAUDE.md § Credentials and environment.
