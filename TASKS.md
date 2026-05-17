@@ -412,9 +412,44 @@ After P1-6: open app → sign in → confirm This Week screen loads. Confirm 4 d
 ### User Check-In
 After P4-10: open the app, add a habit ("Gym 4x/week") and 2 tasks. Tap the gym ring 2x — confirm count shows 2/4. Complete a task — confirm it moves to Done section. Undo the completion — confirm it moves back. Inspect on second device or Supabase dashboard that data persisted.
 
+### Backend Deployment (added after Phase 4 implementation — preferred over local network testing)
+
+- [ ] **P4-11** **[User setup]** Create Render Web Service for the backend.
+  - Go to render.com → New → Web Service. Connect the GitHub repo.
+  - Root directory: `backend`.
+  - Build command: `npm install && npm run build`.
+  - Start command: `node dist/index.js` (confirm against `backend/package.json` scripts).
+  - Based on: TECHSTACK.md § Backend.
+  - Validate: service deploys without errors; Render logs show server started.
+
+- [ ] **P4-12** Set environment variables on Render.
+  - In Render dashboard → Service → Environment, add:
+    - `SUPABASE_URL`
+    - `SUPABASE_ANON_KEY`
+    - `SUPABASE_SERVICE_ROLE_KEY`
+    - `ANTHROPIC_API_KEY`
+    - `BACKEND_PUBLIC_URL` — set to the Render service URL (e.g. `https://your-app.onrender.com`)
+    - `PORT=3000`
+    - `DEFAULT_TIMEZONE=Europe/Berlin`
+  - Values from `docs/credentials.md`.
+  - Validate: trigger a redeploy; `curl https://your-app.onrender.com/health` returns `{"ok":true}`.
+
+- [ ] **P4-13** Update app to point to Render backend.
+  - In `app/.env`, set `EXPO_PUBLIC_API_URL=https://your-app.onrender.com`.
+  - Since `EXPO_PUBLIC_*` vars are bundled at JS-serve time (dev client reads from Metro), restart Expo dev server after changing.
+  - Validate: sign in on device; This Week screen loads data from Render backend (check Render logs for incoming requests).
+
+- [ ] **P4-14** New EAS dev build (only if native packages were added since last build).
+  - Run from `/app`: `eas build --platform android --profile development`.
+  - Install resulting `.apk` on device.
+  - Note: required if any native package (e.g. react-native-svg) was added since the Phase 0 build.
+  - Validate: dev client opens and connects to Expo Metro server successfully.
+
 ### End-of-Phase Admin
-- [x] Mark completed tasks.
-- [x] Git commit: `feat(p4): core loop — tasks, habits, tab bar, quick-add, undo snackbar, detail sheets`
+- [ ] Mark completed tasks (P4-11 through P4-14 still pending).
+- [x] Git commit: `feat(p4): core loop — tasks, habits, tab bar, quick-add, undo snackbar, detail sheets` (covers P4-1 through P4-10)
+- [ ] Git commit after P4-11–P4-14: `feat(p4): render deployment, eas build, app wired to production backend`
+- [ ] Record Render service URL in `docs/credentials.md` and update `docs/env.md` with `BACKEND_PUBLIC_URL` note.
 
 ---
 
