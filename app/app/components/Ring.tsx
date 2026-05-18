@@ -1,7 +1,6 @@
-import Svg, { Circle, Text as SvgText } from 'react-native-svg';
+import { StyleSheet, Text, View } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 import { colors } from '../../lib/tokens';
-
-// SVG progress ring — matches the Ring component in docs/ui/components.jsx exactly.
 
 type Props = {
   value: number;
@@ -23,41 +22,35 @@ export function Ring({ value, target, size = 44, stroke = 4, dim = false }: Prop
   const fontSize = size > 50 ? 13 : 11;
 
   return (
-    <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      {/* Background track */}
-      <Circle
-        cx={cx}
-        cy={cy}
-        r={r}
-        fill="none"
-        stroke={colors.surfaceHi}
-        strokeWidth={stroke}
-      />
-      {/* Progress arc — rotated -90° so it starts at top */}
-      <Circle
-        cx={cx}
-        cy={cy}
-        r={r}
-        fill="none"
-        stroke={progressColor}
-        strokeWidth={stroke}
-        strokeDasharray={`${dash} ${circumference}`}
-        strokeLinecap="round"
-        rotation={-90}
-        origin={`${cx}, ${cy}`}
-      />
-      {/* Center label */}
-      <SvgText
-        x={cx}
-        y={cy}
-        textAnchor="middle"
-        dominantBaseline="central"
-        fontSize={fontSize}
-        fontWeight="600"
-        fill={colors.text}
-      >
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={StyleSheet.absoluteFill}>
+        {/* Background track */}
+        <Circle
+          cx={cx}
+          cy={cy}
+          r={r}
+          fill="none"
+          stroke={colors.surfaceHi}
+          strokeWidth={stroke}
+        />
+        {/* Progress arc — rotated -90° so it starts at top */}
+        <Circle
+          cx={cx}
+          cy={cy}
+          r={r}
+          fill="none"
+          stroke={progressColor}
+          strokeWidth={stroke}
+          strokeDasharray={`${dash} ${circumference}`}
+          strokeLinecap="round"
+          rotation={-90}
+          origin={`${cx}, ${cy}`}
+        />
+      </Svg>
+      {/* Overlay text — avoids dominantBaseline which is unreliable on Android */}
+      <Text style={{ fontSize, fontWeight: '600', color: colors.text }}>
         {value}/{target}
-      </SvgText>
-    </Svg>
+      </Text>
+    </View>
   );
 }

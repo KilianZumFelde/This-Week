@@ -8,7 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius } from '../lib/tokens';
@@ -222,6 +222,7 @@ type FieldKey = 'theme' | 'effort' | 'return' | 'week' | 'count';
 
 export default function QuickAdd() {
   const router = useRouter();
+  const { defaultWeek } = useLocalSearchParams<{ defaultWeek?: string }>();
   const insets = useSafeAreaInsets();
   const { data: themes } = useThemes();
   const createTask = useCreateTask();
@@ -235,7 +236,7 @@ export default function QuickAdd() {
   const [themeId, setThemeId] = useState(themes?.[0]?.id ?? '');
   const [effort, setEffort] = useState<EffortValue>('unknown');
   const [returnLevel, setReturnLevel] = useState<ReturnValue>('unknown');
-  const [week, setWeek] = useState<WeekValue>('this_week');
+  const [week, setWeek] = useState<WeekValue>(defaultWeek === 'backlog' ? 'backlog' : 'this_week');
 
   // Habit fields
   const [weeklyCount, setWeeklyCount] = useState(3);

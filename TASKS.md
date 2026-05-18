@@ -443,15 +443,15 @@ After P4-10: open the app, add a habit ("Gym 4x/week") and 2 tasks. Tap the gym 
 
 ### Tasks
 
-- [ ] **P5-1** Backend: `GET /tasks?week_assignment=backlog` — list open backlog tasks (already covered by PATCH from P4-2; confirm filter works).
-  - Validate: create a backlog task; appears in GET with `week_assignment=backlog`.
+- [x] **P5-1** Backend: `GET /tasks?week_assignment=backlog` — list open backlog tasks (already covered by PATCH from P4-2; confirm filter works).
+  - Confirmed: `week_assignment` filter at tasks.ts:34 handles this. `useBacklogTasks` hook calls `/tasks?week_assignment=backlog&status=open`.
 
-- [ ] **P5-2** Backend: `POST /tasks/:id/promote` — move backlog task to this week.
+- [x] **P5-2** Backend: `POST /tasks/:id/promote` — move backlog task to this week.
   - Sets `week_assignment=this_week`, `week_start_date=current_sunday`.
-  - Based on: DATABASE_DESIGN.md § Carry-Over Decision Effects (keep_this_week); UX lens § Backlog.
-  - Validate: promote a backlog task; appears in This Week.
+  - Added to `backend/src/routes/tasks.ts`. Also added `usePromoteTask` mutation hook.
+  - Undo: PATCH back to `week_assignment=backlog`, `week_start_date=null`.
 
-- [ ] **P5-3** Backlog screen (`app/(tabs)/backlog.tsx`).
+- [x] **P5-3** Backlog screen (`app/(tabs)/backlog.tsx`).
   - Prototype reference: `docs/ui/screens-primary.jsx` → `Backlog` (populated) and `BacklogEmpty` (empty state).
   - Prototype reference: `docs/ui/components.jsx` → `Task` component (same as This Week).
   - Prototype reference: `docs/ui/styles.css` → `.page-head`, `.theme-group`, `.task`, `.seg`.
@@ -483,7 +483,9 @@ After P4-10: open the app, add a habit ("Gym 4x/week") and 2 tasks. Tap the gym 
 After P5-3: add a task to the backlog. Navigate to This Week — confirm it's not there. Go back to Backlog, promote it. Navigate to This Week — confirm it appears.
 
 ### End-of-Phase Admin
-- [ ] Mark completed tasks.
+- [x] Mark completed tasks. All P5-1 through P5-3 complete.
+- [x] Also fixed HK-1: Ring counter now uses absolute-positioned RN Text overlay (removes unreliable dominantBaseline on Android).
+- [x] FAB tab context: + FAB on Backlog tab defaults quick-add to `week_assignment=backlog`.
 - [ ] Git commit: `feat(p5): backlog screen, promote-to-this-week, collapsible theme groups`
 
 ---
@@ -1120,7 +1122,7 @@ After P12-7: full end-to-end daily use test. Add goals, tasks, habits. Complete 
 
 Bugs found during testing that haven't been fixed yet. Fix these before or alongside the phase they belong to.
 
-- [ ] **HK-1** Ring counter text not visually centered on Android.
+- [x] **HK-1** Ring counter text not visually centered on Android.
   - `dominantBaseline="central"` was applied in P4 fix but the text still appears slightly off-center on Android. Likely a react-native-svg rendering difference on Android vs iOS/web.
   - Investigate: try using `y={cy + fontSize * 0.35}` and no `dominantBaseline`, or render the counter as an absolute-positioned `<Text>` overlay on top of the SVG ring instead.
   - Validate: open app on Android device, habit ring counter sits visually centered inside the circle.

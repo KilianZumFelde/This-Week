@@ -138,4 +138,23 @@ export async function tasksRoutes(fastify: FastifyInstance) {
     if (!data) return reply.status(404).send({ error: 'Task not found or not completed' });
     return data;
   });
+
+  fastify.post('/tasks/:id/promote', { preHandler: [authenticate] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const tz = await getUserTimezone(request.userId);
+    const weekStartDate = getCurrentWeekStartDate(tz);
+
+    const { data, error } = await supabase
+      .from('tasks')
+      .update({ week_assignment: 'this_week', week_start_date: weekStartDate })
+      .eq('id', id)
+      .eq('user_id', request.userId)
+      .eq('week_assignment', 'backlog')
+      .select()
+      .single();
+
+    if (error) return reply.status(500).send({ error: error.message });
+    if (!data) return reply.status(404).send({ error: 'Task not found or not in backlog' });
+    return data;
+  });
 }

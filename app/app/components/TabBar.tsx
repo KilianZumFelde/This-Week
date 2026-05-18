@@ -27,7 +27,11 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
       <View style={styles.fabPair} pointerEvents="box-none">
         <TouchableOpacity
           style={styles.fabSmall}
-          onPress={() => router.push('/quick-add')}
+          onPress={() => {
+            const activeTab = TABS[state.index]?.name;
+            const defaultWeek = activeTab === 'backlog' ? 'backlog' : 'this_week';
+            router.push(`/quick-add?defaultWeek=${defaultWeek}`);
+          }}
           activeOpacity={0.85}
         >
           <Icon name="plus" size={20} color={colors.text} />

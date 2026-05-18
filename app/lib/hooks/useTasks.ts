@@ -29,6 +29,21 @@ export function useThisWeekTasks() {
   });
 }
 
+export function useBacklogTasks() {
+  return useQuery<Task[]>({
+    queryKey: ['tasks', 'backlog'],
+    queryFn: () => api.get<Task[]>('/tasks?week_assignment=backlog&status=open'),
+  });
+}
+
+export function usePromoteTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (taskId: string) => api.post<Task>(`/tasks/${taskId}/promote`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+  });
+}
+
 export function useCompleteTask() {
   const qc = useQueryClient();
   return useMutation({
