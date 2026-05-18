@@ -167,7 +167,7 @@ function HabitRow({ habit, completedCount, theme, onIncrement, onPressBody }: Ha
 
 export default function ThisWeek() {
   const insets = useSafeAreaInsets();
-  const [sort, setSort] = useState<'rec' | 'theme'>('rec');
+  const [sort, setSort] = useState<'priority' | 'theme'>('priority');
   const [doneOpen, setDoneOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -195,6 +195,27 @@ export default function ThisWeek() {
 
   const openTasks = (tasks ?? []).filter((t) => t.status === 'open');
   const doneTasks = (tasks ?? []).filter((t) => t.status === 'done');
+
+  // Priority score from effort × return matrix
+  function priorityScore(effort: string, ret: string): number {
+    if (ret === 'high'   && effort === 'low')    return 4;
+    if (ret === 'high'   && effort === 'medium') return 3;
+    if (ret === 'high'   && effort === 'high')   return 3;
+    if (ret === 'medium' && effort === 'low')    return 3;
+    if (ret === 'medium' && effort === 'medium') return 2;
+    if (ret === 'medium' && effort === 'high')   return 1;
+    if (ret === 'low'    && effort === 'low')    return 1;
+    if (ret === 'low'    && effort === 'medium') return 1;
+    if (ret === 'low'    && effort === 'high')   return 0;
+    return 2; // unknown → treat as medium/medium
+  }
+
+  // Flat list sorted by priority score desc, oldest first on ties
+  const prioritySortedTasks = [...openTasks].sort((a, b) => {
+    const diff = priorityScore(b.effort_level, b.return_level) - priorityScore(a.effort_level, a.return_level);
+    if (diff !== 0) return diff;
+    return a.created_at < b.created_at ? -1 : 1;
+  });
 
   // Group open tasks by theme
   const themeGroups = (themes ?? [])
@@ -318,11 +339,11 @@ export default function ThisWeek() {
                 <Text style={styles.sectionLabelText}>Tasks · {openTasks.length}</Text>
                 <View style={styles.seg}>
                   <TouchableOpacity
-                    style={[styles.segBtn, sort === 'rec' && styles.segBtnOn]}
-                    onPress={() => setSort('rec')}
+                    style={[styles.segBtn, sort === 'priority' && styles.segBtnOn]}
+                    onPress={() => setSort('priority')}
                   >
-                    <Text style={[styles.segBtnText, sort === 'rec' && styles.segBtnTextOn]}>
-                      Recommended
+                    <Text style={[styles.segBtnText, sort === 'priority' && styles.segBtnTextOn]}>
+                      Priority
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -336,45 +357,64 @@ export default function ThisWeek() {
                 </View>
               </View>
 
-              {/* Theme groups */}
-              {themeGroups.map(({ theme, tasks: groupTasks }) => {
-                const collapsed = !!collapsedGroups[theme.id];
-                return (
-                  <View key={theme.id}>
-                    <TouchableOpacity
-                      style={styles.themeGroup}
-                      onPress={() =>
-                        setCollapsedGroups((o) => ({ ...o, [theme.id]: !o[theme.id] }))
-                      }
-                      activeOpacity={0.7}
-                    >
-                      <Icon
-                        name={collapsed ? 'chevron-right' : 'chevron-down'}
-                        size={14}
-                        color={colors.text3}
-                      />
-                      <View style={[styles.themeSwatch, { backgroundColor: theme.color ?? colors.text3 }]} />
-                      <Text style={styles.themeName}>{theme.name.toUpperCase()}</Text>
-                      <Text style={styles.themeCount}>· {groupTasks.length}</Text>
-                    </TouchableOpacity>
-                    {!collapsed && groupTasks.map((task) => (
-                      <TaskRow
-                        key={task.id}
-                        task={task}
-                        theme={themeMap[task.theme_id]}
-                        onToggle={() => {
-                          completeTask.mutate(task.id);
-                          showUndo({
-                            label: `"${task.title}" marked done`,
-                            undo: () => reopenTask.mutate(task.id),
-                          });
-                        }}
-                        onPressBody={() => setSelectedTask(task)}
-                      />
-                    ))}
-                  </View>
-                );
-              })}
+              {sort === 'priority' ? (
+                /* Flat priority-sorted list */
+                prioritySortedTasks.map((task) => (
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    theme={themeMap[task.theme_id]}
+                    onToggle={() => {
+                      completeTask.mutate(task.id);
+                      showUndo({
+                        label: `"${task.title}" marked done`,
+                        undo: () => reopenTask.mutate(task.id),
+                      });
+                    }}
+                    onPressBody={() => setSelectedTask(task)}
+                  />
+                ))
+              ) : (
+                /* Theme groups */
+                themeGroups.map(({ theme, tasks: groupTasks }) => {
+                  const collapsed = !!collapsedGroups[theme.id];
+                  return (
+                    <View key={theme.id}>
+                      <TouchableOpacity
+                        style={styles.themeGroup}
+                        onPress={() =>
+                          setCollapsedGroups((o) => ({ ...o, [theme.id]: !o[theme.id] }))
+                        }
+                        activeOpacity={0.7}
+                      >
+                        <Icon
+                          name={collapsed ? 'chevron-right' : 'chevron-down'}
+                          size={14}
+                          color={colors.text3}
+                        />
+                        <View style={[styles.themeSwatch, { backgroundColor: theme.color ?? colors.text3 }]} />
+                        <Text style={styles.themeName}>{theme.name.toUpperCase()}</Text>
+                        <Text style={styles.themeCount}>· {groupTasks.length}</Text>
+                      </TouchableOpacity>
+                      {!collapsed && groupTasks.map((task) => (
+                        <TaskRow
+                          key={task.id}
+                          task={task}
+                          theme={themeMap[task.theme_id]}
+                          onToggle={() => {
+                            completeTask.mutate(task.id);
+                            showUndo({
+                              label: `"${task.title}" marked done`,
+                              undo: () => reopenTask.mutate(task.id),
+                            });
+                          }}
+                          onPressBody={() => setSelectedTask(task)}
+                        />
+                      ))}
+                    </View>
+                  );
+                })
+              )}
             </>
           )}
 
