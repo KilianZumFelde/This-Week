@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Vibration } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -23,25 +23,23 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
       style={[styles.wrapper, { bottom: bottomOffset }]}
       pointerEvents="box-none"
     >
-      {/* FAB pair — sits above the tab bar */}
+      {/* Single FAB — tap for quick-add, hold for voice */}
       <View style={styles.fabPair} pointerEvents="box-none">
         <TouchableOpacity
-          style={styles.fabSmall}
+          style={styles.fabLarge}
+          activeOpacity={0.85}
           onPress={() => {
             const activeTab = TABS[state.index]?.name;
             const defaultWeek = activeTab === 'backlog' ? 'backlog' : 'this_week';
             router.push(`/quick-add?defaultWeek=${defaultWeek}`);
           }}
-          activeOpacity={0.85}
+          onLongPress={() => {
+            Vibration.vibrate(40);
+            router.push('/voice-listening');
+          }}
+          delayLongPress={300}
         >
-          <Icon name="plus" size={20} color={colors.text} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.fabLarge}
-          activeOpacity={0.85}
-          onPress={() => router.push('/voice-listening')}
-        >
-          <Icon name="mic" size={22} color="#1a1816" />
+          <Icon name="plus" size={24} color="#1a1816" />
         </TouchableOpacity>
       </View>
 
@@ -112,21 +110,6 @@ const styles = StyleSheet.create({
     bottom: 78,
     alignItems: 'center',
     gap: 10,
-  },
-  fabSmall: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.surfaceHi,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.30,
-    shadowRadius: 9,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 245, 232, 0.10)',
   },
   fabLarge: {
     width: 56,
