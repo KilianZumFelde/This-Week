@@ -214,6 +214,15 @@ Apparently you are sandboxed. So any npm install, ask the user to do it. Also Lo
 
 NEVER Start a new Phase without asking the user.
 
+
+---
+
+## Fixing Bugs
+When the user tests and detects bugs and gives you a list of bugs do the following:
+1) Analyze, what the cause is
+2) create a plan to fix it
+3) only after the plan, do the fix
+
 ---
 
 ## If Blocked
