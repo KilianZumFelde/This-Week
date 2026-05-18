@@ -123,9 +123,10 @@ export function HabitDetailSheet({ habit, weekRecord, themes, onClose }: Props) 
     onClose();
   }
 
-  function handlePause() {
+  function handleTogglePause() {
     if (!habit) return;
-    updateHabit.mutate({ id: habit.id, status: 'paused' });
+    const next = habit.status === 'paused' ? 'active' : 'paused';
+    updateHabit.mutate({ id: habit.id, status: next });
     onClose();
   }
 
@@ -308,11 +309,17 @@ export function HabitDetailSheet({ habit, weekRecord, themes, onClose }: Props) 
               <View style={styles.actionRow}>
                 <TouchableOpacity
                   style={[styles.actionBtn, styles.actionBtnGhost]}
-                  onPress={handlePause}
+                  onPress={handleTogglePause}
                   activeOpacity={0.7}
                 >
-                  <Icon name="pause" size={13} color={colors.text} />
-                  <Text style={styles.actionBtnText}>Pause</Text>
+                  <Icon
+                    name={habit?.status === 'paused' ? 'refresh' : 'pause'}
+                    size={13}
+                    color={colors.text}
+                  />
+                  <Text style={styles.actionBtnText}>
+                    {habit?.status === 'paused' ? 'Resume' : 'Pause'}
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.actionBtn, styles.actionBtnGhost]}
