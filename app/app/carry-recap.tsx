@@ -92,17 +92,17 @@ export default function CarryRecap() {
         {/* Fractions row */}
         <View style={styles.fracsRow}>
           <View>
-            <Text style={styles.recapNum}>
-              {recap.tasks_completed_count}
-              <Text style={styles.of}>/{recap.tasks_total_count}</Text>
-            </Text>
+            <View style={styles.fracNum}>
+              <Text style={styles.recapNum}>{recap.tasks_completed_count}</Text>
+              <Text style={styles.recapNumOf}>/{recap.tasks_total_count}</Text>
+            </View>
             <Text style={styles.recapLabel}>TASKS DONE</Text>
           </View>
           <View>
-            <Text style={styles.recapNum}>
-              {recap.habits_met_count}
-              <Text style={styles.of}>/{recap.habits_total_count}</Text>
-            </Text>
+            <View style={styles.fracNum}>
+              <Text style={styles.recapNum}>{recap.habits_met_count}</Text>
+              <Text style={styles.recapNumOf}>/{recap.habits_total_count}</Text>
+            </View>
             <Text style={styles.recapLabel}>HABITS ON TARGET</Text>
           </View>
         </View>
@@ -198,8 +198,12 @@ const styles = StyleSheet.create({
   fracsRow: {
     flexDirection: 'row',
     gap: 28,
-    alignItems: 'baseline',
+    alignItems: 'flex-end',
     marginBottom: 26,
+  },
+  fracNum: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
   },
   recapNum: {
     fontFamily: fonts.serif,
@@ -207,12 +211,13 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     letterSpacing: -1.92,
     color: colors.text,
-    lineHeight: 64,
   },
-  of: {
-    color: colors.text3,
-    fontSize: 64,
+  recapNumOf: {
     fontFamily: fonts.serif,
+    fontSize: 64,
+    fontWeight: '400',
+    letterSpacing: -1.92,
+    color: colors.text3,
   },
   recapLabel: {
     fontFamily: fonts.sans,

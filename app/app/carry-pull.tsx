@@ -83,7 +83,7 @@ export default function CarryPull() {
       await qc.invalidateQueries({ queryKey: ['tasks'] });
       // Clear the ritual — unblocks tabs
       setPendingRitualId(null);
-      router.replace('/(tabs)');
+      router.replace('/new-week');
     } finally {
       setSubmitting(false);
     }

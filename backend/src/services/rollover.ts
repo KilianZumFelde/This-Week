@@ -67,7 +67,7 @@ export async function performRollover(
       .from('goals')
       .select('id')
       .eq('user_id', userId)
-      .eq('is_primary', true)
+      .eq('goal_type', 'primary')
       .eq('status', 'active')
       .maybeSingle(),
   ]);

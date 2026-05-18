@@ -54,7 +54,8 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     const inRitual =
       segments.includes('carry-recap') ||
       segments.includes('carry-triage') ||
-      segments.includes('carry-pull');
+      segments.includes('carry-pull') ||
+      segments.includes('new-week');
     if (!inRitual) {
       router.replace('/carry-recap');
     }
@@ -84,6 +85,7 @@ export default function RootLayout() {
             <Stack.Screen name="carry-recap" options={{ headerShown: false }} />
             <Stack.Screen name="carry-triage" options={{ headerShown: false }} />
             <Stack.Screen name="carry-pull" options={{ headerShown: false }} />
+            <Stack.Screen name="new-week" options={{ headerShown: false }} />
           </Stack>
           <UndoSnackbar />
         </AuthGuard>
