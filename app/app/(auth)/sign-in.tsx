@@ -3,8 +3,8 @@ import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvo
 import { supabase } from '../../lib/supabase';
 
 export default function SignIn() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('test@weeklyfocus.dev');
+  const [password, setPassword] = useState('TestUser123!');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

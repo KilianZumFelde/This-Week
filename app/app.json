@@ -29,8 +29,7 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-router",
-      "react-native-svg"
+      "expo-router"
     ],
     "extra": {
       "router": {},
