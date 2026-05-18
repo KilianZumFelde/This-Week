@@ -486,7 +486,7 @@ After P5-3: add a task to the backlog. Navigate to This Week — confirm it's no
 - [x] Mark completed tasks. All P5-1 through P5-3 complete.
 - [x] Also fixed HK-1: Ring counter now uses absolute-positioned RN Text overlay (removes unreliable dominantBaseline on Android).
 - [x] FAB tab context: + FAB on Backlog tab defaults quick-add to `week_assignment=backlog`.
-- [ ] Git commit: `feat(p5): backlog screen, promote-to-this-week, collapsible theme groups`
+- [x] Git commit: `feat(p5): backlog screen, promote-to-this-week, collapsible theme groups`
 
 ---
 
