@@ -9,6 +9,7 @@ Packages successfully installed during development (in addition to initial scaff
 | `@expo/vector-icons` | (latest) | Feather, Ionicons, etc. — tab bar icons, UI icons |
 | `react-native-svg` | (latest) | SVG rendering — habit progress ring, decorative shapes |
 | `expo-speech-recognition` | (SDK 55) | Android built-in speech-to-text — voice capture overlay (P9-3) |
+| `expo-notifications` | ~55.0.23 | Push notifications — token registration, permission request, foreground handler (P10-2) |
 
 ## /backend
 

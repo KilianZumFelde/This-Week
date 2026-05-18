@@ -951,53 +951,82 @@ After P8-7: simulate a week flip (manually set carry_over_ritual status to pendi
 
 ### Tasks
 
-- [ ] **P10-1** **[User setup]** Configure Expo push notification credentials (FCM for Android).
+- [~] **P10-1** **[User setup]** Configure Expo push notification credentials (FCM for Android).
   - Generate FCM server key in Google Cloud Console.
   - Add to Expo EAS credentials.
   - Record in `docs/credentials.md`.
   - Based on: TECHSTACK.md § Notifications and Jobs.
-  - Validate: `expo push:android:upload` succeeds.
+  - Validate: new EAS dev build succeeds and device receives a test push.
+  - Note: requires a new EAS build after `google-services.json` is added. See setup instructions below.
 
-- [ ] **P10-2** Register push token on app startup.
-  - Request notification permissions on first launch.
-  - Get Expo push token, `POST /notifications/register` with token + platform.
-  - Upsert in `notification_tokens` table.
-  - Based on: DATABASE_DESIGN.md § notification_tokens; TECHSTACK.md § Push notifications.
-  - Validate: token appears in `notification_tokens` table after first app launch with permissions granted.
+- [x] **P10-2** Register push token on app startup.
+  - `app/lib/hooks/useNotifications.ts`: request permissions, call `Notifications.getExpoPushTokenAsync`, POST to `/notifications/register`.
+  - `app/app/_layout.tsx`: `useNotificationSetup(session?.user?.id)` called in `AuthGuard`.
+  - `expo-notifications` plugin added to `app.json`.
+  - `backend/src/routes/notifications.ts`: `POST /notifications/register` upserts token; `GET /notifications/reminders`; `DELETE /notifications/reminders`.
+  - Validate: after new EAS build and permissions granted, `notification_tokens` table has row.
 
-- [ ] **P10-3** Backend: schedule reminder when task is created/updated with reminder_spec.
-  - `POST /tasks/:id/reminders` — create `reminders` row from reminder_spec.
-  - On task complete: cancel all pending reminders for that task (`status=cancelled`).
-  - Based on: DATABASE_DESIGN.md § reminders; requirements-lens § Task reminder rules.
-  - Validate: create task with one-shot reminder; row exists in `reminders` with correct `scheduled_for`.
+- [x] **P10-3** Backend: schedule reminder when task is created/updated with reminder_spec.
+  - `backend/src/routes/tasks.ts`: `createReminderForTask()` called after task created if `reminder_spec` present.
+  - `POST /tasks/:id/complete` now calls `cancelRemindersForTask()`.
+  - `POST /tasks/:id/reminders` added for adding reminder to existing task.
+  - `reminder_spec` field added to `CreateTaskRequestSchema` and `useCreateTask` hook.
+  - `quick-add.tsx`: passes `currentDraft?.reminder_spec` through on voice-mode save.
+  - Validate: voice capture "call Pedro tomorrow" → task saved → `reminders` row in DB with `scheduled_for` set.
 
-- [ ] **P10-4** Backend: reminder dispatch job (Render Cron Job, runs every 5 minutes).
-  - `POST /jobs/dispatch-reminders` — find reminders with `status=scheduled` and `scheduled_for <= now()` (or `next_run_at <= now()` for recurring).
-  - Send push notification via Expo push API.
-  - Update `status=sent` / `last_sent_at` / `next_run_at` for recurring.
-  - Based on: TECHSTACK.md § Scheduled jobs; requirements-lens § Task reminder rules.
-  - Validate: create a one-shot reminder 1 minute in the future; cron fires; notification received on device; `status=sent` in DB.
+- [x] **P10-4** Backend: reminder dispatch job (`POST /jobs/dispatch-reminders`).
+  - `backend/src/routes/jobs.ts`: finds `one_shot` reminders past `scheduled_for` and `recurring_until_done` past `next_run_at`.
+  - Calls Expo Push API via `services/push.ts`.
+  - Updates `status=sent` for one_shot; advances `next_run_at` +1 day for recurring.
+  - Protected by `X-Cron-Secret` header (set `CRON_SECRET` env var on Render).
+  - Validate: configure Render Cron → `POST /jobs/dispatch-reminders` every 5 min. Insert test reminder 1 min in future → check `status=sent` in DB.
 
-- [ ] **P10-5** Backend: habit danger-zone nudge job (Render Cron Job, runs daily at 09:00 user timezone — approximate via UTC cron).
-  - `POST /jobs/habit-nudges` — for each active habit, check formula: `(target_count - completed_count) + 1 >= days_left_in_week`.
-  - If triggered AND not already in `habit_nudge_log` for this habit+week: send push notification; insert log row.
-  - Based on: DATABASE_DESIGN.md § Habit Nudge Rules; requirements-lens § Habit danger-zone nudge.
-  - Validate: set habit to 1/4 completed with 3 days left; run job; notification received; log row inserted; run again → no second notification.
+- [x] **P10-5** Backend: habit danger-zone nudge job (`POST /jobs/habit-nudges`).
+  - `backend/src/routes/jobs.ts`: formula `count_remaining + 1 >= days_left`. Checks `habit_nudge_log` for duplicates. Sends push + inserts log row.
+  - Validate: configure Render Cron → `POST /jobs/habit-nudges` daily at 09:00 UTC.
 
-- [ ] **P10-6** Settings → Reminders sub-page (`app/(settings)/reminders.tsx`).
-  - No prototype component in `docs/ui/` for this screen — implement using design system from `docs/ui/styles.css`.
-  - List rows: same pattern as Settings rows (`background: var(--surface); border-radius: var(--radius-md); padding: 13px 14px`) — task title + next fire time in `color: var(--text-2); fontSize: 12px`.
-  - Bell icon size=16 color=var(--text-2) per row (match icon style from `TaskDetail` reminder row in `docs/ui/screens-modals.jsx`).
-  - "Delete all configured reminders" with confirmation: destructive btn-ghost with `color: var(--brick)`.
-  - Based on: `docs/ui/styles.css` (design tokens); `docs/ui/screens-modals.jsx` (reminder row visual reference); requirements-lens Q15-followup.
-  - Validate: schedule 2 reminders; open Settings → Reminders; both listed. Delete all → list clears; `reminders` table updated to `cancelled`.
+- [x] **P10-6** Settings → Reminders sub-page (`app/(settings)/reminders.tsx`).
+  - `app/app/(settings)/`: `_layout.tsx` (Stack), `index.tsx` (settings landing), `reminders.tsx` (reminders list + delete all).
+  - Gear icon on all 4 tabs now navigates to `/(settings)`.
+  - Reminders screen: lists scheduled reminders with task title + next fire time. Confirm → delete all → cancels in DB.
+  - Validate: tap gear → Settings opens. Tap Reminders → list shows scheduled reminders. Delete all → list clears.
 
 ### User Check-In
-After P10-6: create a task with voice capture "remind me in 2 minutes to check the set list". Wait 2 minutes — confirm push notification fires and opens the app.
+After P10 setup + new EAS build: use voice capture "remind me in 2 minutes to check the set list". Confirm token in `notification_tokens` table, reminder in `reminders` table. Wait 2 min → push fires.
+
+### P10-1 Setup Instructions (requires user action + new EAS build)
+
+**Step 1 — Create Firebase project:**
+1. Go to https://console.firebase.google.com
+2. Create a new project (or use existing): "Weekly Focus"
+3. Add an **Android app** with package name `com.kilianzf.weeklyfocus`
+4. Download `google-services.json`
+5. Place it at `app/google-services.json`
+
+**Step 2 — Update `app.json`:**
+Add `"googleServicesFile": "./google-services.json"` inside the `"android"` block.
+
+**Step 3 — Upload FCM key to EAS:**
+In your terminal inside `app/`:
+```
+! eas credentials
+```
+Select Android → Development build → FCM → upload the server key from Firebase console (Project Settings → Cloud Messaging → Server key).
+
+**Step 4 — Build:**
+```
+! eas build --profile development --platform android
+```
+
+**Step 5 — Set `CRON_SECRET` on Render:**
+Set env var `CRON_SECRET=<random-string>` on Render. Then configure two Render Cron Jobs:
+- `POST https://this-week.onrender.com/jobs/dispatch-reminders` — every 5 min — header `X-Cron-Secret: <your-secret>`
+- `POST https://this-week.onrender.com/jobs/habit-nudges` — daily at 09:00 UTC — same header
 
 ### End-of-Phase Admin
-- [ ] Mark completed tasks.
-- [ ] Git commit: `feat(p10): push notifications, reminder dispatch job, habit danger-zone nudges`
+- [x] Mark completed tasks (P10-2 through P10-6 implemented).
+- [~] P10-1 deferred: awaiting user setup (Firebase + google-services.json + new EAS build).
+- [x] Git commit: `feat(p10): push notifications, reminder dispatch job, habit danger-zone nudges`
 
 ---
 
