@@ -1116,6 +1116,17 @@ After P12-7: full end-to-end daily use test. Add goals, tasks, habits. Complete 
 
 ---
 
+## Housekeeping — Open Bugs
+
+Bugs found during testing that haven't been fixed yet. Fix these before or alongside the phase they belong to.
+
+- [ ] **HK-1** Ring counter text not visually centered on Android.
+  - `dominantBaseline="central"` was applied in P4 fix but the text still appears slightly off-center on Android. Likely a react-native-svg rendering difference on Android vs iOS/web.
+  - Investigate: try using `y={cy + fontSize * 0.35}` and no `dominantBaseline`, or render the counter as an absolute-positioned `<Text>` overlay on top of the SVG ring instead.
+  - Validate: open app on Android device, habit ring counter sits visually centered inside the circle.
+
+---
+
 ## Post-v1 Parking Lot (do not implement unless explicitly requested)
 
 - Offline-first sync
