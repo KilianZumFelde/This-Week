@@ -115,6 +115,7 @@ type HabitRowProps = {
   habit: {
     id: string;
     title: string;
+    status: string;
     weekly_target: number;
     current_streak: number;
     theme_id: string;
@@ -127,16 +128,24 @@ type HabitRowProps = {
 
 function HabitRow({ habit, completedCount, theme, onIncrement, onPressBody }: HabitRowProps) {
   const hit = completedCount >= habit.weekly_target;
+  const paused = habit.status === 'paused';
   return (
-    <View style={styles.habitRow}>
-      <TouchableOpacity onPress={onIncrement} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-        <Ring value={completedCount} target={habit.weekly_target} />
+    <View style={[styles.habitRow, paused && styles.habitRowPaused]}>
+      <TouchableOpacity
+        onPress={paused ? undefined : onIncrement}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        activeOpacity={paused ? 1 : 0.7}
+      >
+        <Ring value={completedCount} target={habit.weekly_target} dim={paused} />
       </TouchableOpacity>
       <TouchableOpacity style={styles.habitBody} onPress={onPressBody} activeOpacity={0.7}>
-        <Text style={styles.habitTitle}>{habit.title}</Text>
+        <View style={styles.habitTitleRow}>
+          <Text style={[styles.habitTitle, paused && styles.habitTitlePaused]}>{habit.title}</Text>
+          {paused && <Text style={styles.pausedBadge}>PAUSED</Text>}
+        </View>
         <View style={styles.habitMeta}>
           <ThemeChip theme={theme} />
-          {habit.current_streak > 0 && (
+          {!paused && habit.current_streak > 0 && (
             <View style={[styles.chip, { backgroundColor: colors.goldDim }]}>
               <Icon name="flame" size={10} color={colors.gold} />
               <Text style={[styles.chipText, { color: colors.gold }]}>
@@ -146,7 +155,7 @@ function HabitRow({ habit, completedCount, theme, onIncrement, onPressBody }: Ha
           )}
         </View>
       </TouchableOpacity>
-      {hit && (
+      {hit && !paused && (
         <Text style={styles.habitHit}>HIT</Text>
       )}
     </View>
@@ -255,9 +264,10 @@ export default function ThisWeek() {
                 <Text style={styles.sectionLabelText}>Habits</Text>
                 <Text style={styles.sectionLabelCount}>
                   {(habits ?? []).filter((h) => {
+                    if (h.status !== 'active') return false;
                     const r = recordMap[h.id];
                     return (r?.completed_count ?? 0) >= h.weekly_target;
-                  }).length}/{(habits ?? []).length} on target
+                  }).length}/{(habits ?? []).filter((h) => h.status === 'active').length} on target
                 </Text>
               </View>
               {(habits ?? []).map((habit) => {
@@ -592,15 +602,38 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     marginBottom: 8,
   },
+  habitRowPaused: {
+    opacity: 0.45,
+  },
   habitBody: {
     flex: 1,
     minWidth: 0,
+  },
+  habitTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
   },
   habitTitle: {
     fontSize: 14.5,
     fontWeight: '500',
     color: colors.text,
-    marginBottom: 4,
+  },
+  habitTitlePaused: {
+    color: colors.text3,
+  },
+  pausedBadge: {
+    fontSize: 9.5,
+    fontWeight: '600',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: colors.text3,
+    borderWidth: 1,
+    borderColor: colors.text3,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
   },
   habitMeta: {
     flexDirection: 'row',

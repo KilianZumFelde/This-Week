@@ -8,15 +8,16 @@ type Props = {
   target: number;
   size?: number;
   stroke?: number;
+  dim?: boolean;
 };
 
-export function Ring({ value, target, size = 44, stroke = 4 }: Props) {
+export function Ring({ value, target, size = 44, stroke = 4, dim = false }: Props) {
   const r = (size - stroke) / 2;
   const circumference = 2 * Math.PI * r;
   const pct = Math.min(value / Math.max(target, 1), 1);
   const dash = circumference * pct;
   const hit = value >= target;
-  const progressColor = hit ? colors.gold : colors.accentStrong;
+  const progressColor = dim ? colors.text3 : hit ? colors.gold : colors.accentStrong;
   const cx = size / 2;
   const cy = size / 2;
   const fontSize = size > 50 ? 13 : 11;
@@ -45,12 +46,12 @@ export function Ring({ value, target, size = 44, stroke = 4 }: Props) {
         rotation={-90}
         origin={`${cx}, ${cy}`}
       />
-      {/* Center label — dy shifts text to visual center */}
+      {/* Center label */}
       <SvgText
-        x="50%"
-        y="52%"
+        x={cx}
+        y={cy}
         textAnchor="middle"
-        dy={fontSize * 0.35}
+        dominantBaseline="central"
         fontSize={fontSize}
         fontWeight="600"
         fill={colors.text}

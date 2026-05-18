@@ -42,7 +42,8 @@ export async function habitsRoutes(fastify: FastifyInstance) {
     if (status) {
       query = query.eq('status', status);
     } else {
-      query = query.eq('status', 'active');
+      // Default: return active + paused (exclude archived only)
+      query = query.neq('status', 'archived');
     }
 
     const { data, error } = await query;
@@ -135,7 +136,28 @@ export async function habitsRoutes(fastify: FastifyInstance) {
       .single();
 
     if (fetchError || !record) {
-      return reply.status(404).send({ error: 'No week record found for this habit' });
+      // No record for this week yet — create one with completed_count=1
+      const { data: habit } = await supabase
+        .from('habits')
+        .select('weekly_target')
+        .eq('id', id)
+        .eq('user_id', request.userId)
+        .single();
+
+      const { data: created, error: createError } = await supabase
+        .from('habit_week_records')
+        .insert({
+          user_id: request.userId,
+          habit_id: id,
+          week_start_date: weekStartDate,
+          target_count: habit?.weekly_target ?? 1,
+          completed_count: 1,
+        })
+        .select()
+        .single();
+
+      if (createError) return reply.status(500).send({ error: createError.message });
+      return created;
     }
 
     const { data: updated, error: updateError } = await supabase

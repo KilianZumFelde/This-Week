@@ -31,7 +31,7 @@ export type HabitWeekRecord = {
 export function useHabits() {
   return useQuery<Habit[]>({
     queryKey: ['habits'],
-    queryFn: () => api.get<Habit[]>('/habits?status=active'),
+    queryFn: () => api.get<Habit[]>('/habits'),
   });
 }
 

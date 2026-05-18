@@ -222,6 +222,7 @@ When the user tests and detects bugs and gives you a list of bugs do the followi
 1) Analyze, what the cause is
 2) create a plan to fix it
 3) only after the plan, do the fix
+4) where possible, validate the fix yourself — use curl for API changes, read the relevant code to confirm logic is correct, or run a type check. Only hand back to the user for validation that genuinely requires the running app (visual layout, touch interactions, device behavior).
 
 ---
 

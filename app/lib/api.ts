@@ -2,11 +2,11 @@ import { supabase } from './supabase';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
 
-async function getHeaders(): Promise<Record<string, string>> {
+async function getHeaders(hasBody: boolean): Promise<Record<string, string>> {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   return {
-    'Content-Type': 'application/json',
+    ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }
@@ -16,7 +16,7 @@ async function request<T>(
   path: string,
   body?: unknown,
 ): Promise<T> {
-  const headers = await getHeaders();
+  const headers = await getHeaders(body !== undefined);
   const res = await fetch(`${BASE_URL}${path}`, {
     method,
     headers,
