@@ -427,12 +427,12 @@ After P4-10: open the app, add a habit ("Gym 4x/week") and 2 tasks. Tap the gym 
 - [x] **P4-13** Update app to point to Render backend.
   - `app/.env`: `EXPO_PUBLIC_API_URL=https://this-week.onrender.com`. ✓
 
-- [-] **P4-14** New EAS dev build — skipped. No native packages added since last build.
+- [x] **P4-14** New EAS dev build — skipped. No native packages added since last build.
 
 ### End-of-Phase Admin
 - [x] Mark completed tasks (P4-11 through P4-14).
 - [x] Git commit: `feat(p4): core loop — tasks, habits, tab bar, quick-add, undo snackbar, detail sheets` (covers P4-1 through P4-10)
-- [ ] Git commit: `feat(p4): render deployment, app wired to production backend`
+- [x] Git commit: `feat(p4): render deployment, app wired to production backend`
 - [x] Record Render service URL in `docs/env.md`. ✓
 
 ---
