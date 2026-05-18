@@ -17,7 +17,15 @@ import { Icon } from './components/Icon';
 import { useThemes } from '../lib/hooks/useThemes';
 import { useCreateGoal, useUpdateGoal, useGoals } from '../lib/hooks/useGoals';
 
-type DatePreset = '3mo' | '6mo' | '1y' | null;
+type DatePreset = '1mo' | '2mo' | '3mo' | '6mo' | '1y' | null;
+
+const DATE_PRESETS: { v: Exclude<DatePreset, null>; l: string }[] = [
+  { v: '1mo', l: '1 month' },
+  { v: '2mo', l: '2 months' },
+  { v: '3mo', l: '3 months' },
+  { v: '6mo', l: '6 months' },
+  { v: '1y',  l: '1 year' },
+];
 
 function addMonths(months: number): string {
   const d = new Date();
@@ -25,17 +33,13 @@ function addMonths(months: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function addYear(): string {
-  const d = new Date();
-  d.setFullYear(d.getFullYear() + 1);
-  return d.toISOString().slice(0, 10);
-}
-
 function presetToDate(preset: DatePreset): string | null {
   if (!preset) return null;
+  if (preset === '1mo') return addMonths(1);
+  if (preset === '2mo') return addMonths(2);
   if (preset === '3mo') return addMonths(3);
   if (preset === '6mo') return addMonths(6);
-  if (preset === '1y') return addYear();
+  if (preset === '1y') return addMonths(12);
   return null;
 }
 
@@ -92,7 +96,10 @@ export default function AddGoal() {
     };
 
     if (editGoal) {
-      updateGoal.mutate({ id: editGoal.id, ...body }, { onSuccess: () => router.back() });
+      const updateBody = editGoal.status !== 'active'
+        ? { ...body, status: 'active' as const }
+        : body;
+      updateGoal.mutate({ id: editGoal.id, ...updateBody }, { onSuccess: () => router.back() });
     } else {
       createGoal.mutate(body, { onSuccess: () => router.back() });
     }
@@ -146,12 +153,13 @@ export default function AddGoal() {
               <Text style={styles.requiredBadge}>Required</Text>
             )}
           </View>
-          <View style={styles.dateChips}>
-            {([
-              { v: '3mo' as DatePreset, l: '3 months' },
-              { v: '6mo' as DatePreset, l: '6 months' },
-              { v: '1y' as DatePreset, l: '1 year' },
-            ] as const).map((o) => {
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.dateChips}
+            style={{ marginBottom: 12 }}
+          >
+            {DATE_PRESETS.map((o) => {
               const on = datePreset === o.v;
               return (
                 <TouchableOpacity
@@ -163,7 +171,7 @@ export default function AddGoal() {
                 </TouchableOpacity>
               );
             })}
-          </View>
+          </ScrollView>
           {targetDate && (
             <View style={styles.dateDisplay}>
               <Icon name="calendar" size={16} color={colors.text2} />
@@ -373,9 +381,8 @@ const styles = StyleSheet.create({
   },
   dateChips: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 12,
+    paddingRight: 4,
   },
   dateChip: {
     paddingVertical: 8,

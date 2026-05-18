@@ -99,6 +99,7 @@ export const UpdateGoalRequestSchema = z.object({
   title: z.string().min(1).optional(),
   why: z.string().nullable().optional(),
   goal_type: z.enum(['primary', 'secondary']).optional(),
+  status: z.enum(['active', 'completed', 'archived']).optional(),
   target_date: isoDate.optional(),
   sort_order: z.number().int().optional(),
 });
