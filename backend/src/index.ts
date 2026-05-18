@@ -8,6 +8,8 @@ import { tasksRoutes } from './routes/tasks.js';
 import { habitsRoutes } from './routes/habits.js';
 import { goalsRoutes } from './routes/goals.js';
 import { statsRoutes } from './routes/stats.js';
+import { rolloverRoutes } from './routes/rollover.js';
+import { carryOverRoutes } from './routes/carry-over.js';
 
 const app = Fastify({ logger: true });
 
@@ -29,6 +31,8 @@ await app.register(tasksRoutes);
 await app.register(habitsRoutes);
 await app.register(goalsRoutes);
 await app.register(statsRoutes);
+await app.register(rolloverRoutes);
+await app.register(carryOverRoutes);
 
 const port = Number(process.env.PORT) || 3000;
 const host = process.env.HOST || '0.0.0.0';
