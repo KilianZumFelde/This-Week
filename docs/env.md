@@ -1,6 +1,21 @@
 # env.md
 
-Environment variable reference for the Weekly Focus app.
+Non-secret project references and environment variable guide for the Weekly Focus app.
+
+This file is safe to commit. For actual secret values (API keys, passwords, tokens), see `credentials.md`.
+
+---
+
+## Project References
+
+| Item | Value |
+|------|-------|
+| GitHub Repository | `https://github.com/KilianZumFelde/This-Week.git` |
+| Supabase Project URL | `https://tmwhadppjrpoqytjcgfk.supabase.co` |
+| Supabase Project Ref | `tmwhadppjrpoqytjcgfk` |
+| Supabase Publishable (Anon) Key | `sb_publishable_LRAi7DwGGnBbKyWOLBP4Ag_wDtwnwRj` |
+| Expo Account | `kilianzf@gmail.com` |
+| Render Service Name | `weekly-focus-backend` |
 
 ---
 
@@ -8,12 +23,12 @@ Environment variable reference for the Weekly Focus app.
 
 ```env
 # Supabase
-SUPABASE_URL=https://<project-ref>.supabase.co
-SUPABASE_ANON_KEY=<anon key>
-SUPABASE_SERVICE_ROLE_KEY=<service role key>
+SUPABASE_URL=https://tmwhadppjrpoqytjcgfk.supabase.co
+SUPABASE_ANON_KEY=sb_publishable_LRAi7DwGGnBbKyWOLBP4Ag_wDtwnwRj
+SUPABASE_SERVICE_ROLE_KEY=<service role key — from credentials.md>
 
 # Anthropic
-ANTHROPIC_API_KEY=sk-ant-...
+ANTHROPIC_API_KEY=<API key — from credentials.md>
 
 # Server
 BACKEND_PUBLIC_URL=http://localhost:3000
@@ -27,8 +42,8 @@ DEFAULT_TIMEZONE=Europe/Berlin
 
 ```env
 EXPO_PUBLIC_API_URL=http://localhost:3000
-EXPO_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=<anon key>
+EXPO_PUBLIC_SUPABASE_URL=https://tmwhadppjrpoqytjcgfk.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_LRAi7DwGGnBbKyWOLBP4Ag_wDtwnwRj
 ```
 
 ---

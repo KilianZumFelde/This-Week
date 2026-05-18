@@ -172,12 +172,25 @@ Examples:
 Do not repeatedly ask whether a setup step is done. Check `TASKS.md` first.
 
 ## Credentials and environment
-For credentials (either tokens, or user credentials or whatever) create in the docs folder:
 
-- `credentials.md` — the actual secret values (API keys, passwords, tokens). **Never committed.** Listed in `.gitignore`.
-- `env.md` — the variable names, where to set them, and instructions. Safe to commit. No actual secret values.
+Two files in `/docs` manage project config:
 
-When adding new credentials: put the value in `credentials.md`, put the variable name and usage instructions in `env.md`.
+- `credentials.md` — **secrets only**: API keys, passwords, tokens, private keys, deploy hooks. Never committed. Listed in `.gitignore`.
+- `env.md` — everything non-secret: environment variable names, instructions, public/publishable keys, service names, account identifiers, project URLs, repository URL. Safe to commit.
+
+**What goes where:**
+
+| Belongs in `credentials.md` | Belongs in `env.md` |
+|-----------------------------|---------------------|
+| Service role / secret keys | Publishable / anon keys |
+| Passwords | Project URLs |
+| Private API keys | Service names |
+| Deploy hook URLs | Account emails |
+| FCM / push secrets | Repository URL |
+
+When adding new config: if it would cause harm if exposed, it goes in `credentials.md`. If it can be public, it goes in `env.md`.
+
+When adding new credentials: put the secret value in `credentials.md`, put the variable name and usage instructions in `env.md`.
 
 ---
 
