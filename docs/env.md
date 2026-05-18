@@ -16,6 +16,7 @@ This file is safe to commit. For actual secret values (API keys, passwords, toke
 | Supabase Publishable (Anon) Key | `sb_publishable_LRAi7DwGGnBbKyWOLBP4Ag_wDtwnwRj` |
 | Expo Account | `kilianzf@gmail.com` |
 | Render Service Name | `weekly-focus-backend` |
+| Render Service URL | `https://this-week.onrender.com` |
 
 ---
 
@@ -31,7 +32,7 @@ SUPABASE_SERVICE_ROLE_KEY=<service role key — from credentials.md>
 ANTHROPIC_API_KEY=<API key — from credentials.md>
 
 # Server
-BACKEND_PUBLIC_URL=http://localhost:3000
+BACKEND_PUBLIC_URL=https://this-week.onrender.com
 PORT=3000
 
 # Timezone default (server-side)
