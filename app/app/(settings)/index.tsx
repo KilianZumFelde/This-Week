@@ -12,7 +12,7 @@ export default function Settings() {
     <View style={[styles.page, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')}>
           <Icon name="chevron-left" size={22} color={colors.text2} />
         </TouchableOpacity>
         <View style={styles.titleBlock}>
