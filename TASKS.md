@@ -847,7 +847,7 @@ After P8-7: simulate a week flip (manually set carry_over_ritual status to pendi
 
 ### End-of-Phase Admin
 - [x] Mark completed tasks.
-- [ ] Test actual Sunday timing once (or simulate with timezone offset).
+- [x] Test actual Sunday timing once (or simulate with timezone offset).
 - [x] Git commit: `feat(p8): sunday rollover, carry-over ritual — recap, triage, pull screens`
 
 ---
