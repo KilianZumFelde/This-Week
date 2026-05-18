@@ -712,7 +712,7 @@ After P7-4: complete 2 tasks, increment gym to 3/4. Open Stats — confirm fract
 
 #### Backend
 
-- [ ] **P8-1** Rollover logic service (`backend/src/services/rollover.ts`).
+- [x] **P8-1** Rollover logic service (`backend/src/services/rollover.ts`).
   - Input: `userId`, `timezone`.
   - Steps per DATABASE_DESIGN.md § Sunday Rollover Data Flow:
     1. Compute previous and current `week_start_date`.
@@ -726,14 +726,14 @@ After P7-4: complete 2 tasks, increment gym to 3/4. Open Stats — confirm fract
   - Based on: DATABASE_DESIGN.md § Sunday Rollover Data Flow; requirements-lens § Week boundary.
   - Validate: manually create test data for last week; call rollover; inspect DB: week_records row created, habits streaks updated, carry_over_ritual row with pending decisions.
 
-- [ ] **P8-2** `POST /rollover/check` — idempotent rollover trigger.
+- [x] **P8-2** `POST /rollover/check` — idempotent rollover trigger.
   - Called by the app on every startup.
   - If current week ≠ stored week for the user, run rollover (idempotent via unique constraint on carry_over_ritual).
   - Returns `{ rolled_over: boolean, pending_ritual_id: string | null }`.
   - Based on: DATABASE_DESIGN.md § Sunday Rollover Data Flow.
   - Validate: call twice in same week → `rolled_over: false` both times. Cross week boundary (advance test date) → `rolled_over: true` on first call, `false` on second.
 
-- [ ] **P8-3** Carry-over ritual endpoints.
+- [x] **P8-3** Carry-over ritual endpoints.
   - `GET /carry-over/pending` — return pending ritual + all undecided task_decisions for the user.
   - `POST /carry-over/:ritualId/decisions/:decisionId` — record decision (`keep_this_week` / `send_to_backlog` / `drop`) for one task.
     - `keep_this_week`: update task `week_assignment=this_week`, `week_start_date=new_week`.
@@ -745,12 +745,12 @@ After P7-4: complete 2 tasks, increment gym to 3/4. Open Stats — confirm fract
 
 #### Frontend
 
-- [ ] **P8-4** Call `POST /rollover/check` on app startup (in root layout, after auth).
+- [x] **P8-4** Call `POST /rollover/check` on app startup (in root layout, after auth).
   - Store `pending_ritual_id` in Zustand if returned.
   - Based on: requirements-lens § Triggers / Events.
   - Validate: restart app; request made; no crashes.
 
-- [ ] **P8-5** Carry-Over Recap screen (`app/(modals)/carry-recap.tsx`).
+- [x] **P8-5** Carry-Over Recap screen (`app/carry-recap.tsx`).
   - Prototype reference: `docs/ui/screens-modals.jsx` → `CarryRecap` function.
   - Prototype reference: `docs/ui/styles.css` → `.recap-num`, `.card`.
   - Only shown when `pending_ritual_id` exists; blocks navigation to main tabs (root layout checks and routes here before tabs).
@@ -782,7 +782,7 @@ After P7-4: complete 2 tasks, increment gym to 3/4. Open Stats — confirm fract
   - Based on: `docs/ui/screens-modals.jsx` (`CarryRecap`); `docs/ui/styles.css` (`.recap-num`, `.card`); `docs/ui/NAVIGATION.md` §12.
   - Validate: Simulate rollover (insert carry_over_ritual row); open app → recap screen appears, cannot navigate to tabs. Verify 64px fraction numbers, streak rows, goal card, single CTA button.
 
-- [ ] **P8-6** Carry-Over Triage screen (`app/(modals)/carry-triage.tsx`).
+- [x] **P8-6** Carry-Over Triage screen (`app/carry-triage.tsx`).
   - Prototype reference: `docs/ui/screens-modals.jsx` → `CarryTriage` function.
   - Prototype reference: `docs/ui/styles.css` → `.card`, `.task` chip components.
 
@@ -817,7 +817,7 @@ After P7-4: complete 2 tasks, increment gym to 3/4. Open Stats — confirm fract
   - Based on: `docs/ui/screens-modals.jsx` (`CarryTriage`); `docs/ui/styles.css`; `docs/ui/NAVIGATION.md` §13.
   - Validate: Triage 3 tasks — progress dots update per task (sage = done, accent = current, surface-hi = remaining). After all triaged, transitions to pull step. "Drop" fires Undo snackbar.
 
-- [ ] **P8-7** Carry-Over Pull screen (`app/(modals)/carry-pull.tsx`).
+- [x] **P8-7** Carry-Over Pull screen (`app/carry-pull.tsx`).
   - Prototype reference: `docs/ui/screens-modals.jsx` → `CarryPull` function.
 
   **Modal header** — "Sunday set-up · 3 of 3" label left, no close button.
@@ -846,9 +846,9 @@ After P7-4: complete 2 tasks, increment gym to 3/4. Open Stats — confirm fract
 After P8-7: simulate a week flip (manually set carry_over_ritual status to pending with test tasks). Open app — confirm ritual blocks. Triage all tasks. Pull 1 from backlog. Tap "Start week" — confirm toast and This Week loads.
 
 ### End-of-Phase Admin
-- [ ] Mark completed tasks.
+- [x] Mark completed tasks.
 - [ ] Test actual Sunday timing once (or simulate with timezone offset).
-- [ ] Git commit: `feat(p8): sunday rollover, carry-over ritual — recap, triage, pull screens`
+- [x] Git commit: `feat(p8): sunday rollover, carry-over ritual — recap, triage, pull screens`
 
 ---
 
