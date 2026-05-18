@@ -240,6 +240,49 @@ If something is unclear but not blocking, make a reasonable assumption, document
 
 ---
 
+## Git: Committing and Pushing
+
+This project runs on **Windows with PowerShell**. The Bash tool is available but should NOT be used for git commits — it chokes on parentheses in file paths like `app/app/(tabs)/backlog.tsx`.
+
+**Always use the PowerShell tool for all git operations.**
+
+### Staging files with parentheses in paths
+
+Quote any path that contains `(` or `)`:
+
+```powershell
+git add "app/app/(tabs)/backlog.tsx"
+```
+
+Unquoted paths like `app/app/(tabs)/backlog.tsx` cause PowerShell to treat `(tabs)` as a sub-expression and throw a `CommandNotFoundException`.
+
+### Commit message syntax
+
+Use a PowerShell here-string (`@'...'@`) for multi-line commit messages. The closing `'@` must be at column 0:
+
+```powershell
+git commit -m @'
+feat(p5): short summary line
+
+- bullet one
+- bullet two
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+'@
+```
+
+Do NOT use the Bash `$(cat <<'EOF'...'EOF')` pattern — it fails in PowerShell.
+
+### Push
+
+```powershell
+git push origin main
+```
+
+Render auto-deploys on push to `main`. The backend is live at `https://this-week.onrender.com`.
+
+---
+
 ## Out of Scope Unless Explicitly Requested
 
 Do not add the following unless the user explicitly requests them:
