@@ -38,3 +38,6 @@ supabase/.temp
 
 # Credentials (never commit)
 docs/credentials.md
+
+# Firebase service account keys
+*firebase-adminsdk*.json

@@ -8,14 +8,38 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Vibration,
+  ActivityIndicator,
 } from 'react-native';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius } from '../../lib/tokens';
 import { Icon } from './Icon';
-import { Task, useUpdateTask, useDeleteTask, useCreateTask } from '../../lib/hooks/useTasks';
+import { Task, useUpdateTask, useDeleteTask, useCreateTask, ReminderSpec } from '../../lib/hooks/useTasks';
 import { Theme } from '../../lib/hooks/useThemes';
 import { useUndoStore } from '../../lib/stores/undo-store';
+import { useReminderInputStore } from '../../lib/stores/reminder-input-store';
+import { api } from '../../lib/api';
+
+function formatReminderSpec(spec: ReminderSpec): string {
+  if (spec.kind === 'recurring_until_done') {
+    const rule = spec.recurrence_rule?.toLowerCase() ?? '';
+    if (rule.includes('daily')) return 'Daily reminder until done';
+    if (rule.includes('weekly')) return 'Weekly reminder until done';
+    return 'Recurring reminder';
+  }
+  if (spec.scheduled_for) {
+    const d = new Date(spec.scheduled_for);
+    return d.toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+  return 'Reminder set';
+}
 
 type EffortValue = Task['effort_level'];
 type ReturnValue = Task['return_level'];
@@ -96,6 +120,7 @@ type Props = {
 
 export function TaskDetailSheet({ task, themes, onClose }: Props) {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
   const createTask = useCreateTask();
@@ -109,6 +134,22 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
   const [openField, setOpenField] = useState<FieldKey | null>(null);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
 
+  const [reminderEditing, setReminderEditing] = useState(false);
+  const [reminderText, setReminderText] = useState('');
+  const [reminderSpec, setReminderSpec] = useState<ReminderSpec | null>(null);
+  const [reminderLoading, setReminderLoading] = useState(false);
+
+  const pendingTranscript = useReminderInputStore((s) => s.pendingTranscript);
+  const sourceContext = useReminderInputStore((s) => s.sourceContext);
+  const clearReminderInput = useReminderInputStore((s) => s.clear);
+
+  useEffect(() => {
+    if (pendingTranscript && sourceContext === 'task-detail') {
+      setReminderText(pendingTranscript);
+      clearReminderInput();
+    }
+  }, [pendingTranscript, sourceContext]);
+
   useEffect(() => {
     if (task) {
       setTitle(task.title);
@@ -118,6 +159,9 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
       setWeek(task.week_assignment);
       setOpenField(null);
       setIsEditingTitle(false);
+      setReminderEditing(false);
+      setReminderText('');
+      setReminderSpec(null);
     }
   }, [task?.id]);
 
@@ -164,6 +208,25 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
     if (!task) return;
     updateTask.mutate({ id: task.id, week_assignment: 'backlog' });
     onClose();
+  }
+
+  async function handleReminderConfirm() {
+    if (!reminderText.trim() || !task) return;
+    setReminderLoading(true);
+    try {
+      const parsed = await api.post<ReminderSpec>('/ai/parse-reminder', {
+        text: reminderText.trim(),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      });
+      await api.post(`/tasks/${task.id}/reminders`, parsed);
+      setReminderSpec(parsed);
+      setReminderEditing(false);
+      setReminderText('');
+    } catch {
+      // keep bubble open; user can retry
+    } finally {
+      setReminderLoading(false);
+    }
   }
 
   const toggle = (key: FieldKey) => setOpenField((o) => (o === key ? null : key));
@@ -371,15 +434,71 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
                 </View>
               )}
 
-              {/* Reminder row */}
-              <View style={styles.reminderRow}>
-                <Icon name="bell" size={16} color={colors.text2} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.reminderText}>No reminder set</Text>
-                  <Text style={styles.reminderSub}>Tap to add one</Text>
+              {/* Reminder section */}
+              {reminderEditing ? (
+                <View style={styles.reminderBubbleWrap}>
+                  <View style={styles.reminderBubble}>
+                    <TextInput
+                      style={styles.reminderBubbleInput}
+                      value={reminderText}
+                      onChangeText={setReminderText}
+                      placeholder="e.g. tomorrow at 9am"
+                      placeholderTextColor={colors.text3}
+                      autoFocus
+                    />
+                    <TouchableOpacity
+                      onLongPress={() => {
+                        Vibration.vibrate(40);
+                        router.push('/voice-listening?mode=reminder&ctx=task-detail');
+                      }}
+                      delayLongPress={300}
+                      style={styles.reminderMicBtn}
+                    >
+                      <Icon name="mic" size={15} color="#1a1816" />
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.reminderBubbleActions}>
+                    <TouchableOpacity
+                      onPress={() => { setReminderEditing(false); setReminderText(''); }}
+                    >
+                      <Text style={styles.reminderCancelText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.reminderSetBtn,
+                        (!reminderText.trim() || reminderLoading) && styles.reminderSetBtnDim,
+                      ]}
+                      onPress={handleReminderConfirm}
+                      disabled={!reminderText.trim() || reminderLoading}
+                    >
+                      {reminderLoading ? (
+                        <ActivityIndicator size="small" color="#1a1816" />
+                      ) : (
+                        <Text style={styles.reminderSetBtnText}>Set reminder</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
                 </View>
-                <Text style={styles.reminderEdit}>EDIT</Text>
-              </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.reminderRow}
+                  onPress={() => setReminderEditing(true)}
+                  activeOpacity={0.7}
+                >
+                  <Icon name="bell" size={16} color={colors.text2} />
+                  <View style={{ flex: 1 }}>
+                    {reminderSpec ? (
+                      <Text style={styles.reminderText}>{formatReminderSpec(reminderSpec)}</Text>
+                    ) : (
+                      <>
+                        <Text style={styles.reminderText}>No reminder set</Text>
+                        <Text style={styles.reminderSub}>Tap to add one</Text>
+                      </>
+                    )}
+                  </View>
+                  <Text style={styles.reminderEdit}>EDIT</Text>
+                </TouchableOpacity>
+              )}
 
               {/* Action buttons */}
               <View style={styles.actionRow}>
@@ -607,6 +726,63 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     textTransform: 'uppercase',
     fontWeight: '600',
+  },
+  reminderBubbleWrap: {
+    marginTop: 18,
+    marginBottom: 22,
+    gap: 10,
+  },
+  reminderBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    paddingHorizontal: 14,
+    backgroundColor: colors.surface2,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
+  reminderBubbleInput: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.text,
+    backgroundColor: 'transparent',
+    padding: 0,
+  },
+  reminderMicBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reminderBubbleActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 2,
+  },
+  reminderCancelText: {
+    fontSize: 13,
+    color: colors.text3,
+  },
+  reminderSetBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: radius.md,
+    backgroundColor: colors.accent,
+    minWidth: 60,
+    alignItems: 'center',
+  },
+  reminderSetBtnDim: {
+    opacity: 0.4,
+  },
+  reminderSetBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1a1816',
   },
   // Actions
   actionRow: {

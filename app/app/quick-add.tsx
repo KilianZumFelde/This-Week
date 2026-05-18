@@ -7,6 +7,8 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Vibration,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useState, useEffect } from 'react';
@@ -14,10 +16,26 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius } from '../lib/tokens';
 import { Icon } from './components/Icon';
 import { useThemes, Theme } from '../lib/hooks/useThemes';
-import { useCreateTask } from '../lib/hooks/useTasks';
+import { useCreateTask, ReminderSpec } from '../lib/hooks/useTasks';
 import { useCreateHabit } from '../lib/hooks/useHabits';
 import { useGoals, Goal } from '../lib/hooks/useGoals';
 import { useCaptureStore } from '../lib/stores/capture-store';
+import { useReminderInputStore } from '../lib/stores/reminder-input-store';
+import { api } from '../lib/api';
+
+function formatReminderSpec(spec: ReminderSpec): string {
+  if (spec.kind === 'recurring_until_done') {
+    const rule = spec.recurrence_rule?.toLowerCase() ?? '';
+    if (rule.includes('daily')) return 'Daily';
+    if (rule.includes('weekly')) return 'Weekly';
+    return 'Recurring';
+  }
+  if (spec.scheduled_for) {
+    const d = new Date(spec.scheduled_for);
+    return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+  return 'Set';
+}
 
 // ─── Shared picker infrastructure ────────────────────────────────────────────
 
@@ -305,6 +323,23 @@ export default function QuickAdd() {
   // Low-confidence field names from AI
   const confidenceFlags = currentDraft?.confidence_flags ?? [];
 
+  // Reminder (manual mode only — voice mode gets it from draft)
+  const [reminderSpec, setReminderSpec] = useState<ReminderSpec | null>(null);
+  const [reminderEditing, setReminderEditing] = useState(false);
+  const [reminderText, setReminderText] = useState('');
+  const [reminderLoading, setReminderLoading] = useState(false);
+
+  const pendingTranscript = useReminderInputStore((s) => s.pendingTranscript);
+  const sourceContext = useReminderInputStore((s) => s.sourceContext);
+  const clearReminderInput = useReminderInputStore((s) => s.clear);
+
+  useEffect(() => {
+    if (pendingTranscript && sourceContext === 'quick-add') {
+      setReminderText(pendingTranscript);
+      clearReminderInput();
+    }
+  }, [pendingTranscript, sourceContext]);
+
   // When themes load and no theme set yet, pick first
   useEffect(() => {
     if (!themeId && themes && themes.length > 0) {
@@ -319,6 +354,24 @@ export default function QuickAdd() {
 
   const canSave = title.trim().length > 0 && (themes?.length ?? 0) > 0;
 
+  async function handleReminderConfirm() {
+    if (!reminderText.trim()) return;
+    setReminderLoading(true);
+    try {
+      const parsed = await api.post<ReminderSpec>('/ai/parse-reminder', {
+        text: reminderText.trim(),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      });
+      setReminderSpec(parsed);
+      setReminderEditing(false);
+      setReminderText('');
+    } catch {
+      // keep bubble open; user can retry
+    } finally {
+      setReminderLoading(false);
+    }
+  }
+
   async function handleSave() {
     if (!canSave) return;
     if (type === 'task') {
@@ -329,7 +382,7 @@ export default function QuickAdd() {
         return_level: returnLevel,
         week_assignment: week,
         goal_id: goalId,
-        reminder_spec: currentDraft?.reminder_spec ?? null,
+        reminder_spec: isVoiceMode ? (currentDraft?.reminder_spec ?? null) : (reminderSpec ?? null),
       });
     } else {
       await createHabit.mutateAsync({
@@ -571,6 +624,74 @@ export default function QuickAdd() {
           <View style={[styles.chipsRow, { marginTop: 12 }]}>
             {below.map(renderChip)}
           </View>
+        )}
+
+        {/* Reminder section (tasks only, manual mode) */}
+        {type === 'task' && !isVoiceMode && (
+          reminderEditing ? (
+            <View style={styles.reminderBubbleWrap}>
+              <View style={styles.reminderBubble}>
+                <TextInput
+                  style={styles.reminderBubbleInput}
+                  value={reminderText}
+                  onChangeText={setReminderText}
+                  placeholder="e.g. tomorrow at 9am"
+                  placeholderTextColor={colors.text3}
+                  autoFocus
+                />
+                <TouchableOpacity
+                  onLongPress={() => {
+                    Vibration.vibrate(40);
+                    router.push('/voice-listening?mode=reminder&ctx=quick-add');
+                  }}
+                  delayLongPress={300}
+                  style={styles.reminderMicBtn}
+                >
+                  <Icon name="mic" size={15} color="#1a1816" />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.reminderBubbleActions}>
+                <TouchableOpacity
+                  onPress={() => { setReminderEditing(false); setReminderText(''); }}
+                >
+                  <Text style={styles.reminderCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.reminderSetBtn,
+                    (!reminderText.trim() || reminderLoading) && styles.reminderSetBtnDim,
+                  ]}
+                  onPress={handleReminderConfirm}
+                  disabled={!reminderText.trim() || reminderLoading}
+                >
+                  {reminderLoading ? (
+                    <ActivityIndicator size="small" color="#1a1816" />
+                  ) : (
+                    <Text style={styles.reminderSetBtnText}>Set reminder</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.reminderRow}
+              onPress={() => setReminderEditing(true)}
+              activeOpacity={0.7}
+            >
+              <Icon name="bell" size={14} color={colors.text2} />
+              <Text style={styles.reminderRowText}>
+                {reminderSpec ? formatReminderSpec(reminderSpec) : 'Add reminder'}
+              </Text>
+              {reminderSpec && (
+                <TouchableOpacity
+                  onPress={() => setReminderSpec(null)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Icon name="x" size={12} color={colors.text3} />
+                </TouchableOpacity>
+              )}
+            </TouchableOpacity>
+          )
         )}
 
         {/* Low-conf hint in voice mode */}
@@ -918,5 +1039,78 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     color: colors.text3,
     lineHeight: 16,
+  },
+  reminderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.hairline,
+  },
+  reminderRowText: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.text2,
+  },
+  reminderBubbleWrap: {
+    marginTop: 14,
+    gap: 10,
+  },
+  reminderBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    paddingHorizontal: 14,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
+  reminderBubbleInput: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.text,
+    backgroundColor: 'transparent',
+    padding: 0,
+  },
+  reminderMicBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reminderBubbleActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 2,
+  },
+  reminderCancelText: {
+    fontSize: 13,
+    color: colors.text3,
+  },
+  reminderSetBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: radius.md,
+    backgroundColor: colors.accent,
+    minWidth: 60,
+    alignItems: 'center',
+  },
+  reminderSetBtnDim: {
+    opacity: 0.4,
+  },
+  reminderSetBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1a1816',
   },
 });

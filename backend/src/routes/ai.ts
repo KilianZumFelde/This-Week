@@ -217,4 +217,73 @@ export async function aiRoutes(fastify: FastifyInstance) {
 
     return result;
   });
+
+  // POST /ai/parse-reminder — parse natural language into a ReminderSpec
+  fastify.post('/ai/parse-reminder', { preHandler: [authenticate] }, async (request, reply) => {
+    const parsed = z.object({
+      text: z.string().min(1),
+      timezone: z.string().optional(),
+    }).safeParse(request.body);
+    if (!parsed.success) return reply.status(400).send({ error: parsed.error.flatten() });
+
+    const { text, timezone = 'UTC' } = parsed.data;
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const now = new Date().toISOString();
+
+    const REMINDER_TOOL: Anthropic.Tool = {
+      name: 'parse_reminder',
+      description: 'Return a structured reminder parsed from natural language',
+      input_schema: {
+        type: 'object',
+        required: ['kind', 'scheduled_for', 'recurrence_rule'],
+        properties: {
+          kind: { type: 'string', enum: ['one_shot', 'recurring_until_done'] },
+          scheduled_for: {
+            type: ['string', 'null'],
+            description: 'ISO 8601 datetime for one_shot, or the first occurrence for recurring. null if unparseable.',
+          },
+          recurrence_rule: {
+            type: ['string', 'null'],
+            description: 'RRULE string for recurring_until_done (e.g. FREQ=DAILY), else null.',
+          },
+        },
+      },
+    };
+
+    try {
+      const msg = await client.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 256,
+        system: `You parse natural language reminder phrases into structured data.
+User timezone: ${timezone}
+Current time: ${now}
+
+Rules:
+- "tomorrow", "tomorrow morning" → next day at 09:00 local
+- "tonight", "this evening" → today at 19:00 local
+- "in X hours/minutes" → relative to now
+- "Friday", "next Monday", etc → nearest future occurrence at 09:00 local unless a time is specified
+- "daily until done", "every day", "nudge me daily" → recurring_until_done, FREQ=DAILY
+- Default time when only a date is given: 09:00 local
+- Resolve all times to ISO 8601 UTC strings
+- If the input is not a time reference at all, return scheduled_for: null`,
+        tools: [REMINDER_TOOL],
+        tool_choice: { type: 'tool', name: 'parse_reminder' },
+        messages: [{ role: 'user', content: text }],
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const toolUse = (msg.content as any[]).find((b: any) => b.type === 'tool_use');
+      if (!toolUse) return reply.status(422).send({ error: 'unparseable' });
+
+      const result = toolUse.input as { kind: string; scheduled_for: string | null; recurrence_rule: string | null };
+      if (!result.scheduled_for && !result.recurrence_rule) {
+        return reply.status(422).send({ error: 'unparseable' });
+      }
+
+      return result;
+    } catch {
+      return reply.status(422).send({ error: 'parse_failed' });
+    }
+  });
 }

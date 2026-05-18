@@ -9,7 +9,7 @@ import {
   Modal,
 } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   useSpeechRecognitionEvent,
@@ -19,6 +19,7 @@ import { colors } from '../lib/tokens';
 import { Icon } from './components/Icon';
 import { api } from '../lib/api';
 import { useCaptureStore, CaptureItem } from '../lib/stores/capture-store';
+import { useReminderInputStore } from '../lib/stores/reminder-input-store';
 import { useThemes } from '../lib/hooks/useThemes';
 import { useGoals } from '../lib/hooks/useGoals';
 
@@ -26,10 +27,14 @@ type Phase = 'listening' | 'processing' | 'error';
 
 export default function VoiceListening() {
   const router = useRouter();
+  const { mode, ctx } = useLocalSearchParams<{ mode?: string; ctx?: string }>();
   const insets = useSafeAreaInsets();
   const { data: themes } = useThemes();
   const { data: goals } = useGoals();
   const setCapture = useCaptureStore((s) => s.setCapture);
+  const setReminderInput = useReminderInputStore((s) => s.set);
+
+  const isReminderMode = mode === 'reminder';
 
   const [phase, setPhase] = useState<Phase>('listening');
   const [transcript, setTranscript] = useState('');
@@ -124,6 +129,14 @@ export default function VoiceListening() {
       router.back();
       return;
     }
+
+    if (isReminderMode) {
+      const context = (ctx === 'quick-add' ? 'quick-add' : 'task-detail') as 'task-detail' | 'quick-add';
+      setReminderInput(text, context);
+      router.back();
+      return;
+    }
+
     setPhase('processing');
 
     const activeGoals = (goals ?? []).filter((g) => g.status === 'active');
@@ -200,7 +213,9 @@ export default function VoiceListening() {
           </Text>
         )}
         {phase === 'listening' && transcript.length === 0 && (
-          <Text style={styles.hint}>Say what you want to add…</Text>
+          <Text style={styles.hint}>
+            {isReminderMode ? 'Say when to remind you…' : 'Say what you want to add…'}
+          </Text>
         )}
         {phase === 'error' && (
           <Text style={styles.hint}>{errorMsg}</Text>

@@ -77,7 +77,7 @@ export function useDeleteTask() {
   });
 }
 
-type ReminderSpec = {
+export type ReminderSpec = {
   kind: 'one_shot' | 'recurring_until_done';
   scheduled_for: string | null;
   recurrence_rule: string | null;
