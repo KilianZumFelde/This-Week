@@ -860,7 +860,7 @@ After P8-7: simulate a week flip (manually set carry_over_ritual status to pendi
 
 #### Backend
 
-- [ ] **P9-1** AI capture endpoint `POST /ai/capture`.
+- [x] **P9-1** AI capture endpoint `POST /ai/capture`.
   - Input: `{ transcript: string, context: { themes: Theme[], active_primary_goal?: Goal } }`.
   - Calls Anthropic API (`claude-sonnet-4-6`) with structured output (Zod schema) to parse:
     - `item_type` (task | habit)
@@ -877,7 +877,7 @@ After P8-7: simulate a week flip (manually set carry_over_ritual status to pendi
   - Based on: requirements-lens § AI parsing rules; product-lens § Voice + AI-parsed input.
   - Validate: POST with transcript `"add gym 4 times a week"` → returns habit draft with weekly_target=4; POST with `"call Pedro tomorrow about the booking"` → returns task draft with reminder_spec.
 
-- [ ] **P9-2** Reminder spec parser (part of capture output).
+- [x] **P9-2** Reminder spec parser (part of capture output).
   - Parse natural language reminder phrases into `{ kind, scheduled_for, recurrence_rule }`.
   - Supported: one-shot at specific time, relative one-shot, recurring until done.
   - Default time when not specified: 09:00 local.
@@ -886,7 +886,7 @@ After P8-7: simulate a week flip (manually set carry_over_ritual status to pendi
 
 #### Frontend
 
-- [ ] **P9-3** Voice listening overlay (`app/(modals)/voice-listening.tsx`).
+- [x] **P9-3** Voice listening overlay (`app/voice-listening.tsx`).
   - Prototype reference: `docs/ui/screens-modals.jsx` → `VoiceListening` function.
   - Prototype reference: `docs/ui/styles.css` → `.voice-overlay`, `.voice-orb` + pulse animation keyframes.
   - Uses `expo-av` or `expo-speech-recognition` to record audio.
@@ -915,7 +915,7 @@ After P8-7: simulate a week flip (manually set carry_over_ritual status to pendi
   - Based on: `docs/ui/screens-modals.jsx` (`VoiceListening`); `docs/ui/styles.css` (`.voice-overlay`, `.voice-orb`); `docs/ui/NAVIGATION.md` §05.
   - Validate: Tap mic FAB → overlay appears with pulsing orb animation. Cancel → returns. Confirm → parsed draft card opens with AI-filled fields.
 
-- [ ] **P9-4** Wire voice capture into Quick-Add Draft Card (from Phase 4).
+- [x] **P9-4** Wire voice capture into Quick-Add Draft Card (from Phase 4).
   - Prototype reference: `docs/ui/screens-modals.jsx` → `QuickAddDraft` (initial non-interactive view) and `QuickAddDraftInline` / `QuickAddHabitInline` (interactive) — specifically the AI-prefill + low-confidence chip states.
 
   **Voice header** — add to modal-head when opened from voice (not from + FAB):
@@ -935,12 +935,13 @@ After P8-7: simulate a week flip (manually set carry_over_ritual status to pendi
   - Validate: Voice input "gym 4x a week and call Pedro tomorrow" → two draft cards in sequence. Confirm low-confidence chips show italic style with accent-dim border. "1 of 2" / "2 of 2" counter in header.
 
 ### User Check-In
-After P9-4: tap mic, say "add go to the gym 4 times this week". Confirm draft card shows: type=Habit, title="Go to the gym", theme=Fitness (or nearest), target=4. Edit theme if needed. Save. Confirm habit appears on This Week.
+[-] Deferred — will be tested combined with end of Phase 10 (single EAS build covers P9 voice overlay + P10 push notifications).
 
 ### End-of-Phase Admin
-- [ ] Mark completed tasks.
-- [ ] Confirm AI capture logs row written in Supabase.
-- [ ] Git commit: `feat(p9): voice input, AI capture endpoint, quick-add prefill, low-confidence chips`
+- [x] Mark completed tasks. P9-1 through P9-4 complete.
+- [x] AI capture logs confirmed written in Supabase (3 rows, all success=true).
+- [x] libraries.md updated: `expo-speech-recognition` (app), `@anthropic-ai/sdk` (backend).
+- [x] Git commit: `feat(p9): voice input, AI capture endpoint, quick-add prefill, low-confidence chips`
 
 ---
 
