@@ -54,6 +54,7 @@ export function useIncrementHabit() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['habits'] });
       qc.invalidateQueries({ queryKey: ['habit_week_records'] });
+      qc.invalidateQueries({ queryKey: ['stats'] });
     },
   });
 }
@@ -67,7 +68,10 @@ export function useCreateHabit() {
       weekly_target: number;
       goal_id?: string | null;
     }) => api.post<Habit>('/habits', body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['habits'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['habits'] });
+      qc.invalidateQueries({ queryKey: ['stats'] });
+    },
   });
 }
 
@@ -76,7 +80,10 @@ export function useUpdateHabit() {
   return useMutation({
     mutationFn: ({ id, ...body }: Partial<Habit> & { id: string }) =>
       api.patch<Habit>(`/habits/${id}`, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['habits'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['habits'] });
+      qc.invalidateQueries({ queryKey: ['stats'] });
+    },
   });
 }
 
@@ -84,6 +91,9 @@ export function useDeleteHabit() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.delete(`/habits/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['habits'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['habits'] });
+      qc.invalidateQueries({ queryKey: ['stats'] });
+    },
   });
 }

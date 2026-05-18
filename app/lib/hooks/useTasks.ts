@@ -48,7 +48,10 @@ export function useCompleteTask() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (taskId: string) => api.post<Task>(`/tasks/${taskId}/complete`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['stats'] });
+    },
   });
 }
 
@@ -56,7 +59,10 @@ export function useReopenTask() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (taskId: string) => api.post<Task>(`/tasks/${taskId}/reopen`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['stats'] });
+    },
   });
 }
 
@@ -64,7 +70,10 @@ export function useDeleteTask() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (taskId: string) => api.delete(`/tasks/${taskId}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['stats'] });
+    },
   });
 }
 
@@ -79,7 +88,10 @@ export function useCreateTask() {
       goal_id?: string | null;
       week_assignment?: 'this_week' | 'backlog';
     }) => api.post<Task>('/tasks', body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['stats'] });
+    },
   });
 }
 

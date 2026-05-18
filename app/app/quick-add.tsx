@@ -16,6 +16,7 @@ import { Icon } from './components/Icon';
 import { useThemes, Theme } from '../lib/hooks/useThemes';
 import { useCreateTask } from '../lib/hooks/useTasks';
 import { useCreateHabit } from '../lib/hooks/useHabits';
+import { useGoals, Goal } from '../lib/hooks/useGoals';
 
 // ─── Shared picker infrastructure ────────────────────────────────────────────
 
@@ -216,15 +217,48 @@ function CountPicker({ value, onSelect }: { value: number; onSelect: (n: number)
   );
 }
 
+// ─── Goal picker ─────────────────────────────────────────────────────────────
+
+function GoalPicker({
+  goals,
+  selectedId,
+  onSelect,
+}: {
+  goals: Goal[];
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
+}) {
+  const activeGoals = goals.filter((g) => g.status === 'active');
+  return (
+    <PickerContainer title="Link to a goal" hint="Optional">
+      <OptionRow
+        selected={selectedId === null}
+        onPress={() => onSelect(null)}
+        label="None"
+      />
+      {activeGoals.map((g) => (
+        <OptionRow
+          key={g.id}
+          selected={g.id === selectedId}
+          onPress={() => onSelect(g.id)}
+          label={g.title}
+          sub={g.goal_type === 'primary' ? 'Primary goal' : 'Secondary goal'}
+        />
+      ))}
+    </PickerContainer>
+  );
+}
+
 // ─── Main modal ───────────────────────────────────────────────────────────────
 
-type FieldKey = 'theme' | 'effort' | 'return' | 'week' | 'count';
+type FieldKey = 'theme' | 'effort' | 'return' | 'week' | 'count' | 'goal';
 
 export default function QuickAdd() {
   const router = useRouter();
   const { defaultWeek } = useLocalSearchParams<{ defaultWeek?: string }>();
   const insets = useSafeAreaInsets();
   const { data: themes } = useThemes();
+  const { data: goals } = useGoals();
   const createTask = useCreateTask();
   const createHabit = useCreateHabit();
 
@@ -237,6 +271,7 @@ export default function QuickAdd() {
   const [effort, setEffort] = useState<EffortValue>('unknown');
   const [returnLevel, setReturnLevel] = useState<ReturnValue>('unknown');
   const [week, setWeek] = useState<WeekValue>(defaultWeek === 'backlog' ? 'backlog' : 'this_week');
+  const [goalId, setGoalId] = useState<string | null>(null);
 
   // Habit fields
   const [weeklyCount, setWeeklyCount] = useState(3);
@@ -257,12 +292,14 @@ export default function QuickAdd() {
         effort_level: effort,
         return_level: returnLevel,
         week_assignment: week,
+        goal_id: goalId,
       });
     } else {
       await createHabit.mutateAsync({
         theme_id: activeThemeId,
         title: title.trim(),
         weekly_target: weeklyCount,
+        goal_id: goalId,
       });
     }
     router.back();
@@ -271,10 +308,13 @@ export default function QuickAdd() {
   const effortLabel = effort === 'unknown' ? 'set effort' : effort;
   const returnLabel = returnLevel === 'unknown' ? 'set return' : returnLevel;
   const weekLabel = week === 'this_week' ? 'this week' : 'backlog';
+  const activeGoals = (goals ?? []).filter((g) => g.status === 'active');
+  const linkedGoal = activeGoals.find((g) => g.id === goalId);
+  const goalLabel = linkedGoal ? linkedGoal.title : 'none';
 
   // Ordered field list per type
-  const TASK_FIELDS: FieldKey[] = ['theme', 'effort', 'return', 'week'];
-  const HABIT_FIELDS: FieldKey[] = ['theme', 'count'];
+  const TASK_FIELDS: FieldKey[] = ['theme', 'effort', 'return', 'week', 'goal'];
+  const HABIT_FIELDS: FieldKey[] = ['theme', 'count', 'goal'];
   const fieldOrder = type === 'task' ? TASK_FIELDS : HABIT_FIELDS;
   const openIdx = openField ? fieldOrder.indexOf(openField) : -1;
   const above = openIdx === -1 ? fieldOrder : fieldOrder.slice(0, openIdx + 1);
@@ -332,6 +372,15 @@ export default function QuickAdd() {
         onPress={() => toggle('count')}
       />
     );
+    if (key === 'goal') return (
+      <QAChip
+        key="goal"
+        label="Goal"
+        value={goalLabel}
+        isOpen={openField === 'goal'}
+        onPress={() => toggle('goal')}
+      />
+    );
     return null;
   }
 
@@ -368,6 +417,13 @@ export default function QuickAdd() {
         onSelect={(n) => { setWeeklyCount(n); setOpenField(null); }}
       />
     );
+    if (openField === 'goal') return (
+      <GoalPicker
+        goals={goals ?? []}
+        selectedId={goalId}
+        onSelect={(id) => { setGoalId(id); setOpenField(null); }}
+      />
+    );
     return null;
   }
 
@@ -395,13 +451,13 @@ export default function QuickAdd() {
         <View style={styles.typePill}>
           <TouchableOpacity
             style={[styles.typePillBtn, type === 'task' && styles.typePillBtnOn]}
-            onPress={() => { setType('task'); setOpenField(null); }}
+            onPress={() => { setType('task'); setOpenField(null); setGoalId(null); }}
           >
             <Text style={[styles.typePillText, type === 'task' && styles.typePillTextOn]}>Task</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.typePillBtn, type === 'habit' && styles.typePillBtnOn]}
-            onPress={() => { setType('habit'); setOpenField(null); }}
+            onPress={() => { setType('habit'); setOpenField(null); setGoalId(null); }}
           >
             <Text style={[styles.typePillText, type === 'habit' && styles.typePillTextOn]}>Habit</Text>
           </TouchableOpacity>
