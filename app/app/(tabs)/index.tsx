@@ -168,6 +168,7 @@ export default function ThisWeek() {
   const insets = useSafeAreaInsets();
   const [sort, setSort] = useState<'rec' | 'theme'>('rec');
   const [doneOpen, setDoneOpen] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
 
@@ -313,31 +314,44 @@ export default function ThisWeek() {
               </View>
 
               {/* Theme groups */}
-              {themeGroups.map(({ theme, tasks: groupTasks }) => (
-                <View key={theme.id}>
-                  <View style={styles.themeGroup}>
-                    <Icon name="chevron-down" size={14} color={colors.text3} />
-                    <View style={[styles.themeSwatch, { backgroundColor: theme.color ?? colors.text3 }]} />
-                    <Text style={styles.themeName}>{theme.name.toUpperCase()}</Text>
-                    <Text style={styles.themeCount}>· {groupTasks.length}</Text>
+              {themeGroups.map(({ theme, tasks: groupTasks }) => {
+                const collapsed = !!collapsedGroups[theme.id];
+                return (
+                  <View key={theme.id}>
+                    <TouchableOpacity
+                      style={styles.themeGroup}
+                      onPress={() =>
+                        setCollapsedGroups((o) => ({ ...o, [theme.id]: !o[theme.id] }))
+                      }
+                      activeOpacity={0.7}
+                    >
+                      <Icon
+                        name={collapsed ? 'chevron-right' : 'chevron-down'}
+                        size={14}
+                        color={colors.text3}
+                      />
+                      <View style={[styles.themeSwatch, { backgroundColor: theme.color ?? colors.text3 }]} />
+                      <Text style={styles.themeName}>{theme.name.toUpperCase()}</Text>
+                      <Text style={styles.themeCount}>· {groupTasks.length}</Text>
+                    </TouchableOpacity>
+                    {!collapsed && groupTasks.map((task) => (
+                      <TaskRow
+                        key={task.id}
+                        task={task}
+                        theme={themeMap[task.theme_id]}
+                        onToggle={() => {
+                          completeTask.mutate(task.id);
+                          showUndo({
+                            label: `"${task.title}" marked done`,
+                            undo: () => reopenTask.mutate(task.id),
+                          });
+                        }}
+                        onPressBody={() => setSelectedTask(task)}
+                      />
+                    ))}
                   </View>
-                  {groupTasks.map((task) => (
-                    <TaskRow
-                      key={task.id}
-                      task={task}
-                      theme={themeMap[task.theme_id]}
-                      onToggle={() => {
-                        completeTask.mutate(task.id);
-                        showUndo({
-                          label: `"${task.title}" marked done`,
-                          undo: () => reopenTask.mutate(task.id),
-                        });
-                      }}
-                      onPressBody={() => setSelectedTask(task)}
-                    />
-                  ))}
-                </View>
-              ))}
+                );
+              })}
             </>
           )}
 

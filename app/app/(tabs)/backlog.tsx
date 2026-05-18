@@ -51,6 +51,23 @@ function EffortChip({ level }: { level: string }) {
   );
 }
 
+const RETURN_STYLES: Record<string, { bg: string; color: string; label: string }> = {
+  high: { bg: colors.goldDim, color: colors.gold, label: '· high return' },
+  medium: { bg: 'rgba(212,176,106,0.08)', color: colors.text2, label: '· med return' },
+  low: { bg: colors.surface2, color: colors.text2, label: '· low return' },
+  unknown: { bg: colors.surface2, color: colors.text2, label: '' },
+};
+
+function ReturnChip({ level }: { level: string }) {
+  const s = RETURN_STYLES[level];
+  if (!s || !s.label) return null;
+  return (
+    <View style={[styles.chip, { backgroundColor: s.bg }]}>
+      <Text style={[styles.chipText, { color: s.color }]}>{s.label}</Text>
+    </View>
+  );
+}
+
 // ─── Task row (backlog variant — circle promotes, not completes) ──────────────
 
 type BacklogTaskRowProps = {
@@ -75,6 +92,7 @@ function BacklogTaskRow({ task, theme, onPromote, onPressBody }: BacklogTaskRowP
         <View style={styles.taskMeta}>
           <ThemeChip theme={theme} />
           <EffortChip level={task.effort_level} />
+          <ReturnChip level={task.return_level} />
         </View>
       </TouchableOpacity>
     </View>
@@ -118,7 +136,10 @@ export default function Backlog() {
   }
 
   function toggleGroup(themeId: string, groupIndex: number) {
-    setOpenGroups((o) => ({ ...o, [themeId]: !isGroupOpen(themeId, groupIndex) }));
+    setOpenGroups((o) => {
+      const currentOpen = themeId in o ? o[themeId] : groupIndex < 2;
+      return { ...o, [themeId]: !currentOpen };
+    });
   }
 
   // Build sorted/grouped content
