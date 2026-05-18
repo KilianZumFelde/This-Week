@@ -1124,6 +1124,11 @@ After P12-7: full end-to-end daily use test. Add goals, tasks, habits. Complete 
 
 Bugs found during testing that haven't been fixed yet. Fix these before or alongside the phase they belong to.
 
+- [ ] **HK-2** Carry-over recap: 64px fraction numbers may render smaller/dimmer than the prototype on some Android devices.
+  - The nested `<Text>` approach was already replaced with sibling `<Text>` in a baseline-aligned row, but the visual difference versus the browser prototype persists. Likely caused by Georgia font metrics or Android font rendering at large sizes.
+  - **Do not fix unless the user explicitly requests it.** Leave as-is for now.
+  - If targeted: try loading a custom serif (Source Serif 4) via expo-font, or adjust fontSize/letterSpacing until it matches the prototype visually on device.
+
 - [x] **HK-1** Ring counter text not visually centered on Android.
   - `dominantBaseline="central"` was applied in P4 fix but the text still appears slightly off-center on Android. Likely a react-native-svg rendering difference on Android vs iOS/web.
   - Investigate: try using `y={cy + fontSize * 0.35}` and no `dominantBaseline`, or render the counter as an absolute-positioned `<Text>` overlay on top of the SVG ring instead.
