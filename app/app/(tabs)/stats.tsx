@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { colors, radius } from '../../lib/tokens';
 import { useCurrentWeekStats, useHabitStreaks, usePastWeeks, HabitStreak, WeekRecord } from '../../lib/hooks/useStats';
 import { Icon } from '../components/Icon';
@@ -102,6 +103,7 @@ function WeekRow({ record }: { record: WeekRecord }) {
 
 export default function Stats() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { data: streaks, isLoading: streaksLoading } = useHabitStreaks();
   const { data: pastWeeks, isLoading: pastLoading } = usePastWeeks();
 
@@ -112,7 +114,7 @@ export default function Stats() {
           <Text style={styles.eyebrow}>Quiet progress</Text>
           <Text style={styles.h1}>Stats</Text>
         </View>
-        <TouchableOpacity style={styles.iconBtn}>
+        <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/(settings)')}>
           <Icon name="settings" size={20} color={colors.text2} />
         </TouchableOpacity>
       </View>

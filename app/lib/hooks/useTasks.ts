@@ -77,6 +77,12 @@ export function useDeleteTask() {
   });
 }
 
+type ReminderSpec = {
+  kind: 'one_shot' | 'recurring_until_done';
+  scheduled_for: string | null;
+  recurrence_rule: string | null;
+};
+
 export function useCreateTask() {
   const qc = useQueryClient();
   return useMutation({
@@ -87,6 +93,7 @@ export function useCreateTask() {
       return_level?: string;
       goal_id?: string | null;
       week_assignment?: 'this_week' | 'backlog';
+      reminder_spec?: ReminderSpec | null;
     }) => api.post<Task>('/tasks', body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tasks'] });

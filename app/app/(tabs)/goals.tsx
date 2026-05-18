@@ -141,7 +141,7 @@ export default function Goals() {
           <Text style={styles.eyebrow}>What you're working toward</Text>
           <Text style={styles.h1}>Goals</Text>
         </View>
-        <TouchableOpacity style={styles.iconBtn}>
+        <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/(settings)')}>
           <Icon name="settings" size={20} color={colors.text2} />
         </TouchableOpacity>
       </View>

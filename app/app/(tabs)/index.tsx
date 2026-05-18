@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { colors, radius } from '../../lib/tokens';
 import { useThisWeekTasks, useCompleteTask, useReopenTask, useDeleteTask, Task } from '../../lib/hooks/useTasks';
@@ -167,6 +168,7 @@ function HabitRow({ habit, completedCount, theme, onIncrement, onPressBody }: Ha
 
 export default function ThisWeek() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [sort, setSort] = useState<'priority' | 'theme'>('priority');
   const [doneOpen, setDoneOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
@@ -238,7 +240,7 @@ export default function ThisWeek() {
           <Text style={styles.eyebrow}>Week of {weekLabel}</Text>
           <Text style={styles.h1}>This week</Text>
         </View>
-        <TouchableOpacity style={styles.iconBtn}>
+        <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/(settings)')}>
           <Icon name="settings" size={20} color={colors.text2} />
         </TouchableOpacity>
       </View>

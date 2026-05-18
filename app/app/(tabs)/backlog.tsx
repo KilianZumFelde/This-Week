@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import Svg, { Rect as SvgRect, Path as SvgPath } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { colors, radius } from '../../lib/tokens';
 import {
@@ -116,6 +117,7 @@ type SortMode = 'theme' | 'priority' | 'recent';
 
 export default function Backlog() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [sort, setSort] = useState<SortMode>('theme');
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -181,7 +183,7 @@ export default function Backlog() {
           <Text style={styles.eyebrow}>For later</Text>
           <Text style={styles.h1}>Backlog</Text>
         </View>
-        <TouchableOpacity style={styles.iconBtn}>
+        <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/(settings)')}>
           <Icon name="settings" size={20} color={colors.text2} />
         </TouchableOpacity>
       </View>

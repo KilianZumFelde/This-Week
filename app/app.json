@@ -30,7 +30,15 @@
     },
     "plugins": [
       "expo-router",
-      "expo-speech-recognition"
+      "expo-speech-recognition",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#c87856",
+          "defaultChannel": "default"
+        }
+      ]
     ],
     "extra": {
       "router": {},

@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { UndoSnackbar } from './components/UndoSnackbar';
 import { api } from '../lib/api';
 import { useRolloverStore } from '../lib/stores/rollover-store';
+import { useNotificationSetup } from '../lib/hooks/useNotifications';
 
 const queryClient = new QueryClient();
 
@@ -16,6 +17,8 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { pendingRitualId, setPendingRitualId } = useRolloverStore();
   const rolloverChecked = useRef(false);
+
+  useNotificationSetup(session?.user?.id);
 
   useEffect(() => {
     if (session === undefined) return;
@@ -90,6 +93,7 @@ export default function RootLayout() {
               name="voice-listening"
               options={{ presentation: 'transparentModal', headerShown: false, animation: 'fade' }}
             />
+            <Stack.Screen name="(settings)" options={{ headerShown: false }} />
           </Stack>
           <UndoSnackbar />
         </AuthGuard>

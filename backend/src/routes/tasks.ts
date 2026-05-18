@@ -1,12 +1,53 @@
 import { FastifyInstance } from 'fastify';
+import { z } from 'zod';
 import { authenticate } from '../middleware/authenticate.js';
 import { supabase } from '../lib/supabase.js';
 import {
   CreateTaskRequestSchema,
   UpdateTaskRequestSchema,
   ListTasksQuerySchema,
+  ReminderSpecSchema,
 } from '../lib/request-schemas.js';
 import { getCurrentWeekStartDate } from '../lib/week.js';
+
+async function createReminderForTask(
+  userId: string,
+  taskId: string,
+  spec: z.infer<typeof ReminderSpecSchema>,
+  userTimezone: string
+): Promise<void> {
+  let scheduledFor = spec.scheduled_for;
+
+  // Default to 09:00 local today if no scheduled_for provided
+  if (!scheduledFor) {
+    const now = new Date();
+    // Approximate: use the ISO date with 09:00 UTC offset
+    // For production accuracy, use a timezone library; this is close enough for v1
+    const todayStr = now.toLocaleDateString('sv-SE', { timeZone: userTimezone }); // YYYY-MM-DD
+    scheduledFor = `${todayStr}T09:00:00`;
+  }
+
+  const row: Record<string, unknown> = {
+    user_id: userId,
+    task_id: taskId,
+    kind: spec.kind,
+    status: 'scheduled',
+    scheduled_for: scheduledFor,
+    recurrence_rule: spec.recurrence_rule ?? null,
+    next_run_at: spec.kind === 'recurring_until_done' ? scheduledFor : null,
+  };
+
+  await supabase.from('reminders').insert(row);
+}
+
+async function cancelRemindersForTask(userId: string, taskId: string): Promise<void> {
+  await supabase
+    .from('reminders')
+    .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
+    .eq('user_id', userId)
+    .eq('task_id', taskId)
+    .eq('status', 'scheduled');
+}
 
 async function getUserTimezone(userId: string): Promise<string> {
   const { data } = await supabase
@@ -49,20 +90,20 @@ export async function tasksRoutes(fastify: FastifyInstance) {
     const parsed = CreateTaskRequestSchema.safeParse(request.body);
     if (!parsed.success) return reply.status(400).send({ error: parsed.error.flatten() });
 
-    const body = parsed.data;
+    const { reminder_spec, ...rest } = parsed.data;
 
     // Resolve week_start_date when assigning to this_week
-    let weekStartDate = body.week_start_date ?? null;
-    const weekAssignment = body.week_assignment ?? 'this_week';
+    let weekStartDate = rest.week_start_date ?? null;
+    const weekAssignment = rest.week_assignment ?? 'this_week';
+    const tz = await getUserTimezone(request.userId);
     if (weekAssignment === 'this_week' && !weekStartDate) {
-      const tz = await getUserTimezone(request.userId);
       weekStartDate = getCurrentWeekStartDate(tz);
     }
 
     const { data, error } = await supabase
       .from('tasks')
       .insert({
-        ...body,
+        ...rest,
         user_id: request.userId,
         week_assignment: weekAssignment,
         week_start_date: weekStartDate,
@@ -71,6 +112,11 @@ export async function tasksRoutes(fastify: FastifyInstance) {
       .single();
 
     if (error) return reply.status(500).send({ error: error.message });
+
+    if (data && reminder_spec) {
+      await createReminderForTask(request.userId, data.id, reminder_spec, tz);
+    }
+
     return reply.status(201).send(data);
   });
 
@@ -119,6 +165,9 @@ export async function tasksRoutes(fastify: FastifyInstance) {
 
     if (error) return reply.status(500).send({ error: error.message });
     if (!data) return reply.status(404).send({ error: 'Task not found or already completed' });
+
+    await cancelRemindersForTask(request.userId, id);
+
     return data;
   });
 
@@ -156,5 +205,24 @@ export async function tasksRoutes(fastify: FastifyInstance) {
     if (error) return reply.status(500).send({ error: error.message });
     if (!data) return reply.status(404).send({ error: 'Task not found or not in backlog' });
     return data;
+  });
+
+  fastify.post('/tasks/:id/reminders', { preHandler: [authenticate] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const parsed = ReminderSpecSchema.safeParse(request.body);
+    if (!parsed.success) return reply.status(400).send({ error: parsed.error.flatten() });
+
+    // Verify task belongs to user
+    const { data: task } = await supabase
+      .from('tasks')
+      .select('id')
+      .eq('id', id)
+      .eq('user_id', request.userId)
+      .single();
+    if (!task) return reply.status(404).send({ error: 'Task not found' });
+
+    const tz = await getUserTimezone(request.userId);
+    await createReminderForTask(request.userId, id, parsed.data, tz);
+    return reply.status(201).send({ ok: true });
   });
 }

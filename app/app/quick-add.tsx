@@ -329,6 +329,7 @@ export default function QuickAdd() {
         return_level: returnLevel,
         week_assignment: week,
         goal_id: goalId,
+        reminder_spec: currentDraft?.reminder_spec ?? null,
       });
     } else {
       await createHabit.mutateAsync({

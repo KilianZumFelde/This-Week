@@ -3,6 +3,15 @@ import { z } from 'zod';
 const uuid = z.string().uuid();
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
+// ─── Reminders ────────────────────────────────────────────────────────────────
+
+export const ReminderSpecSchema = z.object({
+  kind: z.enum(['one_shot', 'recurring_until_done']),
+  scheduled_for: z.string().nullable(),
+  recurrence_rule: z.string().nullable(),
+});
+export type ReminderSpec = z.infer<typeof ReminderSpecSchema>;
+
 // ─── Themes ──────────────────────────────────────────────────────────────────
 
 export const CreateThemeRequestSchema = z.object({
@@ -34,6 +43,7 @@ export const CreateTaskRequestSchema = z.object({
   effort_level: z.enum(['low', 'medium', 'high', 'unknown']).optional(),
   return_level: z.enum(['low', 'medium', 'high', 'unknown']).optional(),
   sort_order: z.number().int().optional(),
+  reminder_spec: ReminderSpecSchema.nullable().optional(),
 });
 export type CreateTaskRequest = z.infer<typeof CreateTaskRequestSchema>;
 
