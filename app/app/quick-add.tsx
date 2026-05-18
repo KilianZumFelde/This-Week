@@ -9,7 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius } from '../lib/tokens';
 import { Icon } from './components/Icon';
@@ -17,6 +17,7 @@ import { useThemes, Theme } from '../lib/hooks/useThemes';
 import { useCreateTask } from '../lib/hooks/useTasks';
 import { useCreateHabit } from '../lib/hooks/useHabits';
 import { useGoals, Goal } from '../lib/hooks/useGoals';
+import { useCaptureStore } from '../lib/stores/capture-store';
 
 // ─── Shared picker infrastructure ────────────────────────────────────────────
 
@@ -68,18 +69,35 @@ type ChipProps = {
   value: React.ReactNode;
   isOpen: boolean;
   locked?: boolean;
+  lowConf?: boolean;
   onPress: () => void;
 };
 
-function QAChip({ label, value, isOpen, locked, onPress }: ChipProps) {
+function QAChip({ label, value, isOpen, locked, lowConf, onPress }: ChipProps) {
   return (
     <TouchableOpacity
-      style={[styles.qaChip, isOpen && styles.qaChipOpen]}
+      style={[
+        styles.qaChip,
+        isOpen && styles.qaChipOpen,
+        lowConf && !isOpen && styles.qaChipLowConf,
+      ]}
       onPress={locked ? undefined : onPress}
       activeOpacity={locked ? 1 : 0.7}
     >
-      <Text style={[styles.qaChipKey, isOpen && styles.qaChipKeyOpen]}>{label}</Text>
-      <Text style={[styles.qaChipValue, isOpen && { color: colors.text }]}>{value as string}</Text>
+      <Text style={[
+        styles.qaChipKey,
+        isOpen && styles.qaChipKeyOpen,
+        lowConf && !isOpen && styles.qaChipKeyLowConf,
+      ]}>
+        {label}
+      </Text>
+      <Text style={[
+        styles.qaChipValue,
+        isOpen && { color: colors.text },
+        lowConf && !isOpen && styles.qaChipValueLowConf,
+      ]}>
+        {value as string}
+      </Text>
       {!locked && (
         <Icon name={isOpen ? 'chevDown' : 'chevron-right'} size={11} color={colors.text3} />
       )}
@@ -255,26 +273,44 @@ type FieldKey = 'theme' | 'effort' | 'return' | 'week' | 'count' | 'goal';
 
 export default function QuickAdd() {
   const router = useRouter();
-  const { defaultWeek } = useLocalSearchParams<{ defaultWeek?: string }>();
+  const { defaultWeek, fromVoice } = useLocalSearchParams<{ defaultWeek?: string; fromVoice?: string }>();
   const insets = useSafeAreaInsets();
   const { data: themes } = useThemes();
   const { data: goals } = useGoals();
   const createTask = useCreateTask();
   const createHabit = useCreateHabit();
 
-  const [type, setType] = useState<'task' | 'habit'>('task');
-  const [title, setTitle] = useState('');
+  const isVoiceMode = fromVoice === '1';
+  const { transcript, drafts, currentIndex, advanceIndex, clearCapture } = useCaptureStore();
+  const currentDraft = isVoiceMode ? drafts[currentIndex] ?? null : null;
+  const totalDrafts = isVoiceMode ? drafts.length : 0;
+
+  const [type, setType] = useState<'task' | 'habit'>(currentDraft?.item_type ?? 'task');
+  const [title, setTitle] = useState(currentDraft?.title ?? '');
   const [openField, setOpenField] = useState<FieldKey | null>(null);
 
   // Task fields
-  const [themeId, setThemeId] = useState(themes?.[0]?.id ?? '');
-  const [effort, setEffort] = useState<EffortValue>('unknown');
-  const [returnLevel, setReturnLevel] = useState<ReturnValue>('unknown');
-  const [week, setWeek] = useState<WeekValue>(defaultWeek === 'backlog' ? 'backlog' : 'this_week');
-  const [goalId, setGoalId] = useState<string | null>(null);
+  const [themeId, setThemeId] = useState(currentDraft?.theme_id ?? themes?.[0]?.id ?? '');
+  const [effort, setEffort] = useState<EffortValue>(currentDraft?.effort_level ?? 'unknown');
+  const [returnLevel, setReturnLevel] = useState<ReturnValue>(currentDraft?.return_level ?? 'unknown');
+  const [week, setWeek] = useState<WeekValue>(
+    currentDraft?.week_assignment ??
+    (defaultWeek === 'backlog' ? 'backlog' : 'this_week')
+  );
+  const [goalId, setGoalId] = useState<string | null>(currentDraft?.goal_id ?? null);
 
   // Habit fields
-  const [weeklyCount, setWeeklyCount] = useState(3);
+  const [weeklyCount, setWeeklyCount] = useState(currentDraft?.weekly_target ?? 3);
+
+  // Low-confidence field names from AI
+  const confidenceFlags = currentDraft?.confidence_flags ?? [];
+
+  // When themes load and no theme set yet, pick first
+  useEffect(() => {
+    if (!themeId && themes && themes.length > 0) {
+      setThemeId(currentDraft?.theme_id ?? themes[0].id);
+    }
+  }, [themes]);
 
   const activeThemeId = themeId || themes?.[0]?.id || '';
   const activeTheme = (themes ?? []).find((t) => t.id === activeThemeId);
@@ -302,7 +338,24 @@ export default function QuickAdd() {
         goal_id: goalId,
       });
     }
-    router.back();
+
+    // Multi-item voice flow: advance to next draft
+    if (isVoiceMode && currentIndex < totalDrafts - 1) {
+      advanceIndex();
+      const next = drafts[currentIndex + 1];
+      setType(next.item_type);
+      setTitle(next.title);
+      setThemeId(next.theme_id ?? themes?.[0]?.id ?? '');
+      setEffort(next.effort_level ?? 'unknown');
+      setReturnLevel(next.return_level ?? 'unknown');
+      setWeek(next.week_assignment ?? 'this_week');
+      setGoalId(next.goal_id ?? null);
+      setWeeklyCount(next.weekly_target ?? 3);
+      setOpenField(null);
+    } else {
+      if (isVoiceMode) clearCapture();
+      router.back();
+    }
   }
 
   const effortLabel = effort === 'unknown' ? 'set effort' : effort;
@@ -321,16 +374,16 @@ export default function QuickAdd() {
   const below = openIdx === -1 ? [] : fieldOrder.slice(openIdx + 1);
 
   function renderChip(key: FieldKey) {
+    const lc = (field: string) => confidenceFlags.includes(field);
+
     if (key === 'theme') {
-      const colorDot = (
-        <View style={[styles.chipDot, { backgroundColor: activeTheme?.color ?? colors.text3 }]} />
-      );
       return (
         <View key="theme" style={{ flexDirection: 'row' }}>
           <QAChip
             label="Theme"
             value={activeTheme?.name ?? '—'}
             isOpen={openField === 'theme'}
+            lowConf={lc('theme_id')}
             onPress={() => toggle('theme')}
           />
         </View>
@@ -342,6 +395,7 @@ export default function QuickAdd() {
         label="Effort"
         value={effortLabel}
         isOpen={openField === 'effort'}
+        lowConf={lc('effort_level')}
         onPress={() => toggle('effort')}
       />
     );
@@ -351,6 +405,7 @@ export default function QuickAdd() {
         label="Return"
         value={returnLabel}
         isOpen={openField === 'return'}
+        lowConf={lc('return_level')}
         onPress={() => toggle('return')}
       />
     );
@@ -360,6 +415,7 @@ export default function QuickAdd() {
         label="Week"
         value={weekLabel}
         isOpen={openField === 'week'}
+        lowConf={lc('week_assignment')}
         onPress={() => toggle('week')}
       />
     );
@@ -369,6 +425,7 @@ export default function QuickAdd() {
         label="Weekly"
         value={`${weeklyCount}× per week`}
         isOpen={openField === 'count'}
+        lowConf={lc('weekly_target')}
         onPress={() => toggle('count')}
       />
     );
@@ -434,12 +491,31 @@ export default function QuickAdd() {
     >
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
+        <TouchableOpacity
+          onPress={() => { if (isVoiceMode) clearCapture(); router.back(); }}
+          style={styles.iconBtn}
+        >
           <Icon name="x" size={20} color={colors.text2} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>New {type}</Text>
-        <View style={{ width: 38 }} />
+        <Text style={styles.headerTitle}>
+          {isVoiceMode ? 'New from voice' : `New ${type}`}
+        </Text>
+        {isVoiceMode && totalDrafts > 1 ? (
+          <Text style={styles.itemCounter}>{currentIndex + 1} of {totalDrafts}</Text>
+        ) : (
+          <View style={{ width: 38 }} />
+        )}
       </View>
+
+      {/* Voice heard preview */}
+      {isVoiceMode && transcript.length > 0 && (
+        <View style={styles.voiceHeard}>
+          <Icon name="sparkles" size={12} color={colors.text3} />
+          <Text style={styles.voiceHeardText} numberOfLines={2}>
+            Heard: "{transcript}"
+          </Text>
+        </View>
+      )}
 
       <ScrollView
         style={styles.scroll}
@@ -495,11 +571,24 @@ export default function QuickAdd() {
             {below.map(renderChip)}
           </View>
         )}
+
+        {/* Low-conf hint in voice mode */}
+        {isVoiceMode && confidenceFlags.length > 0 && (
+          <View style={styles.lowConfHint}>
+            <Icon name="sparkles" size={11} color={colors.text3} />
+            <Text style={styles.lowConfHintText}>
+              Italic chips are AI's best guess — tap to confirm.
+            </Text>
+          </View>
+        )}
       </ScrollView>
 
       {/* Bottom bar */}
       <View style={[styles.bottomBar, { paddingBottom: Math.max(22, insets.bottom) }]}>
-        <TouchableOpacity style={[styles.btn, styles.btnGhost]} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={[styles.btn, styles.btnGhost]}
+          onPress={() => { if (isVoiceMode) clearCapture(); router.back(); }}
+        >
           <Text style={styles.btnGhostText}>Cancel</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -508,7 +597,11 @@ export default function QuickAdd() {
           disabled={!canSave || createTask.isPending || createHabit.isPending}
         >
           <Text style={styles.btnPrimaryText}>
-            {type === 'habit' ? 'Save habit' : 'Save'}
+            {isVoiceMode && currentIndex < totalDrafts - 1
+              ? 'Save · next'
+              : type === 'habit'
+              ? 'Save habit'
+              : 'Save'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -621,6 +714,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.accent,
   },
+  qaChipLowConf: {
+    borderWidth: 1,
+    borderColor: colors.accentDim,
+  },
   qaChipKey: {
     fontSize: 11.5,
     letterSpacing: 0.5,
@@ -632,10 +729,17 @@ const styles = StyleSheet.create({
   qaChipKeyOpen: {
     color: colors.accentStrong,
   },
+  qaChipKeyLowConf: {
+    color: colors.accentStrong,
+  },
   qaChipValue: {
     fontSize: 13,
     fontWeight: '500',
     color: colors.text,
+  },
+  qaChipValueLowConf: {
+    color: colors.text2,
+    fontStyle: 'italic',
   },
   chipDot: {
     width: 7,
@@ -781,5 +885,37 @@ const styles = StyleSheet.create({
   },
   btnDisabled: {
     opacity: 0.4,
+  },
+  // Voice mode
+  itemCounter: {
+    fontSize: 12,
+    color: colors.text3,
+    fontVariant: ['tabular-nums'],
+    width: 38,
+    textAlign: 'right',
+  },
+  voiceHeard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingBottom: 6,
+  },
+  voiceHeardText: {
+    flex: 1,
+    fontSize: 12,
+    color: colors.text3,
+    lineHeight: 17,
+  },
+  lowConfHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 14,
+  },
+  lowConfHintText: {
+    fontSize: 11.5,
+    color: colors.text3,
+    lineHeight: 16,
   },
 });

@@ -86,6 +86,10 @@ export default function RootLayout() {
             <Stack.Screen name="carry-triage" options={{ headerShown: false }} />
             <Stack.Screen name="carry-pull" options={{ headerShown: false }} />
             <Stack.Screen name="new-week" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="voice-listening"
+              options={{ presentation: 'transparentModal', headerShown: false, animation: 'fade' }}
+            />
           </Stack>
           <UndoSnackbar />
         </AuthGuard>

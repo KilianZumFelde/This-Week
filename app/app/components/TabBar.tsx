@@ -39,6 +39,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
         <TouchableOpacity
           style={styles.fabLarge}
           activeOpacity={0.85}
+          onPress={() => router.push('/voice-listening')}
         >
           <Icon name="mic" size={22} color="#1a1816" />
         </TouchableOpacity>
