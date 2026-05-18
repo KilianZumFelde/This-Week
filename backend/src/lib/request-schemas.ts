@@ -81,3 +81,25 @@ export const UpdateHabitRequestSchema = z.object({
   sort_order: z.number().int().optional(),
 });
 export type UpdateHabitRequest = z.infer<typeof UpdateHabitRequestSchema>;
+
+// ─── Goals ───────────────────────────────────────────────────────────────────
+
+export const CreateGoalRequestSchema = z.object({
+  theme_id: uuid.nullable().optional(),
+  title: z.string().min(1),
+  why: z.string().nullable().optional(),
+  goal_type: z.enum(['primary', 'secondary']),
+  target_date: isoDate,
+  sort_order: z.number().int().optional(),
+});
+export type CreateGoalRequest = z.infer<typeof CreateGoalRequestSchema>;
+
+export const UpdateGoalRequestSchema = z.object({
+  theme_id: uuid.nullable().optional(),
+  title: z.string().min(1).optional(),
+  why: z.string().nullable().optional(),
+  goal_type: z.enum(['primary', 'secondary']).optional(),
+  target_date: isoDate.optional(),
+  sort_order: z.number().int().optional(),
+});
+export type UpdateGoalRequest = z.infer<typeof UpdateGoalRequestSchema>;

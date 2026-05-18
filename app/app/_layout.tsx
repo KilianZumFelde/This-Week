@@ -43,6 +43,7 @@ export default function RootLayout() {
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="quick-add" options={{ presentation: 'modal', headerShown: false }} />
+            <Stack.Screen name="add-goal" options={{ presentation: 'modal', headerShown: false }} />
           </Stack>
           <UndoSnackbar />
         </AuthGuard>

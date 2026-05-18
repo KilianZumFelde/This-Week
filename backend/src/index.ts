@@ -6,6 +6,7 @@ import { bootstrapRoutes } from './routes/bootstrap.js';
 import { themesRoutes } from './routes/themes.js';
 import { tasksRoutes } from './routes/tasks.js';
 import { habitsRoutes } from './routes/habits.js';
+import { goalsRoutes } from './routes/goals.js';
 
 const app = Fastify({ logger: true });
 
@@ -25,6 +26,7 @@ await app.register(bootstrapRoutes);
 await app.register(themesRoutes);
 await app.register(tasksRoutes);
 await app.register(habitsRoutes);
+await app.register(goalsRoutes);
 
 const port = Number(process.env.PORT) || 3000;
 const host = process.env.HOST || '0.0.0.0';

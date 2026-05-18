@@ -13,6 +13,7 @@ import { useThisWeekTasks, useCompleteTask, useReopenTask, useDeleteTask, Task }
 import { useHabits, useHabitWeekRecords, useIncrementHabit, Habit } from '../../lib/hooks/useHabits';
 import { useUndoStore } from '../../lib/stores/undo-store';
 import { useThemes, Theme } from '../../lib/hooks/useThemes';
+import { useGoals, useGoalStats } from '../../lib/hooks/useGoals';
 import { Ring } from '../components/Ring';
 import { Icon } from '../components/Icon';
 import { TaskDetailSheet } from '../components/TaskDetailSheet';
@@ -176,6 +177,10 @@ export default function ThisWeek() {
   const { data: habits, isLoading: habitsLoading } = useHabits();
   const { data: weekRecords } = useHabitWeekRecords();
   const { data: themes } = useThemes();
+  const { data: goals } = useGoals();
+
+  const primaryGoal = (goals ?? []).find((g) => g.goal_type === 'primary' && g.status === 'active') ?? null;
+  const { data: primaryGoalStats } = useGoalStats(primaryGoal?.id ?? null);
   const completeTask = useCompleteTask();
   const reopenTask = useReopenTask();
   const deleteTask = useDeleteTask();
@@ -252,10 +257,28 @@ export default function ThisWeek() {
               <Icon name="target" size={12} color={colors.accentStrong} />
               <Text style={styles.milestoneEyebrowText}>Primary milestone</Text>
             </View>
-            <Text style={styles.milestoneTitle}>No active goal yet</Text>
-            <View style={styles.milestoneMeta}>
-              <Text style={styles.milestoneMetaText}>{openTasks.length} tasks this week</Text>
-            </View>
+            {primaryGoal ? (
+              <>
+                <Text style={styles.milestoneTitle}>{primaryGoal.title}</Text>
+                <View style={styles.milestoneMeta}>
+                  <View style={styles.milestonePill}>
+                    <Text style={styles.milestonePillText}>
+                      {new Date(primaryGoal.target_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                    </Text>
+                  </View>
+                  <Text style={styles.milestoneMetaText}>
+                    {primaryGoalStats?.tasks_this_week ?? 0} tasks this week toward this
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={styles.milestoneTitle}>No active goal yet</Text>
+                <View style={styles.milestoneMeta}>
+                  <Text style={styles.milestoneMetaText}>{openTasks.length} tasks this week</Text>
+                </View>
+              </>
+            )}
           </View>
 
           {/* Habits section */}
@@ -488,6 +511,16 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   milestoneMetaText: {
+    fontSize: 12.5,
+    color: colors.text2,
+  },
+  milestonePill: {
+    backgroundColor: 'rgba(255,245,232,0.06)',
+    paddingVertical: 4,
+    paddingHorizontal: 9,
+    borderRadius: 8,
+  },
+  milestonePillText: {
     fontSize: 12.5,
     color: colors.text2,
   },
