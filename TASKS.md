@@ -648,20 +648,20 @@ After P6-6: create a primary goal "Land first paid DJ gig" with target date 6 mo
 
 ### Tasks
 
-- [ ] **P7-1** Backend: `GET /stats/current-week` — return tasks done/total and habits on-target/total for the current week.
+- [x] **P7-1** Backend: `GET /stats/current-week` — return tasks done/total and habits on-target/total for the current week.
   - Derived counts, not from `week_records` (which is only populated at rollover).
   - Based on: domain-lens § Derived vs. Stored; ui-brief.md §4.
   - Validate: complete 3 of 5 tasks; endpoint returns `{ tasks_done: 3, tasks_total: 5, habits_on_target: N, habits_total: M }`.
 
-- [ ] **P7-2** Backend: `GET /stats/habit-streaks` — return all active habits with `current_streak` and `best_streak`.
+- [x] **P7-2** Backend: `GET /stats/habit-streaks` — return all active habits with `current_streak` and `best_streak`.
   - Based on: DATABASE_DESIGN.md § habits; domain-lens § Derived vs. Stored.
   - Validate: endpoint returns habit list with streak values.
 
-- [ ] **P7-3** Backend: `GET /stats/past-weeks` — return paginated list of `week_records` most recent first, with expandable task/habit detail.
+- [x] **P7-3** Backend: `GET /stats/past-weeks` — return paginated list of `week_records` most recent first, with expandable task/habit detail.
   - Based on: DATABASE_DESIGN.md § week_records; ui-brief.md §4.
   - Validate: will only have data after first rollover (Phase 8); confirm empty list returns cleanly.
 
-- [ ] **P7-4** Stats screen (`app/(tabs)/stats.tsx`).
+- [x] **P7-4** Stats screen (`app/(tabs)/stats.tsx`).
   - Prototype reference: `docs/ui/screens-primary.jsx` → `Stats` function.
   - Prototype reference: `docs/ui/styles.css` → `.stats-hero`, `.streak-row`, `.week-row`, `.section-label`.
 
@@ -699,8 +699,8 @@ After P6-6: create a primary goal "Land first paid DJ gig" with target date 6 mo
 After P7-4: complete 2 tasks, increment gym to 3/4. Open Stats — confirm fractions show. Check that streak shows 0 (no rollover yet).
 
 ### End-of-Phase Admin
-- [ ] Mark completed tasks.
-- [ ] Git commit: `feat(p7): stats screen — current week fractions, habit streaks, past weeks history`
+- [x] Mark completed tasks.
+- [x] Git commit: `feat(p7): stats screen — current week fractions, habit streaks, past weeks history`
 
 ---
 
