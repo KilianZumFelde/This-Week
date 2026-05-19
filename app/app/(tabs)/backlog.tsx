@@ -4,7 +4,7 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import Svg, { Rect as SvgRect, Path as SvgPath } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,6 +21,7 @@ import { useThemes, Theme } from '../../lib/hooks/useThemes';
 import { useUndoStore } from '../../lib/stores/undo-store';
 import { Icon } from '../components/Icon';
 import { TaskDetailSheet } from '../components/TaskDetailSheet';
+import { SkeletonRow, ScreenError } from '../components/Skeleton';
 
 // ─── Chip helpers (same as This Week) ────────────────────────────────────────
 
@@ -122,7 +123,7 @@ export default function Backlog() {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  const { data: tasks, isLoading } = useBacklogTasks();
+  const { data: tasks, isLoading, isError, refetch } = useBacklogTasks();
   const { data: themes } = useThemes();
   const promoteTask = usePromoteTask();
   const updateTask = useUpdateTask();
@@ -189,9 +190,14 @@ export default function Backlog() {
       </View>
 
       {isLoading ? (
-        <View style={styles.loader}>
-          <ActivityIndicator color={colors.accent} />
-        </View>
+        <ScrollView style={{ flex: 1, paddingHorizontal: 20 }} contentContainerStyle={{ paddingTop: 16, paddingBottom: 140 }}>
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonRow />
+        </ScrollView>
+      ) : isError ? (
+        <ScreenError onRetry={refetch} />
       ) : isEmpty ? (
         <View style={styles.emptyState}>
           <View style={{ opacity: 0.6, marginBottom: 24 }}>
@@ -207,6 +213,9 @@ export default function Backlog() {
           style={styles.scroll}
           contentContainerStyle={{ paddingBottom: 140 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={false} onRefresh={refetch} tintColor={colors.accent} />
+          }
         >
           {/* Sort control */}
           <View style={styles.seg}>

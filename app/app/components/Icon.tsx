@@ -12,6 +12,8 @@ const MAP: Record<string, string> = {
   settings: 'settings',
   'chevron-down': 'chevron-down',
   chevDown: 'chevron-down',
+  'chevron-up': 'chevron-up',
+  chevUp: 'chevron-up',
   'chevron-right': 'chevron-right',
   chevRight: 'chevron-right',
   x: 'x',

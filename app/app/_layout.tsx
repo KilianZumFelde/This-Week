@@ -5,6 +5,7 @@ import { View, ActivityIndicator } from 'react-native';
 import { SessionProvider, useSession } from '../lib/auth';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { UndoSnackbar } from './components/UndoSnackbar';
+import { OverdueGoalPrompt } from './components/OverdueGoalPrompt';
 import { api } from '../lib/api';
 import { useRolloverStore } from '../lib/stores/rollover-store';
 import { useNotificationSetup } from '../lib/hooks/useNotifications';
@@ -101,6 +102,7 @@ export default function RootLayout() {
             <Stack.Screen name="(settings)" options={{ headerShown: false }} />
           </Stack>
           <UndoSnackbar />
+          <OverdueGoalPrompt />
         </AuthGuard>
       </SessionProvider>
     </QueryClientProvider>

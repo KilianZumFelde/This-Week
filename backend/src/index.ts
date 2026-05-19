@@ -13,6 +13,7 @@ import { carryOverRoutes } from './routes/carry-over.js';
 import { aiRoutes } from './routes/ai.js';
 import { notificationsRoutes } from './routes/notifications.js';
 import { jobsRoutes } from './routes/jobs.js';
+import { userSettingsRoutes } from './routes/user-settings.js';
 
 const app = Fastify({ logger: true });
 
@@ -39,6 +40,7 @@ await app.register(carryOverRoutes);
 await app.register(aiRoutes);
 await app.register(notificationsRoutes);
 await app.register(jobsRoutes);
+await app.register(userSettingsRoutes);
 
 const port = Number(process.env.PORT) || 3000;
 const host = process.env.HOST || '0.0.0.0';

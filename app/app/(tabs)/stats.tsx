@@ -4,13 +4,14 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors, radius } from '../../lib/tokens';
 import { useCurrentWeekStats, useHabitStreaks, usePastWeeks, HabitStreak, WeekRecord } from '../../lib/hooks/useStats';
 import { Icon } from '../components/Icon';
+import { SkeletonCard, SkeletonRow } from '../components/Skeleton';
 
 // ─── Week range label ─────────────────────────────────────────────────────────
 
@@ -33,11 +34,7 @@ function StatsHero() {
   );
 
   if (isLoading) {
-    return (
-      <View style={[styles.hero, styles.heroLoading]}>
-        <ActivityIndicator color={colors.accent} />
-      </View>
-    );
+    return <SkeletonCard height={130} />;
   }
 
   return (
@@ -104,8 +101,8 @@ function WeekRow({ record }: { record: WeekRecord }) {
 export default function Stats() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { data: streaks, isLoading: streaksLoading } = useHabitStreaks();
-  const { data: pastWeeks, isLoading: pastLoading } = usePastWeeks();
+  const { data: streaks, isLoading: streaksLoading, refetch: refetchStreaks } = useHabitStreaks();
+  const { data: pastWeeks, isLoading: pastLoading, refetch: refetchPast } = usePastWeeks();
 
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
@@ -123,12 +120,22 @@ export default function Stats() {
         style={styles.scroll}
         contentContainerStyle={{ paddingBottom: 140 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={false}
+            onRefresh={() => { refetchStreaks(); refetchPast(); }}
+            tintColor={colors.accent}
+          />
+        }
       >
         <StatsHero />
 
         <Text style={styles.sectionLabel}>Habit streaks</Text>
         {streaksLoading ? (
-          <ActivityIndicator color={colors.accent} style={{ marginTop: 16 }} />
+          <>
+            <SkeletonRow />
+            <SkeletonRow />
+          </>
         ) : (streaks ?? []).length === 0 ? (
           <Text style={styles.empty}>No active habits yet.</Text>
         ) : (
@@ -137,7 +144,10 @@ export default function Stats() {
 
         <Text style={[styles.sectionLabel, { marginTop: 24 }]}>Past weeks</Text>
         {pastLoading ? (
-          <ActivityIndicator color={colors.accent} style={{ marginTop: 16 }} />
+          <>
+            <SkeletonRow />
+            <SkeletonRow />
+          </>
         ) : (pastWeeks ?? []).length === 0 ? (
           <Text style={styles.empty}>No past weeks yet — check back after the first Sunday rollover.</Text>
         ) : (

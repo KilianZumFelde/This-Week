@@ -1,18 +1,51 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Switch,
+  ScrollView,
+  ActivityIndicator,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Constants from 'expo-constants';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const expoConfig = Constants.expoConfig as any;
 import { colors, radius } from '../../lib/tokens';
 import { Icon } from '../components/Icon';
+import { useUserSettings, useUpdateUserSettings } from '../../lib/hooks/useUserSettings';
+
+const THEME_OPTIONS: { value: 'dark' | 'light' | 'system'; label: string }[] = [
+  { value: 'dark', label: 'Dark' },
+  { value: 'light', label: 'Light' },
+  { value: 'system', label: 'System' },
+];
 
 export default function Settings() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { data: settings, isLoading } = useUserSettings();
+  const update = useUpdateUserSettings();
+
+  const appVersion = (expoConfig?.version ?? '—') as string;
+
+  function toggleNudges(value: boolean) {
+    update.mutate({ danger_zone_nudges_enabled: value });
+  }
+
+  function setThemeMode(mode: 'dark' | 'light' | 'system') {
+    update.mutate({ theme_mode: mode });
+  }
 
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.iconBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')}>
+        <TouchableOpacity
+          style={styles.iconBtn}
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}
+        >
           <Icon name="chevron-left" size={22} color={colors.text2} />
         </TouchableOpacity>
         <View style={styles.titleBlock}>
@@ -22,21 +55,103 @@ export default function Settings() {
         <View style={{ width: 38 }} />
       </View>
 
-      {/* Rows */}
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>Notifications</Text>
-        <TouchableOpacity
-          style={styles.row}
-          onPress={() => router.push('/(settings)/reminders')}
-          activeOpacity={0.7}
-        >
-          <Icon name="bell" size={16} color={colors.text2} />
-          <Text style={styles.rowLabel}>Reminders</Text>
-          <View style={{ marginLeft: 'auto' }}>
-            <Icon name="chevron-right" size={14} color={colors.text3} />
-          </View>
-        </TouchableOpacity>
-      </View>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={{ paddingBottom: Math.max(40, insets.bottom) }}
+      >
+        {isLoading ? (
+          <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />
+        ) : (
+          <>
+            {/* Themes */}
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Themes</Text>
+              <TouchableOpacity
+                style={styles.row}
+                onPress={() => router.push('/(settings)/themes')}
+                activeOpacity={0.7}
+              >
+                <Icon name="target" size={16} color={colors.text2} />
+                <Text style={styles.rowLabel}>Manage Themes</Text>
+                <View style={{ marginLeft: 'auto' }}>
+                  <Icon name="chevron-right" size={14} color={colors.text3} />
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            {/* Notifications */}
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Notifications</Text>
+              <TouchableOpacity
+                style={styles.row}
+                onPress={() => router.push('/(settings)/reminders')}
+                activeOpacity={0.7}
+              >
+                <Icon name="bell" size={16} color={colors.text2} />
+                <Text style={styles.rowLabel}>Reminders</Text>
+                <View style={{ marginLeft: 'auto' }}>
+                  <Icon name="chevron-right" size={14} color={colors.text3} />
+                </View>
+              </TouchableOpacity>
+              <View style={[styles.row, styles.rowSpaced]}>
+                <View style={styles.rowLeft}>
+                  <Icon name="bell" size={16} color={colors.text2} />
+                  <View>
+                    <Text style={styles.rowLabel}>Habit nudges</Text>
+                    <Text style={styles.rowSub}>Alerts when habits are in the danger zone</Text>
+                  </View>
+                </View>
+                <Switch
+                  value={settings?.danger_zone_nudges_enabled ?? true}
+                  onValueChange={toggleNudges}
+                  trackColor={{ false: colors.surfaceHi, true: colors.accent }}
+                  thumbColor={colors.text}
+                  disabled={update.isPending}
+                />
+              </View>
+            </View>
+
+            {/* Appearance */}
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Appearance</Text>
+              <View style={styles.segContainer}>
+                {THEME_OPTIONS.map((opt) => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[
+                      styles.segButton,
+                      settings?.theme_mode === opt.value && styles.segButtonActive,
+                    ]}
+                    onPress={() => setThemeMode(opt.value)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.segLabel,
+                        settings?.theme_mode === opt.value && styles.segLabelActive,
+                      ]}
+                    >
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* About */}
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>About</Text>
+              <View style={styles.row}>
+                <Icon name="settings" size={16} color={colors.text2} />
+                <Text style={styles.rowLabel}>Weekly Focus</Text>
+                <Text style={[styles.rowLabel, { marginLeft: 'auto', color: colors.text3 }]}>
+                  v{appVersion}
+                </Text>
+              </View>
+            </View>
+          </>
+        )}
+      </ScrollView>
     </View>
   );
 }
@@ -79,9 +194,12 @@ const styles = StyleSheet.create({
     color: colors.text,
     letterSpacing: -0.6,
   },
-  section: {
+  scroll: {
+    flex: 1,
     paddingHorizontal: 20,
-    marginTop: 20,
+  },
+  section: {
+    marginTop: 24,
   },
   sectionLabel: {
     fontSize: 11,
@@ -99,10 +217,52 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     padding: 14,
     paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  rowSpaced: {
+    justifyContent: 'space-between',
+  },
+  rowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+    marginRight: 8,
   },
   rowLabel: {
     fontSize: 14.5,
     color: colors.text,
     fontWeight: '500',
+  },
+  rowSub: {
+    fontSize: 12,
+    color: colors.text3,
+    marginTop: 2,
+  },
+  segContainer: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    padding: 3,
+    gap: 2,
+  },
+  segButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  segButtonActive: {
+    backgroundColor: colors.accent,
+  },
+  segLabel: {
+    fontSize: 13,
+    color: colors.text2,
+    fontWeight: '500',
+  },
+  segLabelActive: {
+    color: '#1a1816',
+    fontWeight: '600',
   },
 });

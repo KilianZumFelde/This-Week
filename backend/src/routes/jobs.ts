@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { supabase } from '../lib/supabase.js';
 import { getCurrentWeekStartDate } from '../lib/week.js';
 import { sendPushNotifications, isValidExpoPushToken } from '../services/push.js';
+import { isDangerZone } from '../lib/habitNudge.js';
 
 function checkCronSecret(request: { headers: Record<string, string | string[] | undefined> }): boolean {
   const secret = process.env.CRON_SECRET;
@@ -161,12 +162,8 @@ export async function jobsRoutes(fastify: FastifyInstance) {
           .maybeSingle();
 
         const completed = record?.completed_count ?? 0;
-        const countRemaining = habit.weekly_target - completed;
 
-        // Danger-zone formula: count_remaining + 1 >= days_left
-        if (countRemaining + 1 < daysLeft) continue;
-        // Already hit — no nudge needed
-        if (countRemaining <= 0) continue;
+        if (!isDangerZone({ weeklyTarget: habit.weekly_target, completedCount: completed, daysLeft })) continue;
 
         const tokens = await getUserTokens(user_id);
         if (tokens.length === 0) continue;

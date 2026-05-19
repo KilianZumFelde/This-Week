@@ -4,7 +4,7 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -18,6 +18,7 @@ import { useGoals, useGoalStats } from '../../lib/hooks/useGoals';
 import { Ring } from '../components/Ring';
 import { Icon } from '../components/Icon';
 import { TaskDetailSheet } from '../components/TaskDetailSheet';
+import { SkeletonCard, SkeletonRow, ScreenError } from '../components/Skeleton';
 import { HabitDetailSheet } from '../components/HabitDetailSheet';
 import { getCurrentWeekStartDate, formatWeekLabel } from '../../lib/week';
 
@@ -175,8 +176,8 @@ export default function ThisWeek() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
 
-  const { data: tasks, isLoading: tasksLoading } = useThisWeekTasks();
-  const { data: habits, isLoading: habitsLoading } = useHabits();
+  const { data: tasks, isLoading: tasksLoading, isError: tasksError, refetch: refetchTasks } = useThisWeekTasks();
+  const { data: habits, isLoading: habitsLoading, isError: habitsError, refetch: refetchHabits } = useHabits();
   const { data: weekRecords } = useHabitWeekRecords();
   const { data: themes } = useThemes();
   const { data: goals } = useGoals();
@@ -246,9 +247,17 @@ export default function ThisWeek() {
       </View>
 
       {tasksLoading || habitsLoading ? (
-        <View style={styles.loader}>
-          <ActivityIndicator color={colors.accent} />
-        </View>
+        <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 140 }}>
+          <SkeletonCard height={140} />
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonCard height={8} />
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonRow />
+        </ScrollView>
+      ) : (tasksError || habitsError) ? (
+        <ScreenError onRetry={() => { refetchTasks(); refetchHabits(); }} />
       ) : isEmpty ? (
         // Empty state
         <View style={styles.emptyState}>
@@ -273,6 +282,13 @@ export default function ThisWeek() {
           style={styles.scroll}
           contentContainerStyle={{ paddingBottom: 140 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={false}
+              onRefresh={() => { refetchTasks(); refetchHabits(); }}
+              tintColor={colors.accent}
+            />
+          }
         >
           {/* Milestone hero */}
           <View style={styles.milestone}>

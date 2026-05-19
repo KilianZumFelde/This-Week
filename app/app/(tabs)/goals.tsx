@@ -4,7 +4,7 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -14,6 +14,7 @@ import { useGoals, useGoalStats, Goal } from '../../lib/hooks/useGoals';
 import { useThemes } from '../../lib/hooks/useThemes';
 import { Icon } from '../components/Icon';
 import { GoalActionDrawer } from '../components/GoalActionDrawer';
+import { SkeletonCard, ScreenError } from '../components/Skeleton';
 
 // ─── Months remaining helper ─────────────────────────────────────────────────
 
@@ -115,7 +116,7 @@ export default function Goals() {
   const [graveOpen, setGraveOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
 
-  const { data: goals, isLoading } = useGoals();
+  const { data: goals, isLoading, isError, refetch } = useGoals();
   const { data: themes } = useThemes();
 
   const themeMap = Object.fromEntries((themes ?? []).map((t) => [t.id, t]));
@@ -147,14 +148,21 @@ export default function Goals() {
       </View>
 
       {isLoading ? (
-        <View style={styles.loader}>
-          <ActivityIndicator color={colors.accent} />
-        </View>
+        <ScrollView style={{ flex: 1, paddingHorizontal: 20 }} contentContainerStyle={{ paddingTop: 16, paddingBottom: 140 }}>
+          <SkeletonCard height={160} />
+          <SkeletonCard height={120} />
+          <SkeletonCard height={120} />
+        </ScrollView>
+      ) : isError ? (
+        <ScreenError onRetry={refetch} />
       ) : (
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={{ paddingBottom: 140 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={false} onRefresh={refetch} tintColor={colors.accent} />
+          }
         >
           {/* Primary section */}
           <View style={[styles.sectionLabel, { marginTop: 0 }]}>
