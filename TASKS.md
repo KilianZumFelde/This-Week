@@ -1186,7 +1186,7 @@ Bugs found during testing that haven't been fixed yet. Fix these before or along
   - **Do not fix unless the user explicitly requests it.** Leave as-is for now.
   - If targeted: try loading a custom serif (Source Serif 4) via expo-font, or adjust fontSize/letterSpacing until it matches the prototype visually on device.
 
-- [ ] **HK-3** Reminder parse-reminder endpoint stores wrong UTC time due to AI timezone bug.
+- [x] **HK-3** Reminder parse-reminder endpoint stores wrong UTC time due to AI timezone bug.
   - `POST /ai/parse-reminder` asks Haiku to convert local time to UTC, but Haiku ignores the offset and treats the spoken time as UTC (e.g. "20:35" Berlin → stored as 20:35 UTC instead of 18:35 UTC).
   - Fix: pass `Current time` as local time (no Z), remove timezone name from prompt, tell Haiku to return `YYYY-MM-DDTHH:MM:SS` with no offset. Backend converts local→UTC using `DateTime.fromISO(local, { zone: timezone }).toUTC().toISO()` (luxon).
   - Files: `backend/src/routes/ai.ts` (prompt + post-processing), `backend/package.json` (confirm luxon present).
