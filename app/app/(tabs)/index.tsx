@@ -54,10 +54,10 @@ function derivePriority(effort: string, ret: string): 'high' | 'mid' | 'low' {
   return 'low';
 }
 
-const PRIORITY_BORDER: Record<'high' | 'mid' | 'low', string | null> = {
+const PRIORITY_BORDER: Record<'high' | 'mid' | 'low', string> = {
   high: colors.gold,
   mid: colors.text3,
-  low: null,
+  low: colors.surfaceHi,
 };
 
 // ─── Task row ────────────────────────────────────────────────────────────────
@@ -79,10 +79,10 @@ type TaskRowProps = {
 
 function TaskRow({ task, theme, onToggle, onPressBody }: TaskRowProps) {
   const done = task.status === 'done';
-  const borderColor = done ? null : PRIORITY_BORDER[derivePriority(task.effort_level, task.return_level)];
+  const borderColor = done ? colors.surfaceHi : PRIORITY_BORDER[derivePriority(task.effort_level, task.return_level)];
   return (
     <View style={styles.taskRow}>
-      {borderColor && <View style={[styles.taskPriorityStripe, { backgroundColor: borderColor }]} />}
+      <View style={[styles.taskPriorityStripe, { backgroundColor: borderColor }]} />
       <TouchableOpacity
         onPress={onToggle}
         style={[styles.taskCheck, done && styles.taskCheckDone]}

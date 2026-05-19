@@ -55,10 +55,10 @@ function derivePriority(effort: string, ret: string): 'high' | 'mid' | 'low' {
   return 'low';
 }
 
-const PRIORITY_BORDER: Record<'high' | 'mid' | 'low', string | null> = {
+const PRIORITY_BORDER: Record<'high' | 'mid' | 'low', string> = {
   high: colors.gold,
   mid: colors.text3,
-  low: null,
+  low: colors.surfaceHi,
 };
 
 // ─── Task row (backlog variant — circle promotes, not completes) ──────────────
@@ -74,7 +74,7 @@ function BacklogTaskRow({ task, theme, onPromote, onPressBody }: BacklogTaskRowP
   const borderColor = PRIORITY_BORDER[derivePriority(task.effort_level, task.return_level)];
   return (
     <View style={styles.taskRow}>
-      {borderColor && <View style={[styles.taskPriorityStripe, { backgroundColor: borderColor }]} />}
+      <View style={[styles.taskPriorityStripe, { backgroundColor: borderColor }]} />}
       <TouchableOpacity
         onPress={onPromote}
         style={styles.taskCheck}
