@@ -1062,6 +1062,8 @@ Set env var `CRON_SECRET=<random-string>` on Render. Then configure two Render C
 
 ## Phase 11 — AI Goal Coach
 
+IMPORTANT: Phase 11 is Skipped. Not to be Developed. Obsolete. Skip it.
+
 **Outcome**: "Coach me" button opens an AI conversation. Coach is purely advisory; concludes with a "Create this goal" button that opens the Add Goal form pre-filled.
 
 ### Tasks
