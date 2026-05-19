@@ -951,13 +951,12 @@ After P8-7: simulate a week flip (manually set carry_over_ritual status to pendi
 
 ### Tasks
 
-- [~] **P10-1** **[User setup]** Configure Expo push notification credentials (FCM for Android).
-  - Generate FCM server key in Google Cloud Console.
-  - Add to Expo EAS credentials.
-  - Record in `docs/credentials.md`.
-  - Based on: TECHSTACK.md § Notifications and Jobs.
-  - Validate: new EAS dev build succeeds and device receives a test push.
-  - Note: requires a new EAS build after `google-services.json` is added. See setup instructions below.
+- [x] **P10-1** **[User setup]** Configure Expo push notification credentials (FCM for Android).
+  - google-services.json uploaded to Expo EAS credentials.
+  - New EAS build completed with FCM credentials baked in.
+  - CRON_SECRET set on Render (`credentials.md`).
+  - cron-job.org configured: dispatch-reminders every 15 min, habit-nudges daily at 09:00 UTC.
+  - Validate: create task with reminder "in 2 minutes" → check reminders table flips to sent → notification on device.
 
 - [x] **P10-2** Register push token on app startup.
   - `app/lib/hooks/useNotifications.ts`: request permissions, call `Notifications.getExpoPushTokenAsync`, POST to `/notifications/register`.
@@ -1048,15 +1047,18 @@ Select Android → Development build → FCM → upload the server key from Fire
 ! eas build --profile development --platform android
 ```
 
-**Step 5 — Set `CRON_SECRET` on Render:**
-Set env var `CRON_SECRET=<random-string>` on Render. Then configure two Render Cron Jobs:
-- `POST https://this-week.onrender.com/jobs/dispatch-reminders` — every 15 min — header `X-Cron-Secret: <your-secret>`
-- `POST https://this-week.onrender.com/jobs/habit-nudges` — daily at 09:00 UTC — same header
+**Step 5 — Set `CRON_SECRET` on Render and configure cron-job.org:**
+- Set env var `CRON_SECRET` on Render dashboard → your web service → Environment. Value in `credentials.md`.
+- Cron jobs are handled by **cron-job.org** (free), NOT Render cron (paid). Two jobs configured:
+  - `POST https://this-week.onrender.com/jobs/dispatch-reminders` — every 15 min
+  - `POST https://this-week.onrender.com/jobs/habit-nudges` — daily at 09:00 UTC
+  - Both use header `X-Cron-Secret: <value from credentials.md>`
+- ✅ Done: CRON_SECRET set on Render, both cron-job.org jobs active.
 
 ### End-of-Phase Admin
-- [x] Mark completed tasks (P10-2 through P10-6 implemented).
-- [~] P10-1 deferred: awaiting user setup (Firebase + google-services.json + new EAS build).
+- [x] Mark completed tasks (P10-1 through P10-6 implemented, P10-A1 addendum complete).
 - [x] Git commit: `feat(p10): push notifications, reminder dispatch job, habit danger-zone nudges`
+- [x] Git commit: `fix(p10-a1): RRULE-aware recurring reminders, no external dependency`
 
 ### Addendum — RRULE-aware recurring reminders (added after phase completion)
 
@@ -1065,7 +1067,7 @@ Set env var `CRON_SECRET=<random-string>` on Render. Then configure two Render C
   - `backend/src/routes/jobs.ts` imports and uses it instead of hardcoded +1 day.
   - `backend/src/routes/ai.ts` prompt extended with multi-day RRULE examples.
   - `backend/src/tests/rrule.test.ts` — 8 unit tests, all passing.
-  - Note: Render cron for dispatch-reminders should be set to every 15 minutes (not 5) — sufficient precision for personal use, negligible cost. See P10-1 setup instructions.
+  - Note: dispatch is triggered by cron-job.org (free) every 15 minutes — not Render cron (paid). See P10-1 setup instructions.
 
 ---
 
