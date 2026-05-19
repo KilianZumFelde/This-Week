@@ -35,42 +35,30 @@ function ThemeChip({ theme }: { theme: Theme | undefined }) {
   );
 }
 
-// ─── Effort chip ─────────────────────────────────────────────────────────────
+// ─── Priority border ─────────────────────────────────────────────────────────
 
-const EFFORT_STYLES: Record<string, { bg: string; color: string; label: string }> = {
-  low: { bg: colors.slateDim, color: colors.slate, label: '· low effort' },
-  medium: { bg: 'rgba(122,144,168,0.08)', color: colors.text2, label: '· med effort' },
-  high: { bg: 'rgba(168,107,94,0.10)', color: colors.brick, label: '· high effort' },
-  unknown: { bg: colors.surface2, color: colors.text2, label: '· effort ?' },
-};
-
-function EffortChip({ level }: { level: string }) {
-  const s = EFFORT_STYLES[level] ?? EFFORT_STYLES.unknown;
-  return (
-    <View style={[styles.chip, { backgroundColor: s.bg }]}>
-      <Text style={[styles.chipText, { color: s.color }]}>{s.label}</Text>
-    </View>
-  );
+function derivePriority(effort: string, ret: string): 'high' | 'mid' | 'low' {
+  let score: number;
+  if      (ret === 'high'   && effort === 'low')    score = 4;
+  else if (ret === 'high'   && effort === 'medium') score = 3;
+  else if (ret === 'high'   && effort === 'high')   score = 3;
+  else if (ret === 'medium' && effort === 'low')    score = 3;
+  else if (ret === 'medium' && effort === 'medium') score = 2;
+  else if (ret === 'medium' && effort === 'high')   score = 1;
+  else if (ret === 'low'    && effort === 'low')    score = 1;
+  else if (ret === 'low'    && effort === 'medium') score = 1;
+  else if (ret === 'low'    && effort === 'high')   score = 0;
+  else score = 2;
+  if (score >= 3) return 'high';
+  if (score === 2) return 'mid';
+  return 'low';
 }
 
-// ─── Return chip ─────────────────────────────────────────────────────────────
-
-const RETURN_STYLES: Record<string, { bg: string; color: string; label: string }> = {
-  high: { bg: colors.goldDim, color: colors.gold, label: '· high return' },
-  medium: { bg: 'rgba(212,176,106,0.08)', color: colors.text2, label: '· med return' },
-  low: { bg: colors.surface2, color: colors.text2, label: '· low return' },
-  unknown: { bg: colors.surface2, color: colors.text2, label: '' },
+const PRIORITY_BORDER: Record<'high' | 'mid' | 'low', string | null> = {
+  high: colors.gold,
+  mid: colors.text3,
+  low: null,
 };
-
-function ReturnChip({ level }: { level: string }) {
-  const s = RETURN_STYLES[level];
-  if (!s || !s.label) return null;
-  return (
-    <View style={[styles.chip, { backgroundColor: s.bg }]}>
-      <Text style={[styles.chipText, { color: s.color }]}>{s.label}</Text>
-    </View>
-  );
-}
 
 // ─── Task row ────────────────────────────────────────────────────────────────
 
@@ -91,8 +79,10 @@ type TaskRowProps = {
 
 function TaskRow({ task, theme, onToggle, onPressBody }: TaskRowProps) {
   const done = task.status === 'done';
+  const borderColor = done ? null : PRIORITY_BORDER[derivePriority(task.effort_level, task.return_level)];
   return (
     <View style={styles.taskRow}>
+      {borderColor && <View style={[styles.taskPriorityStripe, { backgroundColor: borderColor }]} />}
       <TouchableOpacity
         onPress={onToggle}
         style={[styles.taskCheck, done && styles.taskCheckDone]}
@@ -104,8 +94,6 @@ function TaskRow({ task, theme, onToggle, onPressBody }: TaskRowProps) {
         <Text style={[styles.taskTitle, done && styles.taskTitleDone]}>{task.title}</Text>
         <View style={styles.taskMeta}>
           <ThemeChip theme={theme} />
-          <EffortChip level={task.effort_level} />
-          <ReturnChip level={task.return_level} />
         </View>
       </TouchableOpacity>
     </View>
@@ -658,6 +646,14 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: colors.surface,
     marginBottom: 8,
+    overflow: 'hidden',
+  },
+  taskPriorityStripe: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
   },
   taskCheck: {
     width: 22,
