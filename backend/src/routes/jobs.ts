@@ -1,9 +1,9 @@
 import { FastifyInstance } from 'fastify';
-import { RRule } from 'rrule';
 import { supabase } from '../lib/supabase.js';
 import { getCurrentWeekStartDate } from '../lib/week.js';
 import { sendPushNotifications, isValidExpoPushToken } from '../services/push.js';
 import { isDangerZone } from '../lib/habitNudge.js';
+import { nextOccurrenceFromRRule } from '../lib/rrule.js';
 
 function checkCronSecret(request: { headers: Record<string, string | string[] | undefined> }): boolean {
   const secret = process.env.CRON_SECRET;
@@ -84,17 +84,9 @@ export async function jobsRoutes(fastify: FastifyInstance) {
             .eq('id', reminder.id);
         } else {
           const recRule = (reminder as any).recurrence_rule as string | null;
-          let nextRun: Date;
-          if (recRule) {
-            try {
-              const next = RRule.fromString(recRule).after(new Date(now));
-              nextRun = next ?? new Date(new Date(now).getTime() + 24 * 60 * 60 * 1000);
-            } catch {
-              nextRun = new Date(new Date(now).getTime() + 24 * 60 * 60 * 1000);
-            }
-          } else {
-            nextRun = new Date(new Date(now).getTime() + 24 * 60 * 60 * 1000);
-          }
+          const nextRun = recRule
+            ? nextOccurrenceFromRRule(recRule, new Date(now))
+            : new Date(new Date(now).getTime() + 24 * 60 * 60 * 1000);
           await supabase
             .from('reminders')
             .update({ last_sent_at: now, next_run_at: nextRun.toISOString() })

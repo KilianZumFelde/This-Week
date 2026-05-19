@@ -16,4 +16,3 @@ Packages successfully installed during development (in addition to initial scaff
 | Package | Version | Purpose |
 |---|---|---|
 | `@anthropic-ai/sdk` | (latest) | Anthropic API client — AI capture endpoint, goal coach (P9-1, P11) |
-| `rrule` | (latest) | RRULE parsing — computes next occurrence for recurring reminders in dispatch job (P10-A1) |

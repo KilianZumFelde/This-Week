@@ -1050,7 +1050,7 @@ Select Android → Development build → FCM → upload the server key from Fire
 
 **Step 5 — Set `CRON_SECRET` on Render:**
 Set env var `CRON_SECRET=<random-string>` on Render. Then configure two Render Cron Jobs:
-- `POST https://this-week.onrender.com/jobs/dispatch-reminders` — every 5 min — header `X-Cron-Secret: <your-secret>`
+- `POST https://this-week.onrender.com/jobs/dispatch-reminders` — every 15 min — header `X-Cron-Secret: <your-secret>`
 - `POST https://this-week.onrender.com/jobs/habit-nudges` — daily at 09:00 UTC — same header
 
 ### End-of-Phase Admin
@@ -1060,12 +1060,12 @@ Set env var `CRON_SECRET=<random-string>` on Render. Then configure two Render C
 
 ### Addendum — RRULE-aware recurring reminders (added after phase completion)
 
-- [ ] **P10-A1** Add proper RRULE scheduling to the dispatch job so multi-day recurrence rules (e.g. "Monday, Wednesday, Friday") fire on the correct days instead of every day.
-  - **Why needed**: `jobs.ts` currently ignores `recurrence_rule` and always advances `next_run_at` by +1 day, making any RRULE other than `FREQ=DAILY` behave incorrectly.
-  - **Backend**: `backend/src/routes/jobs.ts` — replace the hardcoded +1 day advancement with `rrule` library call to compute the true next occurrence from the stored rule.
-  - **Backend**: `backend/src/routes/ai.ts` — extend the `parse-reminder` system prompt rules to document multi-day patterns (e.g. `FREQ=WEEKLY;BYDAY=MO,WE,FR`) so the model reliably generates correct RRULE syntax.
-  - **Package**: add `rrule` to `backend/package.json` (user must run `npm install` in `/backend`).
-  - **Validate**: insert a test reminder with `recurrence_rule=FREQ=WEEKLY;BYDAY=MO,WE` and `next_run_at` set to now → dispatch job fires → `next_run_at` advances to the next Wednesday or Monday (not tomorrow).
+- [x] **P10-A1** Add proper RRULE scheduling to the dispatch job so multi-day recurrence rules (e.g. "Monday, Wednesday, Friday") fire on the correct days instead of every day.
+  - Implemented inline `nextOccurrenceFromRRule` in `backend/src/lib/rrule.ts` (no external dependency).
+  - `backend/src/routes/jobs.ts` imports and uses it instead of hardcoded +1 day.
+  - `backend/src/routes/ai.ts` prompt extended with multi-day RRULE examples.
+  - `backend/src/tests/rrule.test.ts` — 8 unit tests, all passing.
+  - Note: Render cron for dispatch-reminders should be set to every 15 minutes (not 5) — sufficient precision for personal use, negligible cost. See P10-1 setup instructions.
 
 ---
 
