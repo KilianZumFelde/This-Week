@@ -68,7 +68,7 @@ export default function Settings() {
               <Text style={styles.sectionLabel}>Themes</Text>
               <TouchableOpacity
                 style={styles.row}
-                onPress={() => router.push('/(settings)/themes')}
+                onPress={() => router.push('/settings/themes')}
                 activeOpacity={0.7}
               >
                 <Icon name="target" size={16} color={colors.text2} />
@@ -84,7 +84,7 @@ export default function Settings() {
               <Text style={styles.sectionLabel}>Notifications</Text>
               <TouchableOpacity
                 style={styles.row}
-                onPress={() => router.push('/(settings)/reminders')}
+                onPress={() => router.push('/settings/reminders')}
                 activeOpacity={0.7}
               >
                 <Icon name="bell" size={16} color={colors.text2} />
