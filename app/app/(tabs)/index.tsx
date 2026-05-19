@@ -158,9 +158,7 @@ function HabitRow({ habit, completedCount, theme, onIncrement, onPressBody }: Ha
 export default function ThisWeek() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const [sort, setSort] = useState<'priority' | 'theme'>('priority');
   const [doneOpen, setDoneOpen] = useState(false);
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
 
@@ -207,14 +205,6 @@ export default function ThisWeek() {
     if (diff !== 0) return diff;
     return a.created_at < b.created_at ? -1 : 1;
   });
-
-  // Group open tasks by theme
-  const themeGroups = (themes ?? [])
-    .map((theme) => ({
-      theme,
-      tasks: openTasks.filter((t) => t.theme_id === theme.id),
-    }))
-    .filter((g) => g.tasks.length > 0);
 
   const weekStart = getCurrentWeekStartDate();
   const weekLabel = formatWeekLabel(weekStart);
@@ -343,84 +333,22 @@ export default function ThisWeek() {
             <>
               <View style={[styles.sectionLabel, { marginTop: 26 }]}>
                 <Text style={styles.sectionLabelText}>Tasks · {openTasks.length}</Text>
-                <View style={styles.seg}>
-                  <TouchableOpacity
-                    style={[styles.segBtn, sort === 'priority' && styles.segBtnOn]}
-                    onPress={() => setSort('priority')}
-                  >
-                    <Text style={[styles.segBtnText, sort === 'priority' && styles.segBtnTextOn]}>
-                      Priority
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.segBtn, sort === 'theme' && styles.segBtnOn]}
-                    onPress={() => setSort('theme')}
-                  >
-                    <Text style={[styles.segBtnText, sort === 'theme' && styles.segBtnTextOn]}>
-                      By theme
-                    </Text>
-                  </TouchableOpacity>
-                </View>
               </View>
-
-              {sort === 'priority' ? (
-                /* Flat priority-sorted list */
-                prioritySortedTasks.map((task) => (
-                  <TaskRow
-                    key={task.id}
-                    task={task}
-                    theme={themeMap[task.theme_id]}
-                    onToggle={() => {
-                      completeTask.mutate(task.id);
-                      showUndo({
-                        label: `"${task.title}" marked done`,
-                        undo: () => reopenTask.mutate(task.id),
-                      });
-                    }}
-                    onPressBody={() => setSelectedTask(task)}
-                  />
-                ))
-              ) : (
-                /* Theme groups */
-                themeGroups.map(({ theme, tasks: groupTasks }) => {
-                  const collapsed = !!collapsedGroups[theme.id];
-                  return (
-                    <View key={theme.id}>
-                      <TouchableOpacity
-                        style={styles.themeGroup}
-                        onPress={() =>
-                          setCollapsedGroups((o) => ({ ...o, [theme.id]: !o[theme.id] }))
-                        }
-                        activeOpacity={0.7}
-                      >
-                        <Icon
-                          name={collapsed ? 'chevron-right' : 'chevron-down'}
-                          size={14}
-                          color={colors.text3}
-                        />
-                        <View style={[styles.themeSwatch, { backgroundColor: theme.color ?? colors.text3 }]} />
-                        <Text style={styles.themeName}>{theme.name.toUpperCase()}</Text>
-                        <Text style={styles.themeCount}>· {groupTasks.length}</Text>
-                      </TouchableOpacity>
-                      {!collapsed && groupTasks.map((task) => (
-                        <TaskRow
-                          key={task.id}
-                          task={task}
-                          theme={themeMap[task.theme_id]}
-                          onToggle={() => {
-                            completeTask.mutate(task.id);
-                            showUndo({
-                              label: `"${task.title}" marked done`,
-                              undo: () => reopenTask.mutate(task.id),
-                            });
-                          }}
-                          onPressBody={() => setSelectedTask(task)}
-                        />
-                      ))}
-                    </View>
-                  );
-                })
-              )}
+              {prioritySortedTasks.map((task) => (
+                <TaskRow
+                  key={task.id}
+                  task={task}
+                  theme={themeMap[task.theme_id]}
+                  onToggle={() => {
+                    completeTask.mutate(task.id);
+                    showUndo({
+                      label: `"${task.title}" marked done`,
+                      undo: () => reopenTask.mutate(task.id),
+                    });
+                  }}
+                  onPressBody={() => setSelectedTask(task)}
+                />
+              ))}
             </>
           )}
 
@@ -587,53 +515,6 @@ const styles = StyleSheet.create({
   },
   sectionLabelCount: {
     fontSize: 11,
-    color: colors.text3,
-  },
-  // Segmented control
-  seg: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: 3,
-    gap: 2,
-  },
-  segBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 7,
-  },
-  segBtnOn: {
-    backgroundColor: colors.surfaceHi,
-  },
-  segBtnText: {
-    fontSize: 12.5,
-    color: colors.text2,
-    fontWeight: '500',
-  },
-  segBtnTextOn: {
-    color: colors.text,
-  },
-  // Theme group header
-  themeGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 18,
-    marginBottom: 8,
-  },
-  themeSwatch: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-  },
-  themeName: {
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 1,
-    color: colors.text,
-  },
-  themeCount: {
-    fontSize: 12,
     color: colors.text3,
   },
   // Task row
