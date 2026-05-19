@@ -12,10 +12,11 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius } from '../../lib/tokens';
 import { Icon } from './Icon';
-import { Task, useUpdateTask, useDeleteTask, useCreateTask, ReminderSpec } from '../../lib/hooks/useTasks';
+import { Task, useUpdateTask, useDeleteTask, useCreateTask, useTaskReminder, ReminderSpec } from '../../lib/hooks/useTasks';
 import { Theme } from '../../lib/hooks/useThemes';
 import { useUndoStore } from '../../lib/stores/undo-store';
 import { api } from '../../lib/api';
@@ -123,6 +124,8 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
   const deleteTask = useDeleteTask();
   const createTask = useCreateTask();
   const showUndo = useUndoStore((s) => s.show);
+  const qc = useQueryClient();
+  const { data: fetchedReminder } = useTaskReminder(task?.id ?? null);
 
   const [title, setTitle] = useState('');
   const [themeId, setThemeId] = useState('');
@@ -156,6 +159,13 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
       setShowVoiceOverlay(false);
     }
   }, [task?.id]);
+
+  // Sync fetched reminder from DB into display state
+  useEffect(() => {
+    if (fetchedReminder !== undefined) {
+      setReminderSpec(fetchedReminder);
+    }
+  }, [fetchedReminder]);
 
   function handleClose() {
     if (!task) return;
@@ -215,6 +225,7 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
       setReminderSpec(parsed);
       setReminderEditing(false);
       setReminderText('');
+      qc.invalidateQueries({ queryKey: ['tasks', task.id, 'reminder'] });
     } catch {
       setReminderError("Couldn't parse that time — try again");
     } finally {

@@ -207,6 +207,30 @@ export async function tasksRoutes(fastify: FastifyInstance) {
     return data;
   });
 
+  fastify.get('/tasks/:id/reminder', { preHandler: [authenticate] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+
+    const { data: task } = await supabase
+      .from('tasks')
+      .select('id')
+      .eq('id', id)
+      .eq('user_id', request.userId)
+      .single();
+    if (!task) return reply.status(404).send({ error: 'Task not found' });
+
+    const { data } = await supabase
+      .from('reminders')
+      .select('kind, scheduled_for, recurrence_rule')
+      .eq('task_id', id)
+      .eq('user_id', request.userId)
+      .eq('status', 'scheduled')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    return reply.send(data ?? null);
+  });
+
   fastify.post('/tasks/:id/reminders', { preHandler: [authenticate] }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const parsed = ReminderSpecSchema.safeParse(request.body);

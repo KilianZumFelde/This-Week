@@ -102,6 +102,14 @@ export function useCreateTask() {
   });
 }
 
+export function useTaskReminder(taskId: string | null) {
+  return useQuery<ReminderSpec | null>({
+    queryKey: ['tasks', taskId, 'reminder'],
+    queryFn: () => api.get<ReminderSpec | null>(`/tasks/${taskId}/reminder`),
+    enabled: !!taskId,
+  });
+}
+
 export function useUpdateTask() {
   const qc = useQueryClient();
   return useMutation({

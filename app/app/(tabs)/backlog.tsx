@@ -74,7 +74,7 @@ function BacklogTaskRow({ task, theme, onPromote, onPressBody }: BacklogTaskRowP
   const borderColor = PRIORITY_BORDER[derivePriority(task.effort_level, task.return_level)];
   return (
     <View style={styles.taskRow}>
-      <View style={[styles.taskPriorityStripe, { backgroundColor: borderColor }]} />}
+      <View style={[styles.taskPriorityStripe, { backgroundColor: borderColor }]} />
       <TouchableOpacity
         onPress={onPromote}
         style={styles.taskCheck}
