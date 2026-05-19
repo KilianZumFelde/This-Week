@@ -33,11 +33,6 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       router.replace('/(tabs)');
       return;
     }
-    // Prevent dev-state-restoration landing directly on settings with no back stack
-    if (session && segments[0] === '(settings)' && !router.canGoBack()) {
-      router.replace('/(tabs)');
-      return;
-    }
   }, [session, segments]);
 
   // After sign-in, check for pending rollover ritual once per session
@@ -99,7 +94,7 @@ export default function RootLayout() {
               name="voice-listening"
               options={{ presentation: 'transparentModal', headerShown: false, animation: 'fade' }}
             />
-            <Stack.Screen name="(settings)" options={{ headerShown: false }} />
+            <Stack.Screen name="settings" options={{ headerShown: false }} />
           </Stack>
           <UndoSnackbar />
           <OverdueGoalPrompt />

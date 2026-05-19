@@ -226,7 +226,7 @@ export default function ThemesManagement() {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.iconBtn}
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/(settings)'))}
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/settings'))}
         >
           <Icon name="chevron-left" size={22} color={colors.text2} />
         </TouchableOpacity>

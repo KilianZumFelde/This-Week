@@ -241,7 +241,7 @@ export default function ThisWeek() {
           <Text style={styles.eyebrow}>Week of {weekLabel}</Text>
           <Text style={styles.h1}>This week</Text>
         </View>
-        <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/(settings)')}>
+        <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/settings')}>
           <Icon name="settings" size={20} color={colors.text2} />
         </TouchableOpacity>
       </View>

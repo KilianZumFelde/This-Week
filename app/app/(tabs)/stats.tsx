@@ -111,7 +111,7 @@ export default function Stats() {
           <Text style={styles.eyebrow}>Quiet progress</Text>
           <Text style={styles.h1}>Stats</Text>
         </View>
-        <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/(settings)')}>
+        <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/settings')}>
           <Icon name="settings" size={20} color={colors.text2} />
         </TouchableOpacity>
       </View>

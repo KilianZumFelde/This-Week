@@ -184,7 +184,7 @@ export default function Backlog() {
           <Text style={styles.eyebrow}>For later</Text>
           <Text style={styles.h1}>Backlog</Text>
         </View>
-        <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/(settings)')}>
+        <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/settings')}>
           <Icon name="settings" size={20} color={colors.text2} />
         </TouchableOpacity>
       </View>
