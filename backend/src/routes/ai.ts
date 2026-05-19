@@ -264,7 +264,10 @@ Rules:
 - "in X hours/minutes" → relative to now
 - "Friday", "next Monday", etc → nearest future occurrence at 09:00 local unless a time is specified
 - "daily until done", "every day", "nudge me daily" → recurring_until_done, FREQ=DAILY
-- Default time when only a date is given: 09:00 local
+- "every Monday", "each Wednesday" → recurring_until_done, FREQ=WEEKLY;BYDAY=MO (or TU/WE/TH/FR/SA/SU)
+- "Monday and Wednesday", "Monday, Tuesday, Wednesday", "weekdays" → recurring_until_done, FREQ=WEEKLY;BYDAY=MO,WE / MO,TU,WE / MO,TU,WE,TH,FR
+- "weekends" → recurring_until_done, FREQ=WEEKLY;BYDAY=SA,SU
+- Default time when only a date or day is given: 09:00 local
 - Resolve all times to ISO 8601 UTC strings
 - If the input is not a time reference at all, return scheduled_for: null`,
         tools: [REMINDER_TOOL],

@@ -1058,6 +1058,15 @@ Set env var `CRON_SECRET=<random-string>` on Render. Then configure two Render C
 - [~] P10-1 deferred: awaiting user setup (Firebase + google-services.json + new EAS build).
 - [x] Git commit: `feat(p10): push notifications, reminder dispatch job, habit danger-zone nudges`
 
+### Addendum — RRULE-aware recurring reminders (added after phase completion)
+
+- [ ] **P10-A1** Add proper RRULE scheduling to the dispatch job so multi-day recurrence rules (e.g. "Monday, Wednesday, Friday") fire on the correct days instead of every day.
+  - **Why needed**: `jobs.ts` currently ignores `recurrence_rule` and always advances `next_run_at` by +1 day, making any RRULE other than `FREQ=DAILY` behave incorrectly.
+  - **Backend**: `backend/src/routes/jobs.ts` — replace the hardcoded +1 day advancement with `rrule` library call to compute the true next occurrence from the stored rule.
+  - **Backend**: `backend/src/routes/ai.ts` — extend the `parse-reminder` system prompt rules to document multi-day patterns (e.g. `FREQ=WEEKLY;BYDAY=MO,WE,FR`) so the model reliably generates correct RRULE syntax.
+  - **Package**: add `rrule` to `backend/package.json` (user must run `npm install` in `/backend`).
+  - **Validate**: insert a test reminder with `recurrence_rule=FREQ=WEEKLY;BYDAY=MO,WE` and `next_run_at` set to now → dispatch job fires → `next_run_at` advances to the next Wednesday or Monday (not tomorrow).
+
 ---
 
 ## Phase 11 — AI Goal Coach

@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { RRule } from 'rrule';
 import { supabase } from '../lib/supabase.js';
 import { getCurrentWeekStartDate } from '../lib/week.js';
 import { sendPushNotifications, isValidExpoPushToken } from '../services/push.js';
@@ -42,7 +43,7 @@ export async function jobsRoutes(fastify: FastifyInstance) {
     // Find recurring reminders due by next_run_at
     const { data: recurring, error: e2 } = await supabase
       .from('reminders')
-      .select('id, user_id, task_id, kind, next_run_at, tasks(title)')
+      .select('id, user_id, task_id, kind, next_run_at, recurrence_rule, tasks(title)')
       .eq('kind', 'recurring_until_done')
       .eq('status', 'scheduled')
       .not('next_run_at', 'is', null)
@@ -82,9 +83,18 @@ export async function jobsRoutes(fastify: FastifyInstance) {
             .update({ status: 'sent', last_sent_at: now })
             .eq('id', reminder.id);
         } else {
-          // Recurring: advance next_run_at by 1 day
-          const nextRun = new Date(now);
-          nextRun.setDate(nextRun.getDate() + 1);
+          const recRule = (reminder as any).recurrence_rule as string | null;
+          let nextRun: Date;
+          if (recRule) {
+            try {
+              const next = RRule.fromString(recRule).after(new Date(now));
+              nextRun = next ?? new Date(new Date(now).getTime() + 24 * 60 * 60 * 1000);
+            } catch {
+              nextRun = new Date(new Date(now).getTime() + 24 * 60 * 60 * 1000);
+            }
+          } else {
+            nextRun = new Date(new Date(now).getTime() + 24 * 60 * 60 * 1000);
+          }
           await supabase
             .from('reminders')
             .update({ last_sent_at: now, next_run_at: nextRun.toISOString() })
