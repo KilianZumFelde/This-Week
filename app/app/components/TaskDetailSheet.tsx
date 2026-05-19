@@ -12,15 +12,14 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius } from '../../lib/tokens';
 import { Icon } from './Icon';
 import { Task, useUpdateTask, useDeleteTask, useCreateTask, ReminderSpec } from '../../lib/hooks/useTasks';
 import { Theme } from '../../lib/hooks/useThemes';
 import { useUndoStore } from '../../lib/stores/undo-store';
-import { useReminderInputStore } from '../../lib/stores/reminder-input-store';
 import { api } from '../../lib/api';
+import { VoiceReminderModal } from './VoiceReminderModal';
 
 function formatReminderSpec(spec: ReminderSpec): string {
   if (spec.kind === 'recurring_until_done') {
@@ -120,7 +119,6 @@ type Props = {
 
 export function TaskDetailSheet({ task, themes, onClose }: Props) {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
   const createTask = useCreateTask();
@@ -138,17 +136,9 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
   const [reminderText, setReminderText] = useState('');
   const [reminderSpec, setReminderSpec] = useState<ReminderSpec | null>(null);
   const [reminderLoading, setReminderLoading] = useState(false);
+  const [reminderError, setReminderError] = useState('');
+  const [showVoiceOverlay, setShowVoiceOverlay] = useState(false);
 
-  const pendingTranscript = useReminderInputStore((s) => s.pendingTranscript);
-  const sourceContext = useReminderInputStore((s) => s.sourceContext);
-  const clearReminderInput = useReminderInputStore((s) => s.clear);
-
-  useEffect(() => {
-    if (pendingTranscript && sourceContext === 'task-detail') {
-      setReminderText(pendingTranscript);
-      clearReminderInput();
-    }
-  }, [pendingTranscript, sourceContext]);
 
   useEffect(() => {
     if (task) {
@@ -162,6 +152,8 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
       setReminderEditing(false);
       setReminderText('');
       setReminderSpec(null);
+      setReminderError('');
+      setShowVoiceOverlay(false);
     }
   }, [task?.id]);
 
@@ -213,6 +205,7 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
   async function handleReminderConfirm() {
     if (!reminderText.trim() || !task) return;
     setReminderLoading(true);
+    setReminderError('');
     try {
       const parsed = await api.post<ReminderSpec>('/ai/parse-reminder', {
         text: reminderText.trim(),
@@ -223,7 +216,7 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
       setReminderEditing(false);
       setReminderText('');
     } catch {
-      // keep bubble open; user can retry
+      setReminderError("Couldn't parse that time — try again");
     } finally {
       setReminderLoading(false);
     }
@@ -441,7 +434,7 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
                     <TextInput
                       style={styles.reminderBubbleInput}
                       value={reminderText}
-                      onChangeText={setReminderText}
+                      onChangeText={(t) => { setReminderText(t); setReminderError(''); }}
                       placeholder="e.g. tomorrow at 9am"
                       placeholderTextColor={colors.text3}
                       autoFocus
@@ -449,7 +442,7 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
                     <TouchableOpacity
                       onLongPress={() => {
                         Vibration.vibrate(40);
-                        router.push('/voice-listening?mode=reminder&ctx=task-detail');
+                        setShowVoiceOverlay(true);
                       }}
                       delayLongPress={300}
                       style={styles.reminderMicBtn}
@@ -457,9 +450,12 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
                       <Icon name="mic" size={15} color="#1a1816" />
                     </TouchableOpacity>
                   </View>
+                  {reminderError ? (
+                    <Text style={styles.reminderErrorText}>{reminderError}</Text>
+                  ) : null}
                   <View style={styles.reminderBubbleActions}>
                     <TouchableOpacity
-                      onPress={() => { setReminderEditing(false); setReminderText(''); }}
+                      onPress={() => { setReminderEditing(false); setReminderText(''); setReminderError(''); }}
                     >
                       <Text style={styles.reminderCancelText}>Cancel</Text>
                     </TouchableOpacity>
@@ -527,6 +523,12 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
           </View>
         </KeyboardAvoidingView>
       </View>
+
+      <VoiceReminderModal
+        visible={showVoiceOverlay}
+        onConfirm={(t) => { setReminderText(t); setShowVoiceOverlay(false); }}
+        onCancel={() => setShowVoiceOverlay(false)}
+      />
     </Modal>
   );
 }
@@ -757,6 +759,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  reminderErrorText: {
+    fontSize: 12,
+    color: colors.brick,
+    paddingHorizontal: 2,
   },
   reminderBubbleActions: {
     flexDirection: 'row',

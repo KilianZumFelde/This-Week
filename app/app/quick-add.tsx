@@ -328,6 +328,7 @@ export default function QuickAdd() {
   const [reminderEditing, setReminderEditing] = useState(false);
   const [reminderText, setReminderText] = useState('');
   const [reminderLoading, setReminderLoading] = useState(false);
+  const [reminderError, setReminderError] = useState('');
 
   const pendingTranscript = useReminderInputStore((s) => s.pendingTranscript);
   const sourceContext = useReminderInputStore((s) => s.sourceContext);
@@ -357,6 +358,7 @@ export default function QuickAdd() {
   async function handleReminderConfirm() {
     if (!reminderText.trim()) return;
     setReminderLoading(true);
+    setReminderError('');
     try {
       const parsed = await api.post<ReminderSpec>('/ai/parse-reminder', {
         text: reminderText.trim(),
@@ -366,7 +368,7 @@ export default function QuickAdd() {
       setReminderEditing(false);
       setReminderText('');
     } catch {
-      // keep bubble open; user can retry
+      setReminderError("Couldn't parse that time — try again");
     } finally {
       setReminderLoading(false);
     }
@@ -634,7 +636,7 @@ export default function QuickAdd() {
                 <TextInput
                   style={styles.reminderBubbleInput}
                   value={reminderText}
-                  onChangeText={setReminderText}
+                  onChangeText={(t) => { setReminderText(t); setReminderError(''); }}
                   placeholder="e.g. tomorrow at 9am"
                   placeholderTextColor={colors.text3}
                   autoFocus
@@ -650,6 +652,9 @@ export default function QuickAdd() {
                   <Icon name="mic" size={15} color="#1a1816" />
                 </TouchableOpacity>
               </View>
+              {reminderError ? (
+                <Text style={styles.reminderErrorText}>{reminderError}</Text>
+              ) : null}
               <View style={styles.reminderBubbleActions}>
                 <TouchableOpacity
                   onPress={() => { setReminderEditing(false); setReminderText(''); }}
@@ -1086,6 +1091,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  reminderErrorText: {
+    fontSize: 12,
+    color: colors.brick,
+    paddingHorizontal: 2,
   },
   reminderBubbleActions: {
     flexDirection: 'row',
