@@ -991,6 +991,36 @@ After P8-7: simulate a week flip (manually set carry_over_ritual status to pendi
   - Reminders screen: lists scheduled reminders with task title + next fire time. Confirm → delete all → cancels in DB.
   - Validate: tap gear → Settings opens. Tap Reminders → list shows scheduled reminders. Delete all → list clears.
 
+- [x] **P10-7** FAB redesign — merge two floating buttons into single orange `+` button.
+  - `app/app/components/TabBar.tsx`: removed `fabSmall`, single `fabLarge` with `onPress` → quick-add and `onLongPress` (300ms + haptic) → voice overlay.
+  - Validate: tap FAB → quick-add opens. Long-press FAB → voice overlay appears.
+
+- [x] **P10-8** Backend: `POST /ai/parse-reminder` — natural language → ReminderSpec.
+  - `backend/src/routes/ai.ts`: uses `claude-haiku-4-5-20251001` with forced tool use. Input: `{ text, timezone }`. Output: `{ kind, scheduled_for, recurrence_rule }` or 422.
+  - Handles: "tomorrow at 9am", "Friday", "tonight", "daily until done", "in 2 hours", etc.
+  - Validate: POST `{ text: "tomorrow at 9am", timezone: "Europe/Berlin" }` → ISO datetime returned.
+
+- [x] **P10-9** `reminder-input-store.ts` — Zustand store for cross-screen transcript relay.
+  - `app/lib/stores/reminder-input-store.ts`: holds `{ pendingTranscript, sourceContext }`. Used to pass voice transcript from voice overlay back to the screen that triggered it.
+
+- [x] **P10-10** Voice overlay: `mode=reminder` param.
+  - `app/app/voice-listening.tsx`: accepts `?mode=reminder&ctx=<task-detail|quick-add>`. In reminder mode: skips AI capture, stores transcript in `reminder-input-store`, calls `router.back()`. Existing capture flow unchanged. Hint text changes to "Say when to remind you…".
+  - Validate: navigate to `/voice-listening?mode=reminder&ctx=task-detail` → speak → tick → store has transcript.
+
+- [x] **P10-11** Inline reminder bubble in `TaskDetailSheet`.
+  - Tapping the reminder row's EDIT expands into a text input + orange mic button. Long-pressing mic opens `VoiceReminderModal` (inline, see P10-13). Confirm calls `POST /ai/parse-reminder` then `POST /tasks/:id/reminders`. Shows parsed time once saved. Error text shown if parse fails.
+  - `app/app/components/TaskDetailSheet.tsx`.
+  - Validate: open task detail → tap EDIT → type "next Monday 8am" → Set reminder → reminder row shows parsed date.
+
+- [x] **P10-12** Inline reminder bubble in `quick-add.tsx`.
+  - Same bubble below the chips, tasks only, manual mode. Parsed spec stored locally and passed to `createTask` on save.
+  - `app/app/quick-add.tsx`.
+  - Validate: open quick-add manually → "Add reminder" row visible → type reminder → Set reminder → save task → `reminders` row in DB.
+
+- [x] **P10-13** `VoiceReminderModal` component.
+  - `app/app/components/VoiceReminderModal.tsx`: self-contained `<Modal>` with full speech recognition (pulse animations, X / check controls, error/retry state). Rendered inside `TaskDetailSheet` instead of `router.push` to avoid pushed screens rendering behind a React Native system Modal.
+  - Validate: long-press mic in task detail reminder bubble → overlay appears above the sheet → speak → tick → transcript populates input.
+
 ### User Check-In
 After P10 setup + new EAS build: use voice capture "remind me in 2 minutes to check the set list". Confirm token in `notification_tokens` table, reminder in `reminders` table. Wait 2 min → push fires.
 
