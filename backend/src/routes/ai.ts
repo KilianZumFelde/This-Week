@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import { authenticate } from '../middleware/authenticate.js';
 import { supabase } from '../lib/supabase.js';
+import { localToUTC } from '../lib/dateUtils.js';
 
 const CaptureRequestSchema = z.object({
   transcript: z.string().min(1),
@@ -228,7 +229,10 @@ export async function aiRoutes(fastify: FastifyInstance) {
 
     const { text, timezone = 'UTC' } = parsed.data;
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const now = new Date().toISOString();
+
+    // Pass the current time in the user's local timezone (no UTC suffix) so Haiku
+    // can resolve relative references ("tomorrow", "Friday") without doing offset math.
+    const nowLocal = new Date().toLocaleString('sv-SE', { timeZone: timezone }).replace(' ', 'T');
 
     const REMINDER_TOOL: Anthropic.Tool = {
       name: 'parse_reminder',
@@ -240,7 +244,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
           kind: { type: 'string', enum: ['one_shot', 'recurring_until_done'] },
           scheduled_for: {
             type: ['string', 'null'],
-            description: 'ISO 8601 datetime for one_shot, or the first occurrence for recurring. null if unparseable.',
+            description: 'Local datetime for one_shot or first occurrence of recurring, formatted as YYYY-MM-DDTHH:MM:SS with no timezone suffix. null if unparseable.',
           },
           recurrence_rule: {
             type: ['string', 'null'],
@@ -255,20 +259,19 @@ export async function aiRoutes(fastify: FastifyInstance) {
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 256,
         system: `You parse natural language reminder phrases into structured data.
-User timezone: ${timezone}
-Current time: ${now}
+Current time: ${nowLocal}
 
 Rules:
-- "tomorrow", "tomorrow morning" → next day at 09:00 local
-- "tonight", "this evening" → today at 19:00 local
-- "in X hours/minutes" → relative to now
-- "Friday", "next Monday", etc → nearest future occurrence at 09:00 local unless a time is specified
+- "tomorrow", "tomorrow morning" → next day at 09:00
+- "tonight", "this evening" → today at 19:00
+- "in X hours/minutes" → relative to current time
+- "Friday", "next Monday", etc → nearest future occurrence at 09:00 unless a time is specified
 - "daily until done", "every day", "nudge me daily" → recurring_until_done, FREQ=DAILY
 - "every Monday", "each Wednesday" → recurring_until_done, FREQ=WEEKLY;BYDAY=MO (or TU/WE/TH/FR/SA/SU)
 - "Monday and Wednesday", "Monday, Tuesday, Wednesday", "weekdays" → recurring_until_done, FREQ=WEEKLY;BYDAY=MO,WE / MO,TU,WE / MO,TU,WE,TH,FR
 - "weekends" → recurring_until_done, FREQ=WEEKLY;BYDAY=SA,SU
-- Default time when only a date or day is given: 09:00 local
-- Resolve all times to ISO 8601 UTC strings
+- Default time when only a date or day is given: 09:00
+- Return scheduled_for as YYYY-MM-DDTHH:MM:SS with no timezone suffix
 - If the input is not a time reference at all, return scheduled_for: null`,
         tools: [REMINDER_TOOL],
         tool_choice: { type: 'tool', name: 'parse_reminder' },
@@ -282,6 +285,11 @@ Rules:
       const result = toolUse.input as { kind: string; scheduled_for: string | null; recurrence_rule: string | null };
       if (!result.scheduled_for && !result.recurrence_rule) {
         return reply.status(422).send({ error: 'unparseable' });
+      }
+
+      // Convert Haiku's local datetime to UTC using the user's timezone
+      if (result.scheduled_for) {
+        result.scheduled_for = localToUTC(result.scheduled_for, timezone);
       }
 
       return result;
