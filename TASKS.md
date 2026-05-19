@@ -956,7 +956,8 @@ After P8-7: simulate a week flip (manually set carry_over_ritual status to pendi
   - New EAS build completed with FCM credentials baked in.
   - CRON_SECRET set on Render (`credentials.md`).
   - cron-job.org configured: dispatch-reminders every 15 min, habit-nudges daily at 09:00 UTC.
-  - Validate: create task with reminder "in 2 minutes" → check reminders table flips to sent → notification on device.
+  - Both cron-job.org jobs require headers: `X-Cron-Secret` + `Content-Type: application/json`, body: `{}`.
+  - ✅ Validated end-to-end: reminder created → DB row scheduled → cron fired → notification received on device. Notification body = task title.
 
 - [x] **P10-2** Register push token on app startup.
   - `app/lib/hooks/useNotifications.ts`: request permissions, call `Notifications.getExpoPushTokenAsync`, POST to `/notifications/register`.
@@ -1052,8 +1053,9 @@ Select Android → Development build → FCM → upload the server key from Fire
 - Cron jobs are handled by **cron-job.org** (free), NOT Render cron (paid). Two jobs configured:
   - `POST https://this-week.onrender.com/jobs/dispatch-reminders` — every 15 min
   - `POST https://this-week.onrender.com/jobs/habit-nudges` — daily at 09:00 UTC
-  - Both use header `X-Cron-Secret: <value from credentials.md>`
-- ✅ Done: CRON_SECRET set on Render, both cron-job.org jobs active.
+  - Both require two headers: `X-Cron-Secret: <value from credentials.md>` and `Content-Type: application/json`
+- Both require body: `{}`
+- ✅ Done: CRON_SECRET set on Render, both cron-job.org jobs active and confirmed working.
 
 ### End-of-Phase Admin
 - [x] Mark completed tasks (P10-1 through P10-6 implemented, P10-A1 addendum complete).
