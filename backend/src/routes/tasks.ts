@@ -246,6 +246,7 @@ export async function tasksRoutes(fastify: FastifyInstance) {
     if (!task) return reply.status(404).send({ error: 'Task not found' });
 
     const tz = await getUserTimezone(request.userId);
+    await cancelRemindersForTask(request.userId, id);
     await createReminderForTask(request.userId, id, parsed.data, tz);
     return reply.status(201).send({ ok: true });
   });
