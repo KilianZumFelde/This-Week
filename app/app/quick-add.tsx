@@ -323,8 +323,7 @@ export default function QuickAdd() {
   // Low-confidence field names from AI
   const confidenceFlags = currentDraft?.confidence_flags ?? [];
 
-  // Reminder (manual mode only — voice mode gets it from draft)
-  const [reminderSpec, setReminderSpec] = useState<ReminderSpec | null>(null);
+  const [reminderSpec, setReminderSpec] = useState<ReminderSpec | null>(currentDraft?.reminder_spec ?? null);
   const [reminderEditing, setReminderEditing] = useState(false);
   const [reminderText, setReminderText] = useState('');
   const [reminderLoading, setReminderLoading] = useState(false);
@@ -384,7 +383,7 @@ export default function QuickAdd() {
         return_level: returnLevel,
         week_assignment: week,
         goal_id: goalId,
-        reminder_spec: isVoiceMode ? (currentDraft?.reminder_spec ?? null) : (reminderSpec ?? null),
+        reminder_spec: reminderSpec ?? null,
       });
     } else {
       await createHabit.mutateAsync({
@@ -407,6 +406,7 @@ export default function QuickAdd() {
       setWeek(next.week_assignment ?? 'this_week');
       setGoalId(next.goal_id ?? null);
       setWeeklyCount(next.weekly_target ?? 3);
+      setReminderSpec(next.reminder_spec ?? null);
       setOpenField(null);
     } else {
       if (isVoiceMode) clearCapture();
@@ -628,8 +628,8 @@ export default function QuickAdd() {
           </View>
         )}
 
-        {/* Reminder section (tasks only, manual mode) */}
-        {type === 'task' && !isVoiceMode && (
+        {/* Reminder section (tasks only) */}
+        {type === 'task' && (
           reminderEditing ? (
             <View style={styles.reminderBubbleWrap}>
               <View style={styles.reminderBubble}>
