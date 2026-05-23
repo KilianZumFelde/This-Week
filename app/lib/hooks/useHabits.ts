@@ -59,6 +59,19 @@ export function useIncrementHabit() {
   });
 }
 
+export function useDecrementHabit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (habitId: string) =>
+      api.post<HabitWeekRecord>(`/habits/${habitId}/decrement`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['habits'] });
+      qc.invalidateQueries({ queryKey: ['habit_week_records'] });
+      qc.invalidateQueries({ queryKey: ['stats'] });
+    },
+  });
+}
+
 export function useCreateHabit() {
   const qc = useQueryClient();
   return useMutation({

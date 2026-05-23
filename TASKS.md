@@ -435,6 +435,24 @@ After P4-10: open the app, add a habit ("Gym 4x/week") and 2 tasks. Tap the gym 
 - [x] Git commit: `feat(p4): render deployment, app wired to production backend`
 - [x] Record Render service URL in `docs/env.md`. ✓
 
+### Enhancements
+
+- [x] **P4-E1** Backend: `POST /habits/:id/decrement` — decrement `completed_count` by 1, floor at 0.
+  - File: `backend/src/routes/habits.ts`.
+  - Fetch the current week record for the habit; update `completed_count = max(0, current - 1)`.
+  - Mirrors the increment logic exactly.
+  - Validate: `curl -X POST /habits/:id/increment` then `curl -X POST /habits/:id/decrement` — confirm count returns to original.
+
+- [x] **P4-E2** Frontend hook: `useDecrementHabit` in `app/lib/hooks/useHabits.ts`.
+  - Calls `POST /habits/:id/decrement`.
+  - Invalidates `['habits']`, `['habit_week_records']`, `['stats']` — same as `useIncrementHabit`.
+  - Validate: TypeScript check passes (`tsc --noEmit` in `/app`).
+
+- [x] **P4-E3** Wire undo into `onIncrement` in `app/app/(tabs)/index.tsx`.
+  - Import `useDecrementHabit`.
+  - Change `onIncrement` from a direct `incrementHabit.mutate(habit.id)` call to a wrapper that calls mutate with an `onSuccess` callback: `showUndo({ label: '"<habit.title>" logged', undo: () => decrementHabit.mutate(habit.id) })`.
+  - Validate: tap a habit ring → undo toast appears for 6s → tap Undo → count goes back down.
+
 ---
 
 ## Phase 5 — Backlog

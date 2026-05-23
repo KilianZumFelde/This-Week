@@ -170,4 +170,31 @@ export async function habitsRoutes(fastify: FastifyInstance) {
     if (updateError) return reply.status(500).send({ error: updateError.message });
     return updated;
   });
+
+  fastify.post('/habits/:id/decrement', { preHandler: [authenticate] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const tz = await getUserTimezone(request.userId);
+    const weekStartDate = getCurrentWeekStartDate(tz);
+
+    const { data: record, error: fetchError } = await supabase
+      .from('habit_week_records')
+      .select('id, completed_count')
+      .eq('habit_id', id)
+      .eq('week_start_date', weekStartDate)
+      .single();
+
+    if (fetchError || !record) return reply.status(404).send({ error: 'No record for this week' });
+
+    const newCount = Math.max(0, record.completed_count - 1);
+
+    const { data: updated, error: updateError } = await supabase
+      .from('habit_week_records')
+      .update({ completed_count: newCount })
+      .eq('id', record.id)
+      .select()
+      .single();
+
+    if (updateError) return reply.status(500).send({ error: updateError.message });
+    return updated;
+  });
 }

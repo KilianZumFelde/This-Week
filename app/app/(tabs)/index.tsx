@@ -11,7 +11,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { colors, radius } from '../../lib/tokens';
 import { useThisWeekTasks, useCompleteTask, useReopenTask, useDeleteTask, Task } from '../../lib/hooks/useTasks';
-import { useHabits, useHabitWeekRecords, useIncrementHabit, Habit } from '../../lib/hooks/useHabits';
+import { useHabits, useHabitWeekRecords, useIncrementHabit, useDecrementHabit, Habit } from '../../lib/hooks/useHabits';
 import { useUndoStore } from '../../lib/stores/undo-store';
 import { useThemes, Theme } from '../../lib/hooks/useThemes';
 import { useGoals, useGoalStats } from '../../lib/hooks/useGoals';
@@ -174,6 +174,7 @@ export default function ThisWeek() {
   const reopenTask = useReopenTask();
   const deleteTask = useDeleteTask();
   const incrementHabit = useIncrementHabit();
+  const decrementHabit = useDecrementHabit();
   const showUndo = useUndoStore((s) => s.show);
 
   const recordMap = Object.fromEntries(
@@ -320,7 +321,15 @@ export default function ThisWeek() {
                     habit={habit}
                     completedCount={completedCount}
                     theme={themeMap[habit.theme_id]}
-                    onIncrement={() => incrementHabit.mutate(habit.id)}
+                    onIncrement={() =>
+                      incrementHabit.mutate(habit.id, {
+                        onSuccess: () =>
+                          showUndo({
+                            label: `"${habit.title}" logged`,
+                            undo: () => decrementHabit.mutate(habit.id),
+                          }),
+                      })
+                    }
                     onPressBody={() => setSelectedHabit(habit)}
                   />
                 );
