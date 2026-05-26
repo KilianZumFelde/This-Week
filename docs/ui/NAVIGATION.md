@@ -27,15 +27,16 @@ Every tap-target → destination, organized by source screen. This is the single
 | Tab bar · Backlog | tab button | → 02 · Backlog |
 | Tab bar · Goals | tab button | → 03 · Goals |
 | Tab bar · Stats | tab button | → 04 · Stats |
-| FAB · **mic** (terracotta) | the mic button | ⤴ 05 · Voice listening |
-| FAB · **+** (small, left of mic) | the + button | ⤴ 06 · Quick-add draft (with empty fields) |
+| **FAB (single terracotta button)** · tap | the FAB | ⤴ 06 · Quick-add draft (empty fields, default-week derived from active tab) |
+| **FAB (single terracotta button)** · long-press (~300ms) | the FAB | ⤴ 05 · Voice listening |
 
-**First-launch variant (15 · `ThisWeekEmpty`):**
+**First-launch variant (`ThisWeekEmpty`):**
 
 | Element | Destination |
 |---|---|
-| "Set my first goal with Coach" | ⤴ 08 · Coach (in conversation, creation mode) |
-| "Add a task" | ⤴ 06 · Quick-add draft (empty) |
+| "Set my first goal with Coach" | ⚠ **No-op in v1** (known bug — see TASKS.md). Visual placeholder only. |
+| "Add a task" | ⚠ **No-op in v1** (known bug — see TASKS.md). Visual placeholder only. |
+| FAB (tap or long-press) | works as elsewhere — the actual entry point for first-run users. |
 
 ---
 
@@ -46,11 +47,11 @@ Every tap-target → destination, organized by source screen. This is the single
 | Settings gear | ⤴ Settings |
 | Sort toggle | inline re-sort |
 | Theme group header | inline expand/collapse |
-| Task card · circle | "Pull to this week" (visual: theme group moves task to This Week) |
+| Task card · circle | "Pull to this week" (promote task to current week; Undo snackbar) |
 | Task card · body | ↓ 17 · Task detail (same sheet as on This Week) |
 | Tab bar tabs | → corresponding tab |
-| FAB · mic | ⤴ 05 · Voice listening *(item lands in Backlog when added from this tab)* |
-| FAB · + | ⤴ 06 · Quick-add draft (empty, defaults to Backlog) |
+| FAB · tap | ⤴ 06 · Quick-add draft (empty, defaults to Backlog when added from this tab) |
+| FAB · long-press | ⤴ 05 · Voice listening *(item lands in Backlog when added from this tab)* |
 
 **Empty variant (16 · `BacklogEmpty`):** Same nav, just no task cards.
 
@@ -64,11 +65,11 @@ Every tap-target → destination, organized by source screen. This is the single
 | Primary goal card | ↓ 07 · Goal action drawer (kind="active") |
 | Secondary goal card | ↓ 07 · Goal action drawer (kind="active") |
 | "Add directly" button | ⤴ 10 · New goal · empty form |
-| "Coach me" button | ⤴ 08 · Coach (in conversation, creation mode) |
+| "Coach me" button | ⚠ **Non-functional placeholder in v1** — AI Coach feature was dropped (2026-05-24). Button has no onPress. May be removed in a code cleanup pass. |
 | Past goals header | inline expand/collapse |
 | Past goal row | ↓ 07b · Goal action drawer (kind="grave") |
 | Tab bar tabs | → corresponding tab |
-| FAB · mic / + | as elsewhere (added to current view's default scope) |
+| FAB · tap / long-press | as elsewhere (no Backlog-default scope on the Goals tab) |
 
 ---
 
@@ -78,10 +79,10 @@ Every tap-target → destination, organized by source screen. This is the single
 |---|---|
 | Settings gear | ⤴ Settings |
 | Top summary band | (no nav) |
-| Habit streak row | ↓ 18 · Habit detail for that habit |
-| Past-week row | inline expand → reveals that week's tasks + habit results inline |
+| Habit streak row | (no nav in v1 — row is display-only; tap-to-open Habit detail is deferred) |
+| Past-week row | (no nav in v1 — rows are display-only; tap-to-expand is deferred) |
 | Tab bar tabs | → corresponding tab |
-| FAB · mic / + | as elsewhere |
+| FAB · tap / long-press | as elsewhere |
 
 ---
 
@@ -130,60 +131,31 @@ Bottom sheet over the Goals screen.
 
 | Element | Destination |
 |---|---|
-| Reactivate | ⤴ 11 · New goal · pre-filled (subject to 1+2 cap; cap-exceeded modal triggers on save) |
+| Reactivate | ⤴ 10 · New goal · pre-filled in Edit mode (subject to 1+2 cap — backend returns HTTP 400 if exceeded; no cap-exceeded modal in v1) |
 | Drag-down / backdrop | × back to Goals |
 
 ---
 
-## 08 · Coach · in conversation (`CoachEntry`)
+## 08 / 09 · Coach screens — REMOVED FROM SCOPE (2026-05-24)
 
-Full-screen modal. No tab bar.
-
-| Element | Destination |
-|---|---|
-| Close (X) | × back to caller (conversation discarded; warn if substantive) |
-| Restart (top-right) | inline reset of message thread |
-| Input field | inline text entry |
-| Mic button (right of input) | hold to dictate; release commits message |
-| (when AI converges) "Create this goal" appears → | → 09 · Coach final summary |
-
-## 09 · Coach · final summary (`CoachSummary`)
-
-Same chrome as 08, with the final summary message + button.
-
-| Element | Destination |
-|---|---|
-| Close (X) | × back to caller (warning: "Discard recommended goal?") |
-| Restart | back to 08 with fresh thread |
-| Input field / mic | inline continue chatting (stays on 09) |
-| **Create this goal** (big primary button) | ⤴ 11 · New goal · pre-filled from conversation |
+The AI Coach feature was dropped from v1. The Goals tab's "Coach me" button is currently a non-functional placeholder and may be removed in a later code cleanup pass.
 
 ---
 
-## 10 · New goal · empty (`AddGoalForm`)
+## 10 · New / Edit goal (`AddGoalForm`)
 
-Full-screen modal. Reached from Goals tab "Add directly".
+Full-screen modal. Reached from Goals tab "Add directly" (empty fields), or from the Goal Action Drawer's "Edit" / "Reactivate" actions (pre-filled).
 
 | Element | Destination |
 |---|---|
-| Close (X, top-left) | × back to Goals (warning if any field filled) |
+| Close (X, top-left) | × back to caller |
 | Title input | inline edit |
-| Target date quick-chip | inline pick (3mo / 6mo / 1y / Custom → opens native date picker) |
+| Target date quick-chip | inline pick (1mo / 2mo / 3mo / 6mo / 1y). **No Custom chip, no native date picker in v1.** |
 | Type radio (Primary / Secondary) | inline pick |
-| Theme dropdown | inline expand/collapse (AI suggests once title has content) |
+| Theme dropdown | inline expand/collapse (manual pick; no AI suggestion in v1) |
 | Why textarea | inline edit |
-| Save (top-right + bottom) | validate → save → × back to Goals · **if 1+2 cap exceeded** → cap-exceeded modal (Demote current primary / Archive / Cancel) |
-| Cancel | × back to Goals |
-
-## 11 · New goal · pre-filled from Coach (`AddGoalForm prefilled`)
-
-Same form, every field filled from Coach conversation. Banner reads "From your conversation with Coach — review and save."
-
-| Element | Destination |
-|---|---|
-| Close (X) | × back to **09 · Coach summary** (so user can keep chatting or restart) |
-| All form interactions | identical to 10 |
-| Save | as 10, then × back to **Goals** (Coach modal also dismisses on success) |
+| Save (top-right + bottom) | validate → save → × back to caller · **if 1+2 cap exceeded** → backend returns HTTP 400, form shows generic error; user must abandon an existing goal manually and retry. **No demote/archive/cancel modal in v1.** |
+| Cancel | × back to caller |
 
 ---
 
@@ -212,7 +184,34 @@ Full-screen modal. **Optional** — non-blocking; can finish with 0 pulled.
 | Element | Destination |
 |---|---|
 | Backlog task card | inline tap-to-add toggle (no nav; chip flips to "Added" with sage check) |
-| Start week | × dismiss entire ritual → 01 · This Week with toast "Ready for the new week." |
+| Start week | promote selected tasks → clear ritual → → **15 · New week celebration** |
+
+---
+
+## 15 · New week celebration (`NewWeek`)
+
+Full-screen transitional view shown after Carry-pull's "Start week". Has no tab bar and no FAB.
+
+| Element | Destination |
+|---|---|
+| "Let's go" button | `router.replace('/(tabs)')` → 01 · This Week |
+
+This is a brief calm moment between the Sunday ritual and execution. Not a planning step; purely a transition.
+
+---
+
+## 16 · Overdue Goal Prompt (`OverdueGoalPrompt`)
+
+Bottom sheet overlay. Appears on app open whenever an active goal's `target_date` is in the past and hasn't been dismissed this session. Renders on top of any screen.
+
+| Element | Destination |
+|---|---|
+| Mark as hit | mark goal `completed`; sheet dismisses; goal moves to graveyard |
+| Extend | sheet dismisses; → 10 · New / Edit goal (pre-filled, status reactivates if it was graveyard) |
+| Abandon | mark goal `archived`; sheet dismisses; goal moves to graveyard |
+| Tap outside / backdrop | dismiss for the current session only — prompt re-appears next launch until the goal is resolved |
+
+The sheet iterates one overdue goal at a time. If multiple goals are overdue, the next one surfaces after the current one is resolved or dismissed.
 
 ---
 
@@ -222,12 +221,16 @@ Bottom sheet. Opened by tapping the body of any task card (on This Week or Backl
 
 | Element | Destination |
 |---|---|
-| Title | inline edit |
-| Field chip | inline edit (same pattern as 06b draft inline picker) |
-| Reminder row | inline edit (opens reminder editor inline) |
-| Move to backlog | inline change `week=backlog`; Undo snackbar; sheet stays open |
-| Delete | confirm dialog → delete; × back to caller; Undo snackbar |
-| Drag-down / backdrop | × back to caller |
+| Title | inline edit (tap to enter edit mode) |
+| Field chip (Theme / Effort / Return / Week) | inline picker opens below the chip; tap an option to set |
+| Reminder row | inline edit — text field + mic button (long-press mic → 05b · Voice reminder modal); confirm sends text to `/ai/parse-reminder` and saves the spec |
+| Move to backlog | inline change `week=backlog`; × back to caller |
+| Delete | **immediate delete (no confirm dialog in v1 — consistent with domain-lens.md "tasks are low-stakes")**; × back to caller; Undo snackbar appears for ~6s |
+| Drag-down / backdrop | × back to caller (dirty fields auto-save on dismiss) |
+
+### 05b · Voice reminder modal (`VoiceReminderModal`)
+
+A sub-overlay used only inside the Task Detail Sheet's reminder editor. Long-press the mic button there to open it. Single-purpose dictation overlay; confirm pastes the recognized transcript back into the reminder text field.
 
 ## 18 · Habit detail (`HabitDetail`)
 
@@ -235,13 +238,13 @@ Bottom sheet. Opened by tapping the **text area** (not the ring) of any habit ca
 
 | Element | Destination |
 |---|---|
-| Title | inline edit |
-| Theme chip | inline edit |
-| Goal link chip | inline edit (pick from active goals) |
-| Weekly target stepper (− / +) | inline change |
-| Pause / Resume | inline toggle; sheet stays open |
-| Delete | confirm dialog → delete; × back to caller; Undo snackbar |
-| Drag-down / backdrop | × back to caller |
+| Title | inline edit (tap to enter edit mode) |
+| Theme chip | inline picker opens below; tap to set |
+| Goal link chip | **Display-only in v1** — shows *"none — link one?"* but the picker is not wired up. Known bug — see TASKS.md. |
+| Weekly target stepper (− / +) | inline change (range 1–14) |
+| Pause / Resume | inline toggle; × back to caller |
+| Delete | **Target spec:** confirm dialog → deferred wipe (during Undo window habit + records are restorable; after the snackbar dismisses, the wipe is committed). **Current v1 behavior:** immediate FK-cascading hard-delete with an Undo snackbar that can only recreate an empty habit — streak history is lost. **Known bug — fix planned (see TASKS.md).** |
+| Drag-down / backdrop | × back to caller (dirty fields auto-save on dismiss) |
 
 ---
 
@@ -261,21 +264,22 @@ Full-screen modal, slides up. Reached from any gear icon (top-right of 01/02/03/
 
 | Pattern | Behavior |
 |---|---|
-| Persistent FAB (mic + small +) | Floats over screens 01-04 and Backlog. Hidden on all modals/sheets. |
+| Persistent single FAB | Floats over screens 01-04. Tap → 06 Quick-add. Long-press → 05 Voice listening. Hidden on all modals/sheets. |
 | Bottom tab bar | Visible on screens 01-04 only. Hidden on modals/sheets. |
-| Undo snackbar | App-wide. Shows for ~6s after any destructive action (drop task, delete goal, delete habit, increment-rollback). Tapping "Undo" reverses. |
+| Undo snackbar | App-wide. Shows for ~6s after task-complete, task-delete, habit-increment, habit-delete, and carry-over drop. Tapping "Undo" reverses (note: habit-delete undo currently cannot restore lost streak history — see Known bugs in TASKS.md). Goal mark-hit / abandon do NOT emit Undo in v1. |
 | Sheets dismiss on | (a) drag-down on grip, (b) tap on dimmed backdrop, (c) explicit close/back button |
 | Full-screen modals dismiss on | (a) close X, (b) Cancel button, (c) successful Save (auto-dismiss) |
-| Carry-over ritual is uniquely **blocking** | No dismiss path on screens 12 + 13. App opens straight into it until triage is cleared. |
+| Carry-over ritual is uniquely **blocking** | No dismiss path on screens 12 + 13. App opens straight into it until triage is cleared. Screens 14 (Pull) and 15 (New week) are non-blocking continuation steps. |
 
 ---
 
 ## Entry-point summary
 
-These are the screens a user can reach in one tap from anywhere they typically are:
+These are the screens a user can reach in one tap (or long-press) from anywhere they typically are:
 
-- **Mic FAB** → 05 · Voice listening (from anywhere with the tab bar)
-- **+ FAB** → 06 · Quick-add draft (empty) (from anywhere with the tab bar)
+- **FAB · tap** → 06 · Quick-add draft (empty) — from any primary tab
+- **FAB · long-press** → 05 · Voice listening — from any primary tab
 - **Tab bar** → 01/02/03/04
 - **Gear icon** → Settings (from any primary tab)
-- **Sunday morning, first launch** → 12 · Recap (forced; can't get to 01 without finishing triage)
+- **Sunday morning, first launch** → 12 · Recap → 13 · Triage → 14 · Pull → 15 · New week → 01 · This Week (12+13 are forced; 14+15 are continuation steps)
+- **Overdue goal present on app open** → 16 · Overdue Goal Prompt surfaces as a bottom sheet on top of the current screen

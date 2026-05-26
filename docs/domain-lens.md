@@ -20,7 +20,7 @@
 | **Reminder** | A scheduled notification attached to a task. | task link, schedule spec (one-shot time / recurring pattern), status |
 
 **Non-entities (explicitly):**
-- **AI Coach sessions** — ephemeral. No transcripts saved. Output is the resulting Goal(s); the conversation is process, not data. (Can be revisited as a feature later if needed.)
+- **AI Coach sessions** — the AI Coach feature has been **dropped from scope** (2026-05-24). The direct Add Goal form is sufficient for the user; no advisory chat flow will be built. Any historical references to the Coach in earlier sections are obsolete.
 
 **Theme initial state:** Pre-seed with 3–4 generic placeholder themes (e.g., Health, Career, Personal, Learning). User can delete/rename freely. Reduces empty-state friction without forcing structure.
 
@@ -60,7 +60,7 @@
 - `missed`: target date passed and user chose the didn't-hit option in the prompt.
 - `abandoned`: user chose **"Delete"** in the goal drawer. For goals, **Delete = Abandon** — it is NOT a hard-erase; the goal moves to the graveyard and is kept as history. (Deliberate cross-entity split: "Delete" hard-removes a Task/Habit but abandons a Goal, because goals are long-term reflective objects whose history is valuable — consistent with the early "graveyard is useful data" decision and "never delete user data silently".)
 - **There is no hard-erase of goals in v1.** A mistakenly-created goal can be Edited, or abandoned into the (collapsed, low-volume) graveyard; it is never permanently purged.
-- Abandoning a goal (or it becoming hit/missed) **unlinks its tasks/habits** (goal link cleared, theme link remains) — keeps "tasks toward this goal" surfaces clean.
+- **Goal link on tasks/habits is NOT cleared** when a goal becomes hit/missed/abandoned (v1 behavior, 2026-05-24). The goal moves to the graveyard but linked tasks/habits keep their `goal_id` pointer. Rationale: low-cost trade-off — orphaned chips on a few tasks is acceptable for v1, and the user re-thinks goals periodically anyway, so the cleanup happens naturally. May be revisited if it becomes noisy.
 - Graveyard goals are visible in the Goals tab — Graveyard section. Tapping one opens the drawer with **only "Edit"** (reactivate by setting a future date → back to `active`, subject to the 1+2 cap). Mark-as-hit/Delete do not apply to already-terminal goals.
 - **CRUD surface (resolved 2026-05-15):** Goal Update & lifecycle transitions are hosted by (a) a small **goal action drawer** (tap any goal card → title + Mark as hit / Delete / Edit) and (b) the **dual-mode Add/Edit Goal screen** (Edit opens it pre-filled — title/why/date/theme + promote↔demote via the Primary/Secondary radio, cap enforced on save). This retires the previously-deferred standalone Goal Detail screen.
 
@@ -73,13 +73,15 @@
 
 | Entity | Uniqueness |
 |---|---|
-| Theme | Name unique per user (case-insensitive) — "DJ Career" = "dj career" |
-| Goal | (title, theme) together must be unique — prevents accidental duplicates within a theme |
+| Theme | Name unique per user (case-sensitive in v1 — enforced by DB `unique (user_id, name)`; case-insensitive matching is not enforced in code) |
+| Goal | No business uniqueness in v1 — duplicate titles within a theme are allowed |
 | Task | No business uniqueness — multiple tasks with same title are allowed. Internal ID only. |
-| Habit | (title, theme) together must be unique — no two "Gym" habits in the Fitness theme |
+| Habit | No business uniqueness in v1 — duplicate titles within a theme are allowed |
 | HabitWeekRecord | (habit, week-start-date) is the unique key — exactly one record per habit per week |
-| WeekRecord | week-start-date is unique — exactly one per Sunday |
+| WeekRecord | (user, week-start-date) is unique — exactly one per Sunday |
 | Reminder | Internal ID only |
+
+Note: the earlier "(title, theme) unique" rule for Goal and Habit was relaxed for v1 (2026-05-24). The user is single-user-single-device and prefers tolerating accidental duplicates over hitting a save-blocking error.
 
 ### Derived vs. Stored
 

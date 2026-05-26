@@ -1215,6 +1215,24 @@ Bugs found during testing that haven't been fixed yet. Fix these before or along
   - Investigate: try using `y={cy + fontSize * 0.35}` and no `dominantBaseline`, or render the counter as an absolute-positioned `<Text>` overlay on top of the SVG ring instead.
   - Validate: open app on Android device, habit ring counter sits visually centered inside the circle.
 
+- [ ] **HK-4** Habit delete is irreversible — destroys streak history with no real Undo.
+  - Discovered during 2026-05-26 docs-vs-code audit.
+  - `HabitDetailSheet.handleDelete` calls `useDeleteHabit` which hits `DELETE /habits/:id`. The backend FK-cascades the delete to all `habit_week_records` for that habit. The Undo snackbar that follows only fires `useCreateHabit` (a fresh empty habit with no records), so months of streak data are permanently lost on a stray tap.
+  - The spec (domain-lens.md, ui-brief.md §10, NAVIGATION.md screen 18) calls for: (a) a confirm dialog before delete, and (b) a deferred-wipe pattern where the habit + records are restorable during the Undo snackbar window and only committed-deleted after the snackbar dismisses.
+  - Files involved: `app/app/components/HabitDetailSheet.tsx` (UI), `app/lib/hooks/useHabits.ts` (mutation), `backend/src/routes/habits.ts` (DELETE endpoint), `app/lib/stores/undo-store.ts` (snackbar lifecycle).
+  - Fix plan to be drafted separately for user approval.
+
+- [ ] **HK-5** Empty-state CTAs on This Week are dead.
+  - Discovered during 2026-05-26 docs-vs-code audit.
+  - On a brand-new account with no goals/tasks/habits, This Week renders an empty-state hero with two buttons: "Set my first goal with Coach" and "Add a task" (see `app/app/(tabs)/index.tsx` ~lines 241–258). Neither button has an `onPress` handler — they are pure visual placeholders. The FAB is the only working entry point for first-run users.
+  - Low priority: there is currently only one production user (the project author) and that user is past first-launch. Fix later if onboarding flow is ever revisited.
+
+- [ ] **HK-6** Goal abandon / mark-as-hit doesn't unlink linked tasks or habits.
+  - Discovered during 2026-05-26 docs-vs-code audit.
+  - `POST /goals/:id/mark-hit` and `POST /goals/:id/abandon` only update the goal's status. Tasks and habits with `goal_id` pointing to the now-graveyard goal keep that pointer indefinitely, so they may continue to display a "linked to [dead goal]" badge or be counted in goal-link queries.
+  - Decision 2026-05-24: accept this for v1 — orphan chips are tolerable, and the user re-thinks goals periodically anyway. The earlier domain-lens spec that called for unlinking has been updated to match the current behavior. Revisit only if it becomes noisy in practice.
+  - If fixed later: in both backend handlers, after updating the goal, also issue `UPDATE tasks SET goal_id = NULL WHERE goal_id = $1 AND user_id = $2;` and the same for habits.
+
 ---
 
 ## Post-v1 Parking Lot (do not implement unless explicitly requested)

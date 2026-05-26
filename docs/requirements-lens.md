@@ -39,16 +39,17 @@
 - **If task is completed before reminder fires** → reminder cancelled silently.
 - **Reminders persist across week flips** — a reminder set 3 weeks out survives Sunday flips.
 - **Tapping the notification** → opens the app. No snooze in v1.
+- **Reminder visibility (v1, 2026-05-24 clarification):** reminders are not shown on task cards in This Week / Backlog, but they ARE visible and editable inside the **Task Detail Sheet** (the bottom sheet that opens when tapping a task's title). Settings → Reminders also lists all scheduled reminders with a "Delete all" action. The earlier "reminders are invisible during normal use, only manageable behind gear icon" rule is relaxed: the Task Detail Sheet is considered an acceptable second surface because it's one tap away and contextual to the task itself.
 
 **Reminder capability matrix the AI must support:**
 
 | Capability | Example trigger phrase | v1 status |
 |---|---|---|
-| One-shot at specific time | "Remind me Thursday 9am" | ✓ Required |
-| Relative one-shot | "Remind me in 2 hours", "tomorrow morning" | ✓ Required |
-| Recurring until completed | "Nudge me daily until I do this" | ✓ Required |
-| Recurring on schedule | "Remind me every Monday" | Optional / nice-to-have |
-| Conditional | "If still not done Friday, ping me" | Optional / nice-to-have |
+| One-shot at specific time | "Remind me Thursday 9am" | ✓ Implemented |
+| Relative one-shot | "Remind me in 2 hours", "tomorrow morning" | ✓ Implemented |
+| Recurring until completed | "Nudge me daily until I do this" | ✓ Implemented |
+| Recurring on schedule | "Remind me every Monday", "weekdays", "Mon + Wed" | ✓ Implemented (RRULE `FREQ=WEEKLY;BYDAY=...`) |
+| Conditional | "If still not done Friday, ping me" | Not implemented; optional / nice-to-have |
 
 **AI parsing rules at capture:**
 - AI extracts: item type (task vs. habit), title, theme, effort (task only), return (task only), this-week vs. backlog (task only), weekly count target (habit only), goal link, reminder spec.
@@ -61,8 +62,8 @@
 - **Goal link** auto-applied if theme has a primary milestone.
 - AI **never refuses to create** a draft. Low-confidence fields shown with visual marker (faded text).
 - AI **never auto-saves** — every voice capture produces a draft requiring explicit user confirmation tap.
-- **Multi-item parsing** in one utterance produces N draft cards in sequence. "Save all" option offered.
-- **Voice undo** trigger phrases: "scratch that", "start over", "cancel" → dismiss draft.
+- **Multi-item parsing** in one utterance produces N draft cards in sequence. The user steps through them one at a time using **Save · next**; no "Save all" bulk action is provided in v1.
+- **Voice undo trigger phrases** (e.g., "scratch that", "start over") are **not implemented in v1** — to dismiss a draft, the user taps Cancel.
 
 **Effort/Return priority scoring (for "Recommended" sort on This Week):**
 
@@ -73,20 +74,20 @@
 | **Low return** | Low | Low | Lowest |
 
 - **Recommended sort** = priority score descending, ties broken by added-order (oldest first).
-- Effort: {Low, Medium, High}, required on every task, default Medium.
-- Return: {Low, Medium, High}, required on every task, default Medium.
+- Effort: {Low, Medium, High, Unknown}. The DB and manual creation default to **Unknown**; the AI prompt defaults to **Medium** when inferring from speech with no explicit cue. Unknown tasks are sorted as if they were Medium/Medium.
+- Return: {Low, Medium, High, Unknown}. Same defaulting rule as Effort.
 
 **Goal cap enforcement (max 1 primary + max 2 secondary active):**
 
-**Single enforcement point:** the cap is enforced ONLY at the Add Goal screen, on save. It is the one place goals are created (whether reached directly from the Goals tab or via the Coach's "Create this goal" handoff). The AI Coach does NOT enforce the cap — it may advise on prioritization in conversation, but it has no inline create/save, so all hard enforcement happens once, on the Add Goal save.
+**Enforcement point (v1):** the cap is enforced at the **backend on save**. The Add Goal form sends the request; if the cap would be exceeded, the backend returns `HTTP 400` and the save fails. There is **no inline demote/replace/cancel modal in v1** — the user resolves the conflict manually by going to Goals, deleting (abandoning) an existing goal, then re-saving the new one. Rationale (2026-05-24): the user finds manual conflict resolution acceptable for v1; the modal can be added later if it becomes a friction point.
 
 | Scenario | Rule |
 |---|---|
-| Adding new primary when one exists | Force choice on save (at Add Goal screen): demote current primary to secondary, archive current primary, or cancel the new one. No silent override. |
-| Adding 3rd secondary | Force: replace a specific secondary, promote new to primary (demoting current), or cancel. |
-| Demoting primary when 2 secondaries already exist | Force a drop of one secondary first (would otherwise make 3). |
-| Goal target date passed | Prompt user: *Did you hit this? Extend? Drop?*. Goal moves to archive on "Drop" or "Hit". Never silent deletion. |
-| Manually archiving a goal | Always allowed. Goal → graveyard. All linked tasks **lose the goal link silently**; theme link remains. |
+| Adding new primary when one exists | Backend rejects with `HTTP 400`. User abandons the current primary (or demotes it by editing it) and re-saves. |
+| Adding 3rd secondary | Backend rejects with `HTTP 400`. User abandons one secondary and re-saves. |
+| Demoting primary when 2 secondaries already exist | Save fails. User abandons one secondary first. |
+| Goal target date passed | Prompt user: *Did you hit this? Extend? Drop?*. Goal moves to graveyard on "Mark as hit" or "Abandon"; "Extend" reopens the Edit form. Never silent deletion. |
+| Manually abandoning a goal | Always allowed. Goal → graveyard. Linked tasks/habits **keep their `goal_id` pointer** in v1 (see domain-lens.md — orphan chips are tolerated). |
 
 **Definition of done:**
 - **Task done** = user explicitly marks done (single tap, no confirm modal). Immediately reversible via the **general Undo snackbar** (see below); also re-openable any time within the same week by tapping the done task again. **Not reversible after Sunday flip** — preserves history integrity.
@@ -94,13 +95,7 @@
 - **Habit complete-this-week** = count reaches target (e.g., 4/4). Over-target allowed and shown.
 - **Week complete** = Sunday flip occurs (clock-driven, not user-driven). No "finalize my week" button.
 
-**AI Goal Coach (advisory only — does NOT create, edit, or enforce):**
-- Coach is an **adaptive AI conversation guided by principles**, not a fixed wizard.
-- Principles loaded: force the "when"; distinguish one-time milestones from continuous direction (latter is a habit, redirect); identify compounding opportunities; spot low-effort/high-return candidates as secondary goal candidates; push back on vagueness; advise on prioritization within the 1 primary + max 2 secondary focus; distinguish "truly important" goals from "no-brainer compounding bet" goals.
-- Coach mode auto-selected by state: **no active goals** → creation mode; **existing goals** → review/prune mode.
-- **The coach never creates or edits a goal.** It concludes with a plain-prose summary of the recommended goal and a single "Create this goal" button that opens the Add Goal screen pre-filled from the conversation. The user reviews and saves there.
-- **The coach does NOT enforce the cap.** It may advise in prose that a new goal would require demoting/dropping another, but the hard 1+2 enforcement (demote/drop/cancel modal) happens solely at the Add Goal screen on save. No inline overflow handling in chat.
-- Coach for **goals only in v1**, not tasks.
+**AI Goal Coach: DROPPED FROM SCOPE (2026-05-24).** The Coach feature is no longer planned for v1. The direct Add Goal form is sufficient. Any earlier mention of "Coach me on a goal", coach modes, principles, or the "Create this goal" handoff is obsolete.
 
 ### Hard Constraints / Negative Requirements (Must NOT)
 
@@ -119,13 +114,14 @@
 | Trigger | Effect |
 |---|---|
 | Sunday 00:00 local | Week flip: habit counts → 0, streaks update, last week archives, carry-over flag set |
-| User opens app while a carry-over flag is set | Mandatory blocking carry-over ritual: recap → per-task triage (re-appears every app open until fully triaged; no skip/dismiss) → optional non-blocking pull-from-backlog → start week |
-| 09:00 local each day | Habit danger-zone check; fires nudge if formula matches (max once per habit per week) |
+| User opens app while a carry-over flag is set | Mandatory blocking carry-over ritual: recap → per-task triage (re-appears every app open until fully triaged; no skip/dismiss) → optional non-blocking pull-from-backlog → "new week" celebration → This Week |
+| ~09:00 local each day (via Render Cron) | `POST /jobs/habit-nudges` runs; danger-zone formula evaluated; nudge fired if matched (max once per habit per week). The 09:00 timing is enforced by the cron schedule, not by code-side time-of-day checks. |
+| Every ~5 minutes (via Render Cron) | `POST /jobs/dispatch-reminders` runs; due one-shot and recurring reminders sent via Expo Push. |
 | Task completed before reminder fires | Reminder cancelled silently |
 | Voice utterance submitted | AI parses → draft card(s) presented for confirmation |
 | User confirms draft | Item saved to system |
-| Goal target date passes | Prompt: *Did you hit this? Extend? Drop?* |
-| User exceeds goal cap (on Add Goal save — the single enforcement point; never in the Coach chat) | Force choice modal — demote/drop/cancel |
+| Goal target date passes | App surfaces an Overdue Goal bottom-sheet prompt with: *Mark as hit / Extend (re-opens Edit form) / Abandon*. |
+| User exceeds goal cap on Add Goal save | Backend returns `HTTP 400`; the form shows a generic error. User must abandon an existing goal manually and retry. |
 | Recurring "until done" reminder fires daily | Fires until task is marked done, then auto-cancels |
 
 ### Concurrency

@@ -317,3 +317,12 @@ create trigger set_updated_at_reminders before update on reminders for each row 
 create trigger set_updated_at_notification_tokens before update on notification_tokens for each row execute function set_updated_at();
 create trigger set_updated_at_carry_over_rituals before update on carry_over_rituals for each row execute function set_updated_at();
 create trigger set_updated_at_carry_over_task_decisions before update on carry_over_task_decisions for each row execute function set_updated_at();
+
+-- ============================================================
+-- 007: Habit soft-delete
+-- ============================================================
+
+alter table habits add column if not exists deleted_at timestamptz;
+
+create index if not exists habits_deleted_at_idx on habits (deleted_at)
+  where deleted_at is not null;

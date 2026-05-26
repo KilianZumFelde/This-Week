@@ -8,12 +8,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius } from '../../lib/tokens';
 import { Icon } from './Icon';
-import { Habit, HabitWeekRecord, useUpdateHabit, useDeleteHabit, useCreateHabit } from '../../lib/hooks/useHabits';
+import { Habit, HabitWeekRecord, useUpdateHabit, useDeleteHabit, useRestoreHabit } from '../../lib/hooks/useHabits';
 import { Theme } from '../../lib/hooks/useThemes';
 import { useUndoStore } from '../../lib/stores/undo-store';
 
@@ -87,7 +88,7 @@ export function HabitDetailSheet({ habit, weekRecord, themes, onClose }: Props) 
   const insets = useSafeAreaInsets();
   const updateHabit = useUpdateHabit();
   const deleteHabit = useDeleteHabit();
-  const createHabit = useCreateHabit();
+  const restoreHabit = useRestoreHabit();
   const showUndo = useUndoStore((s) => s.show);
 
   const [title, setTitle] = useState('');
@@ -132,18 +133,26 @@ export function HabitDetailSheet({ habit, weekRecord, themes, onClose }: Props) 
 
   function handleDelete() {
     if (!habit) return;
-    const snap = { ...habit };
-    deleteHabit.mutate(habit.id);
-    showUndo({
-      label: `"${snap.title}" deleted`,
-      undo: () =>
-        createHabit.mutate({
-          theme_id: snap.theme_id,
-          title: snap.title,
-          weekly_target: snap.weekly_target,
-        }),
-    });
-    onClose();
+    Alert.alert(
+      'Delete habit?',
+      'This will remove the habit and its history. You have a few seconds to undo.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            const snap = { ...habit };
+            deleteHabit.mutate(snap.id);
+            showUndo({
+              label: `"${snap.title}" deleted`,
+              undo: () => restoreHabit.mutate({ id: snap.id, previous_status: snap.status }),
+            });
+            onClose();
+          },
+        },
+      ],
+    );
   }
 
   const activeTheme = themes.find((t) => t.id === themeId);

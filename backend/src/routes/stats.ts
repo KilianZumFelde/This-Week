@@ -54,6 +54,7 @@ export async function statsRoutes(fastify: FastifyInstance) {
       .select('id, title, current_streak, best_streak')
       .eq('user_id', request.userId)
       .eq('status', 'active')
+      .is('deleted_at', null)
       .order('sort_order', { ascending: true });
 
     if (error) return reply.status(500).send({ error: error.message });

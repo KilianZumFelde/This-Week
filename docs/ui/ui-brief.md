@@ -76,11 +76,9 @@ Key feel: **calm, warm, quietly-serious, soft-modern minimalism**. Closer to a t
 
 **Top-right gear icon** on the This Week screen (and other primary screens) → opens Settings (full-screen, slides up).
 
-**Floating mic button** (terracotta FAB) at bottom-right above the tab bar — persistent across all primary tabs. Tapping starts voice capture.
+**Single floating action button (FAB)** — terracotta, bottom-right above the tab bar, persistent across all primary tabs. **Tap → quick-add modal** (manual entry with empty fields, defaults to this-week or backlog based on the active tab). **Long-press (~300ms) → voice listening overlay** (AI parses speech into draft cards). Decision 2026-05-24 — single button with a press-and-hold gesture for voice replaces the earlier "mic FAB + smaller + button" dual-FAB design.
 
-**Floating "+" button** smaller, paired left of the mic button — opens the same draft card flow with empty fields, for manual entry.
-
-Modal patterns: bottom sheets for quick edits (task detail, habit detail), full-screen modals for complex flows (AI Coach, Add Goal, carry-over triage).
+Modal patterns: bottom sheets for quick edits (task detail, habit detail, goal action drawer, overdue goal prompt), full-screen modals for complex flows (Add Goal, carry-over ritual screens, voice listening, quick-add).
 
 ---
 
@@ -91,19 +89,18 @@ Modal patterns: bottom sheets for quick edits (task detail, habit detail), full-
 **Purpose**: The day-to-day landing view. Shows the active primary milestone, this week's habits with progress, this week's tasks grouped by theme, and a collapsed Done section. Designed so the user opens the app and sees "what matters right now" with zero taps.
 
 **Layout hierarchy**:
-1. **Hero**: Primary milestone card at top — single line title, soft gradient background, small badge "5 tasks this week toward this goal". Tap to expand into just those tasks.
-2. **Habits section**: Horizontal scrollable row OR vertical compact list of habit cards, each showing title, theme chip, weekly count (e.g., *2/4*), and a circular progress indicator. **Tap the progress ring → increment count; tap the card's text area (name/theme) → open Habit Detail/Edit.** Two hit-targets, no added chrome. Subtle gold glow when target hit (4/4). Accidental increment is reverted via the app-wide Undo snackbar.
-3. **Tasks section**: Grouped by theme with collapsible theme section headers. Each task card shows: checkbox/circle, title, theme chip, effort chip, return chip, optional milestone link badge. Single tap on the circle = mark done; tap on the title body = open edit sheet.
-4. **Sort toggle** above tasks: *Recommended* (default — priority score, low-effort/high-return floats top) / *By theme* / *Added order*.
+1. **Hero**: Primary milestone card at top — single-line title, flat warm-surface background (no gradient; React Native limitation, surface-tone-on-surface is the substitute), small target-date pill ("by Sept 2026") and a "N tasks this week toward this" line.
+2. **Habits section**: vertical compact list of habit cards, each showing title, theme chip, weekly count (e.g., *2/4*), and a circular progress ring. **Tap the progress ring → increment count; tap the card's text area (name/theme) → open Habit Detail/Edit.** Two hit-targets, no added chrome. When the target is hit a calm gold "HIT" label appears on the row (no animation in v1). Accidental increment is reverted via the app-wide Undo snackbar. Section header shows "N/M on target" tally.
+3. **Tasks section**: **Flat list sorted by priority score** (effort × return; high-return/low-effort floats top). No theme grouping on This Week. Each task card shows: circle (tap = mark done) + title + theme chip, with a **colored vertical priority stripe** down the left edge (gold = top, mid grey = mid, dim = low). **Effort and return chips are NOT shown on the card** — they live in the Task Detail sheet. The optional milestone-link badge is also not shown on the card; goal membership is implicit via the milestone hero count. Tap the title body to open the Task Detail sheet.
+4. **No sort toggle on This Week** (removed 2026-05-24 — priority sort is always on). The Backlog tab retains a sort toggle (theme / priority / recent).
 5. **Done section** (bottom, collapsed by default): "Done (N)" header — expandable to reveal struck-through completed tasks for the week.
 
 **Key UI elements**:
-- Milestone hero card with target date badge ("by Sept 2026") and tasks-toward-goal count
-- Habit cards with circular progress + count text
-- Task cards with theme chip + effort chip + return chip + optional goal link icon
-- Sort toggle (segmented control)
+- Milestone hero card with target date pill and tasks-toward-goal count
+- Habit cards with circular progress ring + count text + gold "HIT" badge when target met
+- Task cards with theme chip + colored priority stripe (no effort/return/goal chips on the card)
 - Collapsible Done section
-- Persistent mic FAB (terracotta) + smaller "+" button bottom-right
+- Persistent single FAB bottom-right (tap = quick-add, long-press = voice)
 - Bottom tab bar
 - Gear icon top-right (Settings)
 
@@ -114,8 +111,8 @@ Modal patterns: bottom sheets for quick edits (task detail, habit detail), full-
 - Done tasks where (week = current AND status = done)
 
 **Variant states**:
-- **Empty (first-launch, no goals/tasks/habits)**: A calm hero illustration + warm copy: *"This is your week. Start by setting your first goal — or just add a task."* Two CTAs: *"Set my first goal (with AI Coach)"* and *"Add a task"*. No mock data.
-- **Empty (has goals but no tasks/habits this week)**: Milestone card shows alone; below it, *"No tasks or habits for this week yet. Tap the mic or + to add."*
+- **Empty (first-launch, no goals/tasks/habits)**: A calm hero illustration + warm copy: *"This is your week. Start by setting a goal you actually want to work toward — or just add a task."* Two CTAs: *"Set my first goal with Coach"* (visual label retained — Coach feature itself is dropped) and *"Add a task"*. **Known v1 bug:** these CTAs do not currently navigate anywhere; the FAB is the working entry point.
+- **Empty (has goals but no tasks/habits this week)**: Milestone card shows alone with a *"N tasks this week"* line; user adds via the FAB.
 - **Loading**: Skeleton placeholders shaped like cards — same dimensions, no shimmer animation, just a calm muted fade.
 - **Error (data load failed)**: Inline message *"Couldn't load this week. Pull down to retry."* with manual refresh.
 
@@ -147,30 +144,30 @@ Modal patterns: bottom sheets for quick edits (task detail, habit detail), full-
 
 ### 3. Goals
 
-**Purpose**: Manage active goals (primary + up to 2 secondaries), launch the AI Coach for definition or review, browse the graveyard of past goals.
+**Purpose**: Manage active goals (primary + up to 2 secondaries), add new goals directly, browse the graveyard of past goals.
 
 **Layout hierarchy**:
-1. **Primary section** at top: the single primary goal as a large card — title, target date, optional "why" excerpt, linked tasks/habits count, subtle progress signal.
-2. **Secondaries section**: up to 2 secondary goal cards, slightly smaller than the primary.
-3. **CTAs**: *"+ Add Goal"* (direct form) and *"🪄 Coach me on a goal"* (opens AI Coach modal).
-4. **Graveyard section** (collapsed by default): "Past goals (N)" — expands to reveal hit / missed / abandoned goals with their resolution status.
+1. **Primary section** at top: header "Primary · N of 1"; the single primary goal as a card showing eyebrow (`theme · by Mon Year`), title, optional "why" excerpt, tasks-this-week + habits-linked counts, and a "N mo left" badge.
+2. **Secondaries section**: header "Secondary · N of 2 slots"; up to 2 secondary goal cards, slightly smaller styling than the primary.
+3. **Buttons row**: two side-by-side buttons — **"Add directly"** (ghost button, opens Add Goal form) and **"Coach me"** (primary accent button — currently a visible-but-non-functional button; the Coach feature was dropped 2026-05-24. May be removed in a later code cleanup pass).
+4. **Graveyard section** (collapsed by default): "Past goals (N)" — expands to reveal hit / abandoned / missed goals with their resolution label and date.
 
-**Interaction**: tapping any goal card (primary, secondary, or a graveyard goal) opens the **Goal Action Drawer** (see its screen). Active goals → drawer with Mark as hit / Delete / Edit. Graveyard goals → drawer with Edit only (reactivate).
+**Interaction**: tapping any goal card (primary, secondary, or a graveyard goal) opens the **Goal Action Drawer** (see its screen). Active goals → drawer with Mark as hit / Delete / Edit. Graveyard goals → drawer with Reactivate (re-opens Edit form, subject to cap).
 
 **Key UI elements**:
-- Primary goal hero card (larger, with soft gradient — same accent treatment as milestone hero on This Week); tappable → drawer
-- Secondary goal cards (medium size); tappable → drawer
-- Two CTA buttons — Add Goal (secondary button style) and Coach me (primary accent button)
-- Graveyard collapsible section with each past goal showing title, target date, and resolution state (hit / missed / abandoned); tappable → drawer (Edit-to-reactivate)
+- Primary goal card (warm-surface background; no gradient in v1); tappable → drawer
+- Secondary goal cards (similar style, lighter eyebrow color); tappable → drawer
+- Two buttons — Add directly (ghost) and Coach me (accent, non-functional placeholder for now)
+- Graveyard collapsible section with each past goal showing resolution label (Hit / Abandoned / Missed), title, and a date; tappable → drawer (Reactivate)
 
 **Dynamic content shown**:
 - All **Goals** with status = active, sorted: primary first, then secondaries
-- All **Goals** with status in {hit, missed, abandoned} in the graveyard
+- All **Goals** with status in {completed, archived} in the graveyard (`completed` = hit, `archived` = abandoned)
 
 **Variant states**:
-- **Empty (no goals at all)**: Calm hero — *"You haven't set a goal yet. Want help thinking through one?"* with a single big *"🪄 Start with AI Coach"* button + smaller *"Or add directly"* link.
-- **Has secondaries but no primary**: Visible prompt *"You don't have a primary goal — want to promote one?"*
-- **Goal cap reached** (1 primary + 2 secondaries): Add buttons grayed out OR active but tapping shows the demotion-choice modal.
+- **Empty (no primary)**: section shows the "No primary goal yet — add one below." inline hint.
+- **Empty (no secondaries)**: section shows "No secondary goals yet." inline hint.
+- **Goal cap reached** (1 primary + 2 secondaries): Add Goal form save returns `HTTP 400`. The user is expected to abandon an existing goal manually and retry. (No demote/replace/cancel modal in v1.)
 - **Loading / error**: Standard.
 
 ---
@@ -180,25 +177,25 @@ Modal patterns: bottom sheets for quick edits (task detail, habit detail), full-
 **Purpose**: Show the user they're making progress toward their goal — using plain raw counts, not percentages. This week's tasks-done and habits-on-target fractions, habit streaks (current + best ever), and a browseable past-week history. No per-theme breakdown — the app focuses on the goal, not on optimizing a theme.
 
 **Layout hierarchy**:
-1. **Top summary band**: a large calm raw-count line — `This week — 12/15 tasks · 2/3 habits` (plain fractions, no percentages), with a best-ever streak callout beside it if any.
-2. **Habit streaks panel**: Each active habit with its current streak (e.g., *Gym — 8 weeks*) and best-ever (*Best: 12*).
-3. **Past weeks browser**: Scrollable list of small WeekRecord cards (most recent first). Each card: week date range + the same two fractions (`May 4–10 · 11/14 tasks · 3/3 habits`), tap to expand into that week's completed tasks + habit results.
+1. **Top summary band ("This week" hero)**: two large fractions side-by-side — `tasks done` and `habits on target` (plain fractions, no percentages). If any active habit's current streak equals its best-ever streak (and is > 0), a calm gold **"New best — {title} {n} weeks running"** callout appears beneath.
+2. **Habit streaks panel**: each active habit as a row with its name, current streak (e.g., *8 wk*) and best-ever (*best 12*). New-best rows have a gold accent on the current value.
+3. **Past weeks browser**: scrollable list of small WeekRecord rows (most recent first). Each row: week date range + the two fractions (`May 4–10 · 11/14 tasks · 3/3 habits`). **Rows are non-interactive in v1** — no tap-to-expand into per-week tasks (deferred).
 
 **Key UI elements**:
-- Large raw-count line (top hero spot): tasks fraction · habits fraction
-- Habit streak cards (small) with current + best-ever
-- Past weeks list of small cards (scrollable, expandable rows)
-- Small subtle gold accents on hit-target streaks; no aggressive celebration UI; no charts; no generated insight sentences; no invented week titles
+- Hero card (top): tasks fraction + habits fraction + optional "New best" callout
+- Habit streak rows with current + best-ever
+- Past weeks list of small static rows (scrollable, non-expandable)
+- Small gold accents on new-best streaks; no aggressive celebration UI; no charts; no generated insight sentences; no invented week titles
 
 **Dynamic content shown**:
-- Current week **tasks fraction** = done tasks / total tasks for the current WeekRecord
+- Current week **tasks fraction** = done tasks / total tasks for the current week
 - Current week **habits fraction** = habits that hit their weekly target / total active habits that week
 - All active **Habits** with current and best-ever streak values
-- All **WeekRecords** historically (date range + the two fractions), expandable to show their archived tasks + HabitWeekRecords
+- All **WeekRecords** historically (date range + the two fractions)
 
 **Variant states**:
-- **Empty (no historical data, first week)**: *"Stats will show up here once you've completed your first week."* + small inline preview illustration.
-- **No habits**: habit fraction in the top line shows "—"; streak panel hidden entirely.
+- **Empty (no historical data, first week)**: *"No past weeks yet — check back after the first Sunday rollover."*
+- **No habits**: streak panel shows "No active habits yet."
 - **Loading / error**: Standard.
 
 ---
@@ -233,60 +230,38 @@ Modal patterns: bottom sheets for quick edits (task detail, habit detail), full-
 
 ---
 
-### 6. AI Coach Conversation (full-screen modal)
+### 6. AI Coach Conversation — DROPPED FROM SCOPE (2026-05-24)
 
-**Purpose**: Conversational AI-driven flow for goal definition (when no goals) or goal review (when goals exist). Adaptive, principle-guided, supports voice throughout.
-
-**Layout hierarchy**:
-1. Top bar with **close (X)** button + title *"Goal Coach"*.
-2. **Conversation thread** — message bubbles, AI on left, user on right. Soft-rounded bubbles, warm. The coach is **purely advisory**: it never creates or edits a goal inline. AI messages are plain prose + principle callouts only — no inline editable goal cards.
-3. Bottom **input bar**: text field + persistent mic button. Voice is the encouraged input.
-4. When the conversation concludes, the AI posts a **final summary message in plain prose** stating the recommended goal, followed by a single **"Create this goal"** button beneath the thread. Tapping it opens the standard **Add Goal screen pre-filled** from the conversation — the user reviews and saves there. There is no in-chat "Accept" and no inline editable card.
-
-**Key UI elements**:
-- Chat-style message thread (asymmetric bubbles)
-- Final summary message (plain prose) + a single *"Create this goal"* button → opens Add Goal pre-filled
-- Bottom input bar with mic button (prominent)
-- Close button (X) top-left
-- *"Restart conversation"* secondary action if the user wants to wipe and start over
-
-**Dynamic content shown**: Real-time conversational AI output, conditioned by user's existing Goals + Themes context. The AI is loaded with principles (force the "when"; distinguish milestones vs. continuous direction; spot compounding opportunities; advise on prioritization within the 1+2 cap). Note: the coach only *advises* on the cap in conversation — the hard cap is enforced solely at the Add Goal screen (single enforcement point), never inside the chat.
-
-**Variant states**:
-- **No existing goals (creation mode)**: Opens with *"Let's figure out what you actually want to work toward."*
-- **Existing goals (review mode)**: Opens with *"Let's check in on your current goals."* — shows current goals as context cards above the thread.
-- **Cap exceeded scenario**: The coach may *mention* in prose that creating this will mean demoting/dropping another goal, but it does NOT present a choice card — the demotion-choice modal lives only on the Add Goal screen, triggered on save.
-- **Loading**: Typing indicator (subtle 3-dot animation).
-- **Error / AI unreachable**: *"Coach is offline right now. You can still add a goal directly."* + button to switch to Add Goal form.
+The AI Coach conversational feature is no longer planned for v1. The direct Add Goal form (Screen 7) is the only goal-creation path. The "Coach me" button on the Goals screen is currently a non-functional placeholder and may be removed in a later code cleanup pass.
 
 ---
 
 ### 7. Add Goal Form (full-screen modal)
 
-**Purpose**: The single goal-creation screen. Reached two ways: directly from the Goals tab (empty fields, for users who already know what they want) OR from the Coach's "Create this goal" button (every field pre-filled from the conversation — user reviews and saves). This is also the **single enforcement point for the 1+2 goal cap** (the cap-exceeded modal triggers here on save, never in the Coach chat).
+**Purpose**: The single goal-creation/editing screen. Reached from the Goals tab "Add directly" button (empty) or from any goal-action drawer's "Edit" / "Reactivate" action (pre-filled).
 
 **Layout hierarchy**:
-1. Top bar with close (X) + title *"New Goal"*.
-2. **Title** field (large).
-3. **Target date** field — required. Quick-select chips (*3 months* / *6 months* / *1 year* / *Custom*) above a native date picker.
-4. **Type** radio: *Primary* / *Secondary*. Default based on current state (Primary if none exists, else Secondary).
-5. **Theme** dropdown — AI suggests based on title; user can change.
-6. **Optional "why"** — multi-line text field, smaller, labeled *"Why does this matter? (optional)"*.
-7. Bottom bar: *Cancel* / *Save*. Save disabled until title + target date are filled.
+1. Top bar with close (X) on the left, screen title in the middle ("New goal" or "Edit goal"), Save button on the right.
+2. **Goal title** field (large serif input, multiline).
+3. **Target date** — required. **Quick-select chips only**: *1 month / 2 months / 3 months / 6 months / 1 year*. No "Custom" chip and no native date picker in v1. The currently-selected preset's resolved date is displayed below the chip row in a compact pill ("tap to refine" hint is currently decorative).
+4. **Type** radio: *Primary* / *Secondary*. The current code defaults to Primary for new goals; backend will reject the save if the cap is exceeded.
+5. **Theme** dropdown — pick from existing themes; "None" is allowed. No AI suggestion in v1.
+6. **Optional "why"** — multi-line text field labeled *"Why does this matter? (optional)"*.
+7. Bottom bar: *Cancel* / *Save goal*. Save disabled until title + target date are filled.
 
 **Key UI elements**:
-- Large title input
-- Date picker with quick-select chips above
+- Large serif title input
+- Five date-preset chips (no Custom)
 - Primary/Secondary radio
-- Theme dropdown
+- Theme dropdown with "None" option
 - Optional "why" textarea
-- Cancel / Save buttons
+- Cancel / Save goal buttons
 
-**Dynamic content shown**: Pre-fills nothing on direct entry; AI-suggested theme appears once title has enough content.
+**Dynamic content shown**: Pre-fills nothing on direct entry; pre-fills all fields when editing or reactivating an existing goal.
 
 **Variant states**:
-- **Cap exceeded on save**: Modal appears: *"You already have a primary goal. What would you like to do?"* — options: Demote current primary, Archive current primary, Cancel.
-- **Required field missing**: Save disabled; subtle hint visible.
+- **Cap exceeded on save**: Backend returns `HTTP 400`; the form surfaces a generic error. **No demote/replace/cancel modal in v1.** User dismisses, goes to Goals, abandons one existing goal, then re-saves.
+- **Required field missing**: Save disabled; *"Title + target date are required."* hint visible.
 - **Saving / error**: Standard.
 
 ---
@@ -321,22 +296,23 @@ Modal patterns: bottom sheets for quick edits (task detail, habit detail), full-
 
 ### 9. Task Detail / Edit (bottom sheet)
 
-**Purpose**: Open from any task tap (on the title body, not the checkbox). Lets the user edit any field "right then and there", or move/drop/defer the task.
+**Purpose**: Open from any task tap (on the title body, not the checkbox). Lets the user edit any field "right then and there", or move/delete the task.
 
 **Layout hierarchy**:
-1. Title (large, editable inline)
-2. Field chips (same as draft card): Theme / Effort / Return / Week assignment / Goal link / Reminder
-3. Below: action row — *Move to backlog* / *Delete* (no separate "Drop" — "Drop" is only the gentle triage-context word for this same remove-the-task operation; general Undo snackbar covers accidental removal)
-4. Sheet dismisses on drag-down or backdrop tap.
+1. Title (large, editable inline — tap to enter edit mode)
+2. Field chips: **Theme / Effort / Return / Week** — tapping a chip opens an inline picker (single tap to set, no nested modal).
+3. **Reminder row**: shows "No reminder set / Tap to add one" or the current reminder summary. Tapping opens an inline reminder editor with a text field and a mic button (long-press the mic for voice). The text is sent to `/ai/parse-reminder` which returns a structured spec saved to the reminder for that task. Reminders ARE visible here (in-detail-sheet) — this is the accepted second surface beyond Settings → Reminders.
+4. Action row: *Move to backlog* / *Delete*. Delete is **immediate** (no confirm dialog — tasks are low-stakes, the Undo snackbar is the safety net). Footer note: *"Accidental? An Undo snackbar appears for ~6s after any remove."*
+5. Sheet dismisses on drag-down or backdrop tap (dirty fields are saved on dismiss).
 
 **Key UI elements**:
 - Editable title field
-- Tappable field chips
-- Inline reminder edit (opens voice/text input)
-- Action row (smaller buttons, tertiary-style)
+- Tappable field chips with inline pickers
+- Inline reminder editor (text input + mic for voice)
+- Action row (Move to backlog / Delete)
 - Bottom sheet handle
 
-**Dynamic content shown**: The full state of the selected Task entity.
+**Dynamic content shown**: The full state of the selected Task entity + its current scheduled reminder if any.
 
 **Variant states**: Standard editing states; no special variants needed.
 
@@ -347,26 +323,24 @@ Modal patterns: bottom sheets for quick edits (task detail, habit detail), full-
 **Purpose**: Edit habit fields, pause/resume, or delete. Also shows the habit's streak history at a glance. Opened by tapping a habit card's **text area (name/theme)** — the progress ring is reserved for incrementing, never opens this sheet.
 
 **Layout hierarchy**:
-1. Title (editable inline)
-2. Theme chip
-3. Weekly count target (editable — number stepper)
-4. Optional goal link chip
-5. **Streak block**: current streak + best-ever, displayed prominently
-6. Action row: *Pause / Resume* / *Delete*
+1. Title (editable inline — tap to enter edit mode)
+2. Theme chip (tap to change) + Goal link chip (visible but currently displays *"none — link one?"*; the picker is not wired up in v1)
+3. Weekly count target (editable via −/+ number stepper, range 1–14)
+4. **Streak block**: gold flame icon + "Streak" eyebrow; current streak (large gold serif number) + best-ever streak (smaller); an 8-week dot row showing recent weeks (gold = hit, dim = miss), with labels "8 wk ago" / "this week"
+5. Action row: *Pause / Resume* / *Delete*
 
 **Key UI elements**:
 - Editable title
-- Theme chip
+- Theme chip (interactive) + Goal link chip (display-only in v1)
 - Number stepper for weekly count target
-- Goal link chip
-- Streak block (current + best, with gold accent on best)
-- Pause/Resume toggle, Delete button (delete shows confirm dialog)
+- Streak block (current + best + 8-week dot row)
+- Pause/Resume toggle, Delete button
 
-**Dynamic content shown**: Full state of selected Habit entity + most recent HabitWeekRecords for context.
+**Dynamic content shown**: Full state of selected Habit entity + current week's HabitWeekRecord (used for the right-most dot in the 8-week row).
 
 **Variant states**:
-- **Paused habit**: Pause button shows as Resume; streak block displays *"Streak: 4 (paused)"* in muted color.
-- **Confirming delete**: Inline alert — *"This will permanently delete the habit and all its weekly history. Confirm?"*
+- **Paused habit**: Pause button shows as Resume; row in the parent list dims to 0.45 opacity with a *"PAUSED"* badge inline next to the title.
+- **Confirming delete (target spec, not yet implemented in v1):** an inline alert should read *"This will permanently delete the habit and all its weekly history. Confirm?"* and the actual record-wipe should be deferred until the Undo snackbar window closes. **Currently in code:** delete is immediate, FK-cascading hard-delete of the habit and all `habit_week_records`; the Undo snackbar recreates an empty habit but cannot restore lost streak history. See Known bugs in TASKS.md — fix planned.
 
 ---
 
@@ -440,4 +414,50 @@ Modal patterns: bottom sheets for quick edits (task detail, habit detail), full-
 
 **Status**: Removed from scope (decision 2026-05-15) — judged too much for v1. Parked, not lost; can be revisited later.
 
-**First-run experience instead**: there is no onboarding flow. A brand-new user lands directly on **This Week** in its empty state (see Screen 1 — *"Empty (first-launch, no goals/tasks/habits)"*: calm hero + *"Set my first goal (with AI Coach)"* / *"Add a task"* CTAs). That empty state now carries the entire first-run job — orientation happens by doing, not by a swipe tour.
+**First-run experience instead**: there is no onboarding flow. A brand-new user lands directly on **This Week** in its empty state (see Screen 1). That empty state carries the entire first-run job — orientation happens by doing, not by a swipe tour. **Known v1 bug:** the empty-state CTAs are visible but not wired to navigate; the FAB is the working entry point. See Known bugs in TASKS.md.
+
+---
+
+### 15. New Week Celebration (full-screen)
+
+**Purpose**: A calm transition moment between completing the Sunday set-up ritual and entering This Week. Marks the shift from "review last week" to "execute this week" so it feels deliberate, not abrupt.
+
+**Layout hierarchy**:
+1. Eyebrow text: "NEW WEEK" (small terracotta).
+2. Large serif heading: "New week, fresh start." (two lines).
+3. Subtitle: "You know what to do."
+4. Bottom button: "Let's go" (primary accent, full width) → replaces stack with This Week.
+
+**Key UI elements**:
+- Eyebrow + large serif heading + soft subtitle
+- Single primary button at the bottom
+
+**Dynamic content shown**: Static copy. No dynamic data.
+
+**Variant states**: None.
+
+---
+
+### 16. Overdue Goal Prompt (bottom sheet)
+
+**Purpose**: Surfaces when the user opens the app and an active goal's `target_date` is in the past. Lets the user resolve the overdue goal in three ways without ever silently deleting it.
+
+**Layout hierarchy**:
+1. Eyebrow: "{Primary|Secondary} goal · past target date" (terracotta).
+2. Large goal title (serif).
+3. Sub-text: "Target was {Month Day, Year}".
+4. Question: "Did you reach this goal?"
+5. Three action rows:
+   - **Mark as hit** (sage tone) — *"Move to past goals — well done."*
+   - **Extend** (accent tone) — *"Reopen the form to push the target date."* — closes the sheet and opens the Add Goal form pre-filled in Edit mode.
+   - **Abandon** (brick tone) — *"Move to past goals as abandoned."*
+6. Footer: *"Tap outside to dismiss for now."* — dismissing the sheet only dismisses for the session; the prompt re-appears next launch until the goal is resolved.
+
+**Key UI elements**:
+- Goal preview block (eyebrow + title + target date)
+- Three action rows with icons and sub-text
+- Tap-outside-to-dismiss backdrop
+
+**Dynamic content shown**: First overdue active goal (by `target_date < today`) not yet dismissed in this session.
+
+**Variant states**: None (single template; only changes by goal data).

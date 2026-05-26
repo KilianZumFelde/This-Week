@@ -110,3 +110,15 @@ export function useDeleteHabit() {
     },
   });
 }
+
+export function useRestoreHabit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, previous_status }: { id: string; previous_status: string }) =>
+      api.post<Habit>(`/habits/${id}/restore`, { previous_status }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['habits'] });
+      qc.invalidateQueries({ queryKey: ['stats'] });
+    },
+  });
+}

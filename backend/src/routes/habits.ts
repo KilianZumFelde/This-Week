@@ -37,6 +37,7 @@ export async function habitsRoutes(fastify: FastifyInstance) {
       .from('habits')
       .select('*')
       .eq('user_id', request.userId)
+      .is('deleted_at', null)
       .order('sort_order', { ascending: true });
 
     if (status) {
@@ -111,15 +112,36 @@ export async function habitsRoutes(fastify: FastifyInstance) {
   fastify.delete('/habits/:id', { preHandler: [authenticate] }, async (request, reply) => {
     const { id } = request.params as { id: string };
 
-    // Hard delete: cascades to habit_week_records via FK
+    // Soft-delete: preserves streak history for Undo window
     const { error } = await supabase
       .from('habits')
-      .delete()
+      .update({ deleted_at: new Date().toISOString(), status: 'archived' })
       .eq('id', id)
-      .eq('user_id', request.userId);
+      .eq('user_id', request.userId)
+      .is('deleted_at', null);
 
     if (error) return reply.status(500).send({ error: error.message });
     return reply.status(204).send();
+  });
+
+  fastify.post('/habits/:id/restore', { preHandler: [authenticate] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const { previous_status } = (request.body ?? {}) as { previous_status?: string };
+    const restoredStatus =
+      previous_status === 'paused' ? 'paused' : 'active';
+
+    const { data, error } = await supabase
+      .from('habits')
+      .update({ deleted_at: null, status: restoredStatus })
+      .eq('id', id)
+      .eq('user_id', request.userId)
+      .not('deleted_at', 'is', null)
+      .select()
+      .single();
+
+    if (error) return reply.status(500).send({ error: error.message });
+    if (!data) return reply.status(404).send({ error: 'Not found or not deleted' });
+    return data;
   });
 
   fastify.post('/habits/:id/increment', { preHandler: [authenticate] }, async (request, reply) => {

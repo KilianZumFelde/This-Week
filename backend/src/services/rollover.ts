@@ -101,7 +101,8 @@ export async function performRollover(
     .from('habits')
     .select('id, target_count, current_streak, best_streak')
     .eq('user_id', userId)
-    .eq('status', 'active');
+    .eq('status', 'active')
+    .is('deleted_at', null);
 
   const habits = activeHabits ?? [];
 

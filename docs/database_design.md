@@ -191,6 +191,16 @@ unknown
 
 Primary v1 platform is Android.
 
+### theme_mode
+
+```txt
+dark
+light
+system
+```
+
+Stored on `user_settings.theme_mode`. Not currently a Postgres enum or CHECK constraint — validated at the backend layer (Zod) on update.
+
 ---
 
 ## Tables
@@ -668,7 +678,8 @@ create index ai_capture_logs_user_created_idx on ai_capture_logs(user_id, create
 Notes:
 
 - Keep this table minimal.
-- Prefer not to store raw input or raw AI response in v1.
+- Stores **metadata only** in v1 — no raw transcripts, no raw AI responses, no sanitized previews.
+- `tasks.notes` and `habits.notes` columns exist in the schema for future use but are **not surfaced anywhere in the v1 UI** (neither read nor written by the app).
 
 ---
 
@@ -819,17 +830,13 @@ Use `habit_nudge_log` to prevent duplicate nudges.
 
 ## Row-Level Security
 
-RLS should be enabled on user-owned tables.
-
-Baseline policy pattern:
+RLS is **enabled** on every user-owned table via `supabase/migrations/005_rls.sql`, with the baseline policy:
 
 ```sql
 user_id = auth.uid()
 ```
 
-For backend service-role operations, ensure backend still scopes queries by authenticated user.
-
-RLS policy details can be finalized in SQL migrations.
+The backend uses the Supabase service role and still scopes every query by `user_id` from the authenticated session.
 
 ---
 
@@ -852,13 +859,13 @@ Default themes are editable/deletable by the user.
 
 ---
 
-## Open Questions
+## Resolved Decisions
 
-These should be resolved before final migrations:
+These were originally open questions during design; all have been resolved as built:
 
-1. Whether `theme_id` on goals should be required or optional.
-2. Whether backlog tasks should preserve their previous `week_start_date` in a separate historical column.
-3. Whether deleted/dropped tasks need an audit trail beyond carry-over decisions.
-4. Whether AI capture logs should store sanitized input/output previews or remain metadata-only.
-5. Whether secondary goal cap should be enforced only in backend or also through a database trigger.
+1. **`theme_id` on goals: optional** (`uuid references themes(id) on delete set null`, nullable).
+2. **Backlog tasks do not preserve previous `week_start_date`** — when a task is sent to backlog (including via carry-over `send_to_backlog`), `week_start_date` is set to NULL. No separate historical column.
+3. **No audit trail for dropped tasks beyond carry-over decisions.** Dropped tasks are hard-deleted; the carry-over decision row records that a drop happened.
+4. **AI capture logs are metadata-only** — no raw input, no raw output, no sanitized previews stored.
+5. **Secondary goal cap is enforced in backend only** (`backend/src/routes/goals.ts` counts active secondaries before insert). No DB trigger. The primary goal cap is enforced via the partial unique index `goals_one_active_primary_per_user_idx`.
 

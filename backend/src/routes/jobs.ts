@@ -140,7 +140,8 @@ export async function jobsRoutes(fastify: FastifyInstance) {
         .select('id, title, weekly_target, danger_zone_nudge_enabled')
         .eq('user_id', user_id)
         .eq('status', 'active')
-        .eq('danger_zone_nudge_enabled', true);
+        .eq('danger_zone_nudge_enabled', true)
+        .is('deleted_at', null);
 
       if (e2 || !habits) continue;
 
@@ -193,5 +194,25 @@ export async function jobsRoutes(fastify: FastifyInstance) {
     }
 
     return { nudges_sent: nudgesSent };
+  });
+
+  // POST /jobs/purge-deleted-habits — hard-delete habits soft-deleted >24h ago
+  // Called by Render Cron daily
+  fastify.post('/jobs/purge-deleted-habits', async (request, reply) => {
+    if (!checkCronSecret(request as Parameters<typeof checkCronSecret>[0])) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
+
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    const { data, error } = await supabase
+      .from('habits')
+      .delete()
+      .not('deleted_at', 'is', null)
+      .lt('deleted_at', cutoff)
+      .select('id');
+
+    if (error) return reply.status(500).send({ error: error.message });
+    return { purged: (data ?? []).length };
   });
 }

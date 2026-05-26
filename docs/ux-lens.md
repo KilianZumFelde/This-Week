@@ -12,9 +12,9 @@
 **Day-to-day (any random day of the week):**
 1. User opens the app on phone.
 2. **This Week** screen loads immediately — zero taps to see the day's reality.
-3. User sees, top-down: the active **primary milestone** (one-line header), then **habits with current progress** (e.g., *Gym 2/4*, *Bachata 1/2*, *CVs 0/3*), then **tasks for this week grouped by theme** with effort/return chips on each.
+3. User sees, top-down: the active **primary milestone** (one-line header), then **habits with current progress** (e.g., *Gym 2/4*, *Bachata 1/2*, *CVs 0/3*), then **tasks for this week as a single flat list sorted by priority score** (effort × return; high-return/low-effort floats to top). Each task row shows a **colored priority stripe** down its left edge (gold = top priority, mid = grey, low = dim) and a theme chip. Effort/return values themselves are not chips on the card — they live in the Task Detail sheet. There is **no sort toggle** on This Week (it was removed 2026-05-24: priority sort is always on; backlog still has its own sort toggle).
 4. User taps a habit's progress ring to increment its count (or taps the habit card's text to open its detail/edit sheet), and taps a task's circle to complete it (or its title to open detail).
-5. Throughout the day, user captures new tasks via the **always-visible mic button** (bottom-right, persistent across screens). Speaks naturally; AI parses into a task or habit draft card.
+5. Throughout the day, user captures new tasks via the **single floating action button** (bottom-right, persistent across primary tabs). **Tap = quick-add modal** (manual entry, empty fields). **Long-press = voice listening overlay** (speech → AI parses into draft cards). Decision 2026-05-24: one button with a press-and-hold gesture for voice, rather than two separate FABs.
 6. User confirms or edits the draft inline (single tap to change theme, effort, return, week vs. backlog). Saves.
 7. Done items strike through and fade into a collapsible "Done (n)" section at the bottom of This Week.
 
@@ -24,10 +24,11 @@
 3. **Mandatory carry-over ritual** (blocking — no skip/dismiss/defer; re-appears every app open until fully triaged):
    - **Frame 0 — wins-first recap**: last week `X/N tasks · Y/Z habits` (fractions, no %), streak deltas (kept/broken), one forward line "still working toward [primary goal] — N tasks done toward it". Never opens on failure. (No "goals completed" counter — goals rarely complete in a week.)
    - **Then per-task triage**: unfinished tasks one-by-one with exactly three buttons each: *Keep for this week / Send to backlog / Drop*. No fourth option, no skip. ("Drop" = delete the task — the gentle triage word for the same remove operation called "Delete" everywhere else.)
-4. **Pull-from-backlog (optional, non-blocking — the final ritual step)**: once triage is cleared, a "Stock this week" step lists backlog items; tap any to add to the week. A "Start week" button is always enabled even if nothing is pulled (pulling is additive, never limbo — so optional, unlike mandatory triage). Same promotion is also available anytime from the Backlog tab; this is the guided ritual surfacing of it.
-5. (Last week's habit/task results live in the Frame 0 recap above — not a separate step.)
-6. **+ Add new** — voice or manual capture for fresh items.
-7. Total time: 2–5 minutes. Designed to be lightweight, not a 30-minute planning session.
+4. **Pull-from-backlog (optional, non-blocking)**: once triage is cleared, a "Stock this week" step lists backlog items; tap any to add to the week. A "Start week" button is always enabled even if nothing is pulled (pulling is additive, never limbo — so optional, unlike mandatory triage). Same promotion is also available anytime from the Backlog tab; this is the guided ritual surfacing of it.
+5. **New week celebration**: after tapping "Start week", a brief full-screen "New week, fresh start." screen appears with a single "Let's go" button that drops the user into This Week. (Not a planning step — just a calm transition moment so the shift from review to execution feels deliberate.)
+6. (Last week's habit/task results live in the Frame 0 recap above — not a separate step.)
+7. **+ Add new** — voice or manual capture for fresh items.
+8. Total time: 2–5 minutes. Designed to be lightweight, not a 30-minute planning session.
 
 ### Entry Points
 - **Primary**: opening the mobile app — always lands on **This Week**.
@@ -44,15 +45,15 @@
 | Moment | Expected behavior |
 |---|---|
 | **Tapping a task** | Strikes through immediately, fades to "Done" section. No confirm modal. |
-| **Tapping a habit** | **Tap the progress ring** → count increments by 1. **Tap the card's text area (name/theme)** → opens Habit Detail/Edit sheet. Two distinct hit-targets on the same card; no added chrome (no kebab). When target hit (e.g., 4/4), subtle visual celebration (brief animation, cell turns gold/green). **No confetti. No motivational quotes. No popups.** Anti-Jira is also anti-Duolingo. |
+| **Tapping a habit** | **Tap the progress ring** → count increments by 1. **Tap the card's text area (name/theme)** → opens Habit Detail/Edit sheet. Two distinct hit-targets on the same card; no added chrome (no kebab). When target is hit (e.g., 4/4), a calm gold "HIT" badge appears on the row. **No confetti. No motivational quotes. No popups.** Anti-Jira is also anti-Duolingo. |
 | **Accidental habit increment** | Caught by the **general Undo snackbar** (see Edge journeys / Key Decisions) — fat-finger Gym to 3/4, tap Undo, back to 2/4. No bespoke decrement control needed; the ring stays a safe small target because Undo is universal. |
-| **Mic button** | Always available, anywhere in app. Tap → record → AI parses → draft card appears. |
+| **FAB (single button)** | Persistent floating button bottom-right above the tab bar, on all primary tabs. **Tap → quick-add modal** (manual entry, empty fields, defaults to this-week or backlog based on which tab you're on). **Long-press (~300ms) → voice listening overlay** (AI parses speech into draft cards). |
 | **Editing a draft** | All AI-inferred fields are tappable inline. Single tap changes value. No nested modals. |
 | **Editing existing item** | Same — tap to edit inline, "right then and there", no navigation. |
 | **Mid-week change of mind** | Tap a task → menu offers *Move to backlog / Delete*. Tap a habit → *Pause* (stops counting until resumed). One tap into a menu, not surfaced on the main view. (No "move to next week" — there is no next-week state; backlog + Sunday pull is the forward-staging mechanism. "Drop" is NOT used here — it's only the gentle triage label for the same delete operation.) |
 | **Streak broken** | Resets to 0. "Best ever" stays visible alongside current — motivating without punishing. |
 | **Habit nudge** | When user is in "danger zone" of missing weekly target (e.g., Friday, gym at 1/4), the app fires a smart push notification. Not user-configured per-habit; system-triggered based on progress state. |
-| **Reminders visibility** | **Revised after Q15:** reminders are **invisible during normal use** — no bell icon on tasks, no inline "next-fire time", no in-app reminder list view. The user sees reminders only when the OS push notification fires. Reminder management lives behind the **Settings (gear icon) → Reminders** sub-page, containing at minimum a *"Delete all configured reminders"* action. Rationale: "I should be reminded about it or not. Why do I need to see when I will be reminded about this?" |
+| **Reminders visibility** | No bell icon on task cards in This Week / Backlog (the user shouldn't see a "next-fire countdown" in the main lists). However, reminders ARE visible and editable inside the **Task Detail Sheet** (the bottom sheet that opens when tapping a task's title) — this is considered an acceptable second surface because it's contextual to the task and one tap away. Settings → Reminders also exposes a global list with a *"Delete all configured reminders"* action. Revision 2026-05-24 — earlier "invisible during normal use" rule relaxed to allow the in-detail-sheet view. |
 
 ### Branching / Alternative Paths
 
@@ -73,26 +74,20 @@ User can flip the type with one tap if AI guesses wrong.
 
 ### Goal-Setting Sub-Journey
 
-**Two paths from the Goals tab:**
+**One path from the Goals tab:**
 
-1. **+ Add Goal (direct)** — for when the user already knows what they want:
-   - Title
-   - Target date — **required**, the form refuses to save without one. Quick-select chips offered: 3 months / 6 months / 1 year / Custom.
-   - Type — Primary or Secondary. Default: Primary if no primary exists; Secondary otherwise.
-   - Theme — AI suggests from title; user can change.
-   - Optional "why" paragraph (surfaced occasionally to maintain motivation).
+**+ Add Goal (direct)** — the only goal-creation flow in v1:
+- Title
+- Target date — **required**, the form refuses to save without one. Quick-select chips offered: 1 mo / 2 mo / 3 mo / 6 mo / 1 year. No "Custom" arbitrary-date picker in v1 — if the user needs a date outside the presets, they'll need to wait or pick the nearest preset.
+- Type — Primary or Secondary. Default: Primary when no goal exists; otherwise the user picks. (Current code defaults new goals to Primary regardless of existing primary; the backend will reject if the cap is exceeded.)
+- Theme — picked from a list (no AI suggestion in v1).
+- Optional "why" paragraph (surfaced occasionally to maintain motivation).
 
-2. **🪄 Coach me on a goal** — for when the user doesn't yet know what they want, or wants help prioritizing:
-   - Adaptive AI conversation, **not a fixed wizard**.
-   - Guided by **principles, not static questions**. The AI is loaded with concepts: force the "when"; distinguish one-time milestones from continuous directions (latter = habit territory); identify compounding opportunities; spot low-effort/high-return candidates that should be secondary goals; push back on vagueness; advise on prioritization within the 1 primary + max 2 secondary focus; distinguish "truly important" goals from "no-brainer compounding bet" goals.
-   - Voice supported throughout — phone typing is painful.
-   - **Purely advisory.** The coach never creates or edits a goal inline. It concludes with a plain-prose summary of the recommended goal + a single **"Create this goal"** button that opens the standard **Add Goal screen pre-filled** from the conversation. The user reviews and saves there. No in-chat accept, no inline editable card. (This is the simplification decided post-discovery — see discovery.md Key Decisions.)
+**AI Coach feature: DROPPED FROM SCOPE (2026-05-24).** The previously-planned "🪄 Coach me on a goal" conversational flow is not being built. The direct Add Goal form is sufficient.
 
-**Two trigger modes for the coach:**
-- **No active goals** → coach helps define the first set (first-goal creation mode — note: this is the coach's mode, NOT a separate onboarding flow; first-launch onboarding was removed from scope 2026-05-15).
-- **Existing goals** → coach helps review and re-prioritize ("is this still primary?", "this secondary hasn't moved in 8 weeks — drop or recommit?").
+**Hard cap enforcement (v1):** the 1 primary + 2 secondary cap is enforced **at the backend on save**. If saving would exceed the cap, the backend returns `HTTP 400` and the Add Goal form shows a generic error. There is no inline demote/replace/cancel modal in v1 — the user resolves the conflict by going to Goals, abandoning an existing goal manually, then re-saving.
 
-**Hard cap enforcement:** the 1 primary + 2 secondary cap is enforced at a **single point — the Add Goal screen, on save**. If saving would exceed the cap, the Add Goal screen forces a demotion/drop/cancel choice. No silent overflow. The Coach may *advise* on prioritization in prose but does NOT enforce the cap itself (it has no inline create/save).
+**Target-date-passed prompt:** when the user opens the app and an active goal's `target_date` is in the past, an Overdue Goal bottom-sheet appears with three actions: **Mark as hit** (moves to graveyard as `hit`), **Extend** (reopens Edit form so user can push the date), **Abandon** (moves to graveyard as `archived`). Tapping the backdrop dismisses the prompt for the session.
 
 ### Success Moment
 
@@ -104,15 +99,16 @@ Per quarter (the real success of the product): the user can name their primary m
 
 ### Edge Journeys
 
-- **Carry-over (Sunday):** mandatory blocking ritual — wins-first recap, then unfinished tasks triaged explicitly one-by-one (kept / sent to backlog / dropped). No skip/dismiss; re-appears every app open until cleared. Never silently moved.
+- **Carry-over (Sunday):** mandatory blocking ritual — wins-first recap → per-task triage (kept / sent to backlog / dropped) → optional pull-from-backlog → "new week" celebration → This Week. The triage step is blocking and re-appears every app open until cleared. Pulling and the celebration are non-blocking. Never silently moved.
 - **Mid-week re-prioritization:** one-tap menu on any task to move/drop/defer.
 - **Missed habit days:** flagged in red on next week's "last week's results" view. No guilt-trip; just visibility.
 - **Streak broken:** resets to 0; "Best ever" persists as motivation.
-- **Goal target date passes:** prompt to review — "Did you hit this? Extend? Drop?". Goal never silently deleted. A graveyard of missed goals is also useful data.
+- **Goal target date passes:** an **Overdue Goal bottom-sheet** appears with three actions (Mark as hit / Extend / Abandon). Goal never silently deleted; tapping the backdrop dismisses for the session only — the prompt re-appears next launch until the goal is resolved.
 - **Pausing a habit:** habit stops counting until resumed; doesn't break streak history.
 - **Pulling from backlog mid-week:** allowed via Backlog tab → tap → "Add to this week".
-- **General Undo (app-wide):** any state-changing action — task completed, task dropped, habit incremented, deletes (and later: goal mark-hit/abandon/demote) — surfaces a brief Undo snackbar; one tap reverts the last action. This is the universal safety net; it replaces bespoke per-entity undo. (Task-done also remains separately re-openable by tapping it again any time before the Sunday flip — the immediate Undo and the deliberate same-week reversal coexist.)
-- **Capture-anywhere via voice:** mic button persistent in bottom-right; works on any tab.
+- **General Undo (app-wide):** any state-changing action — task completed, task dropped, habit incremented, task delete, habit delete — surfaces a brief Undo snackbar; one tap reverts the last action. This is the universal safety net. (Task-done also remains separately re-openable by tapping it again any time before the Sunday flip — the immediate Undo and the deliberate same-week reversal coexist.) Goal mark-hit / abandon do NOT currently emit Undo in v1 (low priority — goals are deliberate, low-frequency actions).
+- **Capture-anywhere via voice:** the single FAB long-pressed; works on any primary tab.
+- **First-launch empty state:** brand-new users land on This Week's empty state with a calm hero and two CTAs ("Set my first goal" / "Add a task"). **Known issue (v1):** these CTAs do not currently navigate anywhere — see Known bugs in TASKS.md. The FAB (tap or long-press) is the working entry point for new users.
 
 ### Navigation
 
