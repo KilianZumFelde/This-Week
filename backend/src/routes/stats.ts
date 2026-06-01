@@ -18,7 +18,7 @@ export async function statsRoutes(fastify: FastifyInstance) {
     const tz = await getUserTimezone(request.userId);
     const weekStart = getCurrentWeekStartDate(tz);
 
-    const [tasksRes, habitRecordsRes] = await Promise.all([
+    const [tasksRes, activeHabitsRes, habitRecordsRes] = await Promise.all([
       supabase
         .from('tasks')
         .select('status')
@@ -27,23 +27,34 @@ export async function statsRoutes(fastify: FastifyInstance) {
         .eq('week_start_date', weekStart)
         .neq('status', 'archived_done'),
       supabase
+        .from('habits')
+        .select('id')
+        .eq('user_id', request.userId)
+        .eq('status', 'active')
+        .is('deleted_at', null),
+      supabase
         .from('habit_week_records')
-        .select('target_met')
+        .select('habit_id, target_met')
         .eq('user_id', request.userId)
         .eq('week_start_date', weekStart),
     ]);
 
     if (tasksRes.error) return reply.status(500).send({ error: tasksRes.error.message });
+    if (activeHabitsRes.error) return reply.status(500).send({ error: activeHabitsRes.error.message });
     if (habitRecordsRes.error) return reply.status(500).send({ error: habitRecordsRes.error.message });
 
     const tasks = tasksRes.data ?? [];
+    const activeHabitIds = new Set((activeHabitsRes.data ?? []).map((h) => h.id));
     const habitRecords = habitRecordsRes.data ?? [];
 
+    // Total is the number of active habits, not the number of week records — week
+    // records may not exist yet for habits created before this week / not yet
+    // incremented. On-target counts only records belonging to active habits.
     return {
       tasks_done: tasks.filter((t) => t.status === 'done').length,
       tasks_total: tasks.length,
-      habits_on_target: habitRecords.filter((h) => h.target_met).length,
-      habits_total: habitRecords.length,
+      habits_on_target: habitRecords.filter((h) => h.target_met && activeHabitIds.has(h.habit_id)).length,
+      habits_total: activeHabitIds.size,
     };
   });
 
