@@ -8,13 +8,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useState, useEffect } from 'react';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSequence,
-  withSpring,
-} from 'react-native-reanimated';
+import { useState } from 'react';
 import { colors, radius } from '../../lib/tokens';
 import { useThisWeekTasks, useCompleteTask, useReopenTask, useDeleteTask, Task } from '../../lib/hooks/useTasks';
 import { useHabits, useHabitWeekRecords, useIncrementHabit, useDecrementHabit, Habit } from '../../lib/hooks/useHabits';
@@ -126,20 +120,6 @@ function HabitRow({ habit, completedCount, theme, onIncrement, onPressBody }: Ha
   const hit = completedCount >= habit.weekly_target;
   const paused = habit.status === 'paused';
 
-  const counterScale = useSharedValue(1);
-  const counterStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: counterScale.value }],
-  }));
-
-  useEffect(() => {
-    if (completedCount > 0) {
-      counterScale.value = withSequence(
-        withSpring(1.4, { damping: 4, stiffness: 500 }),
-        withSpring(1.0, { damping: 10, stiffness: 300 }),
-      );
-    }
-  }, [completedCount]);
-
   return (
     <View style={[styles.habitRow, paused && styles.habitRowPaused]}>
       <TapFeedback
@@ -147,9 +127,7 @@ function HabitRow({ habit, completedCount, theme, onIncrement, onPressBody }: Ha
         disabled={paused}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <Animated.View style={counterStyle}>
-          <Ring value={completedCount} target={habit.weekly_target} dim={paused} />
-        </Animated.View>
+        <Ring value={completedCount} target={habit.weekly_target} dim={paused} />
       </TapFeedback>
       <TouchableOpacity style={styles.habitBody} onPress={onPressBody} activeOpacity={0.7}>
         <View style={styles.habitTitleRow}>
