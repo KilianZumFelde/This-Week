@@ -32,8 +32,8 @@ export function TapFeedback({ children, onPress, disabled = false, hitSlop }: Pr
 
   function handlePress() {
     scale.value = withSequence(
-      withSpring(1.18, { damping: 4, stiffness: 400 }),
-      withSpring(1.0, { damping: 10, stiffness: 300 }),
+      withSpring(1.1, { damping: 20, stiffness: 400 }),
+      withTiming(1.0, { duration: 120 }),
     );
     rippleScale.value = 0;
     rippleOpacity.value = 0.3;
