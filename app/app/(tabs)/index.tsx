@@ -8,7 +8,13 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSequence,
+  withSpring,
+} from 'react-native-reanimated';
 import { colors, radius } from '../../lib/tokens';
 import { useThisWeekTasks, useCompleteTask, useReopenTask, useDeleteTask, Task } from '../../lib/hooks/useTasks';
 import { useHabits, useHabitWeekRecords, useIncrementHabit, useDecrementHabit, Habit } from '../../lib/hooks/useHabits';
@@ -17,6 +23,7 @@ import { useThemes, Theme } from '../../lib/hooks/useThemes';
 import { useGoals, useGoalStats } from '../../lib/hooks/useGoals';
 import { Ring } from '../components/Ring';
 import { Icon } from '../components/Icon';
+import { TapFeedback } from '../components/TapFeedback';
 import { TaskDetailSheet } from '../components/TaskDetailSheet';
 import { SkeletonCard, SkeletonRow, ScreenError } from '../components/Skeleton';
 import { HabitDetailSheet } from '../components/HabitDetailSheet';
@@ -83,13 +90,11 @@ function TaskRow({ task, theme, onToggle, onPressBody }: TaskRowProps) {
   return (
     <View style={styles.taskRow}>
       <View style={[styles.taskPriorityStripe, { backgroundColor: borderColor }]} />
-      <TouchableOpacity
-        onPress={onToggle}
-        style={[styles.taskCheck, done && styles.taskCheckDone]}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 4 }}
-      >
-        {done && <Icon name="check" size={13} color={colors.bg} />}
-      </TouchableOpacity>
+      <TapFeedback onPress={onToggle} hitSlop={{ top: 8, bottom: 8, left: 8, right: 4 }}>
+        <View style={[styles.taskCheck, done && styles.taskCheckDone]}>
+          {done && <Icon name="check" size={13} color={colors.bg} />}
+        </View>
+      </TapFeedback>
       <TouchableOpacity style={styles.taskBody} onPress={onPressBody} activeOpacity={0.7}>
         <Text style={[styles.taskTitle, done && styles.taskTitleDone]}>{task.title}</Text>
         <View style={styles.taskMeta}>
@@ -120,15 +125,32 @@ type HabitRowProps = {
 function HabitRow({ habit, completedCount, theme, onIncrement, onPressBody }: HabitRowProps) {
   const hit = completedCount >= habit.weekly_target;
   const paused = habit.status === 'paused';
+
+  const counterScale = useSharedValue(1);
+  const counterStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: counterScale.value }],
+  }));
+
+  useEffect(() => {
+    if (completedCount > 0) {
+      counterScale.value = withSequence(
+        withSpring(1.4, { damping: 4, stiffness: 500 }),
+        withSpring(1.0, { damping: 10, stiffness: 300 }),
+      );
+    }
+  }, [completedCount]);
+
   return (
     <View style={[styles.habitRow, paused && styles.habitRowPaused]}>
-      <TouchableOpacity
-        onPress={paused ? undefined : onIncrement}
+      <TapFeedback
+        onPress={onIncrement}
+        disabled={paused}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        activeOpacity={paused ? 1 : 0.7}
       >
-        <Ring value={completedCount} target={habit.weekly_target} dim={paused} />
-      </TouchableOpacity>
+        <Animated.View style={counterStyle}>
+          <Ring value={completedCount} target={habit.weekly_target} dim={paused} />
+        </Animated.View>
+      </TapFeedback>
       <TouchableOpacity style={styles.habitBody} onPress={onPressBody} activeOpacity={0.7}>
         <View style={styles.habitTitleRow}>
           <Text style={[styles.habitTitle, paused && styles.habitTitlePaused]}>{habit.title}</Text>

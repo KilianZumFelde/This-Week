@@ -1195,6 +1195,38 @@ After P12: full end-to-end daily use test. Add goals, tasks, habits. Complete a 
 
 ---
 
+## Phase 13 — Micro-animations
+
+**Outcome**: Tapping a habit ring or task checkmark gives tactile visual feedback — a scale pop and a ripple — making the app feel responsive and rewarding.
+
+### Tasks
+
+- [x] **P13-1** Create `TapFeedback` wrapper component.
+  - File: `app/app/components/TapFeedback.tsx`.
+  - Uses `react-native-reanimated` v4.2.1 (already installed) and `Pressable` from React Native.
+  - Scale: spring from 1.0 → 1.18 → 1.0 on press.
+  - Ripple: absolutely-positioned 64px circle, opacity 0.3 → 0, scale 0 → 1, ~380ms.
+  - Validate: tsc --noEmit passes. ✓
+
+- [x] **P13-2** Apply `TapFeedback` to `TaskRow` checkmark button.
+  - In `app/app/(tabs)/index.tsx`, replaced `TouchableOpacity` on the checkmark with `TapFeedback`.
+  - Validate: tapping the checkmark plays the animation; task still completes correctly.
+
+- [x] **P13-3** Apply `TapFeedback` to `HabitRow` ring button + counter pop.
+  - Wrapped `Ring` in `TapFeedback` (disabled when paused).
+  - Added `useSharedValue` + `useEffect` counter pop: scale 1.0 → 1.4 → 1.0 whenever `completedCount` changes.
+  - Validate: tapping the ring plays the animation; counter number pops when it increments.
+
+### User Check-In
+Open app → tap a habit ring → confirm scale pop + ripple plays. Tap a task checkmark → confirm scale pop plays. Increment habit → confirm counter number bounces.
+
+### End-of-Phase Admin
+- [x] Mark completed tasks. All P13-1 through P13-3 complete.
+- [x] tsc --noEmit: 0 errors.
+- [ ] Git commit after user confirms animations look good.
+
+---
+
 ## Housekeeping — Open Bugs
 
 Bugs found during testing that haven't been fixed yet. Fix these before or alongside the phase they belong to.
