@@ -8,6 +8,10 @@ The app helps the user connect long-term goals to weekly execution through tasks
 
 The goal is finished, working software — not a prototype, mockup, or design exploration.
 
+The project runs in two modes: an initial from-scratch build, then incremental releases on top of it. The line below states the active mode.
+
+**Current work:** Initial build
+
 ---
 
 ## Start of Every Session
@@ -15,17 +19,23 @@ The goal is finished, working software — not a prototype, mockup, or design ex
 At the start of a new Claude Code session:
 
 1. Read this file.
-2. Read `TASKS.md` to understand current progress.
-3. Read any project documents relevant to the next incomplete task and the phase.
-4. Continue from the next incomplete task unless the user gives different instructions.
+2. Check **Current work** above.
+   - If it names a release, the work order is `/docs/releases/release-N/TASKS.md`.
+   - If it says "Initial build", the work order is the root `TASKS.md`.
+3. Read that TASKS.md. Completed tasks are already built; continue from the next incomplete one.
+4. Read any documents the next task names before implementing.
 
-If the user says “continue”, use `TASKS.md` as the source for what to do next.
+Do not infer overall project state by reasoning about the docs. The active TASKS.md is the source of what is done and what is next — completed = built, the rest is the work order.
+
+If the user says "continue", use the active TASKS.md.
 
 ---
 
 ## Project Documents
 
-Project documents live in `/docs`.
+The main documents in `/docs` are the baseline source of truth — they describe the app as last shipped.
+
+Each release adds a folder `/docs/releases/release-N/` containing that release's delta lenses, UI brief, and TASKS.md. During a release, the main docs describe the baseline, the release folder describes what that release changes, and the release's TASKS.md tracks what is built so far.
 
 Read the relevant documents before planning or implementing work.
 
@@ -47,7 +57,7 @@ Do not duplicate these documents inside `CLAUDE.md`.
 
 ## Planning Rules
 
-When asked to create an implementation plan, create `TASKS.md`.
+When asked to create an implementation plan: for the initial build, create the root `TASKS.md`; for a release, create `TASKS.md` inside that release's folder, built from the release's delta plus the existing lenses and real `/docs/ui` code as integration context.
 
 The plan must be split into phases.
 
@@ -99,6 +109,14 @@ The prototype UI files are implementation reference material for:
 Do not reinterpret, redesign, simplify, modernize, or replace the UI with generic component-library patterns unless explicitly requested.
 
 The UI brief, UX lens, and navigation docs provide behavioral and conceptual guidance, but the prototype UI code is the primary implementation reference for visual/UI structure.
+
+### UI source of truth
+
+`/docs/ui` always represents the **target** design — the full current UI including any in-progress release's screens. It is ahead of the running app during a release.
+
+The release's UI brief (in the release folder) states what is new or changed in `/docs/ui` versus the last shipped version, and therefore which app screens need to be built or updated to match it.
+
+So: `/docs/ui` = what the app should look like. The UI brief = what changed and which code to update to get there. Build the app code to match `/docs/ui`, scoped by the brief.
 
 ---
 
@@ -202,6 +220,8 @@ Keep changes focused.
 
 Do not rewrite unrelated files.
 
+Treat shipped code and the baseline lenses as current reality. Do not redesign, simplify, or rebuild existing work to accommodate a new feature unless the release delta explicitly calls for it.
+
 Do not introduce broad abstractions before they are needed.
 
 Do not add new libraries unless they are necessary and consistent with the tech stack.
@@ -214,6 +234,16 @@ Apparently you are sandboxed. So any npm install, ask the user to do it. Also Lo
 
 NEVER Start a new Phase without asking the user.
 
+---
+
+## Releases: Fold-Back
+
+Every release's final phase folds its work into the baseline so the main docs become current again:
+
+- merge the release's delta lenses into the main lenses in `/docs`
+- keep the release folder as a dated archive (do not delete)
+
+The UI (screens + navigation) comes from the design export and is already current in `/docs/ui`; it needs no fold-back. Until the lens fold-back runs, the main lenses remain the pre-release baseline.
 
 ---
 
@@ -297,4 +327,3 @@ Do not add the following unless the user explicitly requests them:
 - complex analytics
 - enterprise/SaaS features
 - large new architecture documents
-
