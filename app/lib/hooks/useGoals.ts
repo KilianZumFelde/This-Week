@@ -1,6 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api';
 
+export type HealthLevelValue = 'behind' | 'slightly_behind' | 'on_track' | 'ahead' | 'well_ahead';
+export type ProgressAnswer = 'a_lot' | 'some' | 'barely' | 'nothing';
+export type ConfidenceAnswer = 'yes' | 'maybe' | 'no';
+
 export type Goal = {
   id: string;
   user_id: string;
@@ -13,6 +17,11 @@ export type Goal = {
   completed_at: string | null;
   archived_at: string | null;
   sort_order: number;
+  // Release 1: health columns (nullable until first Sunday triage)
+  health_level: HealthLevelValue | null;
+  progress_answer: ProgressAnswer | null;
+  confidence_answer: ConfidenceAnswer | null;
+  health_set_date: string | null;
   created_at: string;
   updated_at: string;
 };

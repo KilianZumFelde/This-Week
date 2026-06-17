@@ -10,10 +10,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { colors, radius } from '../../lib/tokens';
-import { useGoals, useGoalStats, Goal } from '../../lib/hooks/useGoals';
+import { useGoals, useGoalStats } from '../../lib/hooks/useGoals';
+import type { Goal } from '../../lib/hooks/useGoals';
 import { useThemes } from '../../lib/hooks/useThemes';
 import { Icon } from '../components/Icon';
-import { GoalActionDrawer } from '../components/GoalActionDrawer';
 import { SkeletonCard, ScreenError } from '../components/Skeleton';
 
 // ─── Months remaining helper ─────────────────────────────────────────────────
@@ -114,7 +114,6 @@ export default function Goals() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [graveOpen, setGraveOpen] = useState(false);
-  const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
 
   const { data: goals, isLoading, isError, refetch } = useGoals();
   const { data: themes } = useThemes();
@@ -127,11 +126,7 @@ export default function Goals() {
   const pastGoals = (goals ?? []).filter((g) => g.status !== 'active');
 
   function openGoal(goal: Goal) {
-    setSelectedGoal(goal);
-  }
-
-  function handleEdit(goal: Goal) {
-    router.push({ pathname: '/add-goal', params: { goalId: goal.id } });
+    router.push({ pathname: '/goal-detail', params: { goalId: goal.id } });
   }
 
   return (
@@ -265,12 +260,6 @@ export default function Goals() {
         </ScrollView>
       )}
 
-      <GoalActionDrawer
-        goal={selectedGoal}
-        themes={themes ?? []}
-        onClose={() => setSelectedGoal(null)}
-        onEdit={handleEdit}
-      />
     </View>
   );
 }

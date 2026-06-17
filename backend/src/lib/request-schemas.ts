@@ -114,3 +114,17 @@ export const UpdateGoalRequestSchema = z.object({
   sort_order: z.number().int().optional(),
 });
 export type UpdateGoalRequest = z.infer<typeof UpdateGoalRequestSchema>;
+
+// ─── Milestones ──────────────────────────────────────────────────────────────
+
+export const CreateMilestoneRequestSchema = z.object({
+  title: z.string().min(1),
+  target_date: isoDate,
+});
+export type CreateMilestoneRequest = z.infer<typeof CreateMilestoneRequestSchema>;
+
+export const UpdateMilestoneRequestSchema = z.object({
+  title: z.string().min(1).optional(),
+  target_date: isoDate.optional(),
+});
+export type UpdateMilestoneRequest = z.infer<typeof UpdateMilestoneRequestSchema>;

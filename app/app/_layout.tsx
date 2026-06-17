@@ -86,6 +86,7 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="quick-add" options={{ presentation: 'modal', headerShown: false }} />
             <Stack.Screen name="add-goal" options={{ presentation: 'modal', headerShown: false }} />
+            <Stack.Screen name="goal-detail" options={{ presentation: 'modal', headerShown: false }} />
             <Stack.Screen name="carry-recap" options={{ headerShown: false }} />
             <Stack.Screen name="carry-triage" options={{ headerShown: false }} />
             <Stack.Screen name="carry-pull" options={{ headerShown: false }} />
