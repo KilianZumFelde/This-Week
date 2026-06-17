@@ -64,6 +64,7 @@ export const ListTasksQuerySchema = z.object({
   week_assignment: z.enum(['this_week', 'backlog']).optional(),
   week_start_date: isoDate.optional(),
   status: z.enum(['open', 'done', 'archived_done']).optional(),
+  goal_id: uuid.optional(),
 });
 export type ListTasksQuery = z.infer<typeof ListTasksQuerySchema>;
 

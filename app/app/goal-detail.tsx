@@ -13,10 +13,70 @@ import { colors, radius } from '../lib/tokens';
 import { useGoals, useMarkGoalHit, useAbandonGoal, useGoalHealthRecords } from '../lib/hooks/useGoals';
 import { useThemes } from '../lib/hooks/useThemes';
 import { useMilestones, useMarkMilestoneHit } from '../lib/hooks/useMilestones';
+import { useGoalTasks, Task } from '../lib/hooks/useTasks';
 import { Track, HealthDots, healthByKey } from './components/HealthTrack';
 import { Icon } from './components/Icon';
 import { SetNextMilestone } from './components/SetNextMilestone';
 import { MilestoneSheet } from './components/MilestoneSheet';
+
+function GoalTaskRow({ task }: { task: Task }) {
+  const done = task.status === 'done';
+  const isBacklog = task.week_assignment === 'backlog';
+  return (
+    <View style={taskRowStyles.row}>
+      <View style={[taskRowStyles.dot, done && taskRowStyles.dotDone]} />
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={[taskRowStyles.title, done && taskRowStyles.titleDone]} numberOfLines={2}>
+          {task.title}
+        </Text>
+      </View>
+      {isBacklog && !done && (
+        <Text style={taskRowStyles.badge}>backlog</Text>
+      )}
+      {done && (
+        <Icon name="check" size={13} color={colors.sage} />
+      )}
+    </View>
+  );
+}
+
+const taskRowStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 11,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.hairline,
+  },
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: colors.text3,
+    flexShrink: 0,
+  },
+  dotDone: {
+    backgroundColor: colors.sage,
+  },
+  title: {
+    fontSize: 14,
+    color: colors.text,
+    fontWeight: '400',
+  },
+  titleDone: {
+    color: colors.text3,
+    textDecorationLine: 'line-through',
+    textDecorationColor: colors.text3,
+  },
+  badge: {
+    fontSize: 10.5,
+    color: colors.text3,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    fontWeight: '500',
+  },
+});
 
 export default function GoalDetail() {
   const { goalId } = useLocalSearchParams<{ goalId: string }>();
@@ -27,6 +87,7 @@ export default function GoalDetail() {
   const { data: themes } = useThemes();
   const { data: milestones } = useMilestones(goalId ?? null);
   const { data: healthRecords } = useGoalHealthRecords(goalId ?? null);
+  const { thisWeek: thisWeekTasksQuery, all: allTasksQuery } = useGoalTasks(goalId ?? null);
 
   const markGoalHit = useMarkGoalHit();
   const abandonGoal = useAbandonGoal();
@@ -204,6 +265,28 @@ export default function GoalDetail() {
             <Icon name="plus" size={15} color={colors.accentStrong} />
             <Text style={styles.addMilestoneText}>Add milestone</Text>
           </TouchableOpacity>
+        )}
+
+        {/* Tasks this week */}
+        <View style={styles.hr} />
+        <Text style={styles.trendLabel}>Tasks this week</Text>
+        {(thisWeekTasksQuery.data ?? []).length === 0 ? (
+          <Text style={styles.emptyMilestones}>No tasks assigned to this goal this week.</Text>
+        ) : (
+          (thisWeekTasksQuery.data ?? []).map((task) => (
+            <GoalTaskRow key={task.id} task={task} />
+          ))
+        )}
+
+        {/* All tasks for this goal */}
+        <View style={styles.hr} />
+        <Text style={styles.trendLabel}>All tasks</Text>
+        {(allTasksQuery.data ?? []).length === 0 ? (
+          <Text style={styles.emptyMilestones}>No tasks linked to this goal yet.</Text>
+        ) : (
+          (allTasksQuery.data ?? []).map((task) => (
+            <GoalTaskRow key={task.id} task={task} />
+          ))
         )}
       </ScrollView>
 

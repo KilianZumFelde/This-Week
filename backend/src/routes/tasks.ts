@@ -63,7 +63,7 @@ export async function tasksRoutes(fastify: FastifyInstance) {
     const parsed = ListTasksQuerySchema.safeParse(request.query);
     if (!parsed.success) return reply.status(400).send({ error: parsed.error.flatten() });
 
-    const { week_assignment, week_start_date, status } = parsed.data;
+    const { week_assignment, week_start_date, status, goal_id } = parsed.data;
 
     let query = supabase
       .from('tasks')
@@ -74,6 +74,7 @@ export async function tasksRoutes(fastify: FastifyInstance) {
 
     if (week_assignment) query = query.eq('week_assignment', week_assignment);
     if (week_start_date) query = query.eq('week_start_date', week_start_date);
+    if (goal_id) query = query.eq('goal_id', goal_id);
     if (status) {
       query = query.eq('status', status);
     } else {

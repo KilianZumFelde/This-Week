@@ -29,6 +29,22 @@ export function useThisWeekTasks() {
   });
 }
 
+export function useGoalTasks(goalId: string | null) {
+  const weekStart = getCurrentWeekStartDate();
+  const thisWeek = useQuery<Task[]>({
+    queryKey: ['tasks', 'goal', goalId, 'this_week', weekStart],
+    queryFn: () =>
+      api.get<Task[]>(`/tasks?goal_id=${goalId}&week_assignment=this_week&week_start_date=${weekStart}`),
+    enabled: !!goalId,
+  });
+  const all = useQuery<Task[]>({
+    queryKey: ['tasks', 'goal', goalId, 'all'],
+    queryFn: () => api.get<Task[]>(`/tasks?goal_id=${goalId}`),
+    enabled: !!goalId,
+  });
+  return { thisWeek, all };
+}
+
 export function useBacklogTasks() {
   return useQuery<Task[]>({
     queryKey: ['tasks', 'backlog'],
