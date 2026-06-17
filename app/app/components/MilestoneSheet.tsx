@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -87,15 +88,22 @@ export function MilestoneSheet({ visible, goalId, goalTargetDate, milestoneId, o
   function handleSave() {
     if (!resolvedDate) return;
     setSaving(true);
+
+    function onError(err: unknown) {
+      setSaving(false);
+      const msg = err instanceof Error ? err.message : 'Something went wrong. Try again.';
+      Alert.alert('Could not save', msg);
+    }
+
     if (isEditing && milestoneId) {
       updateMilestone.mutate(
         { id: milestoneId, title: title.trim(), target_date: resolvedDate },
-        { onSuccess: () => { setSaving(false); onClose(); }, onError: () => setSaving(false) },
+        { onSuccess: () => { setSaving(false); onClose(); }, onError },
       );
     } else {
       createMilestone.mutate(
         { title: title.trim(), target_date: resolvedDate },
-        { onSuccess: () => { setSaving(false); onClose(); }, onError: () => setSaving(false) },
+        { onSuccess: () => { setSaving(false); onClose(); }, onError },
       );
     }
   }
