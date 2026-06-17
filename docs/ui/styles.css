@@ -850,17 +850,19 @@
 .ms-line.overdue { color: var(--brick); }
 .ms-line.overdue .lbl { color: var(--brick); }
 
-/* Milestone list row (detail + triage) */
-.ms-row {
+/* Milestone card (Goal Detail) — card style matching task rows */
+.ms-card {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 0;
-  border-top: 1px solid var(--hairline);
+  padding: 13px 14px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  margin-bottom: 8px;
 }
-.ms-row .ms-title { flex: 1; font-size: 14px; color: var(--text); }
-.ms-row .ms-date { font-size: 12px; color: var(--text-3); font-feature-settings: 'tnum'; }
-.ms-row .ms-hit {
+.ms-card .ms-title { flex: 1; font-size: 14px; color: var(--text); font-weight: 500; }
+.ms-card .ms-date { font-size: 12px; color: var(--text-3); font-feature-settings: 'tnum'; }
+.ms-card .ms-hit {
   font-size: 11px;
   letter-spacing: 0.05em;
   text-transform: uppercase;

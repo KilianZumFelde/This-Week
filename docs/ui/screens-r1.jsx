@@ -146,12 +146,8 @@ function GoalCard({ g }) {
         <span><span className="lbl">Next:</span> {g.nextMs.title} · by {g.nextMs.date}</span>
       </div>
 
-      {/* Quiet secondary counts */}
-      <div className="stats" style={{ fontSize: 12, color: 'var(--text-3)' }}>
-        <div>{g.tasks} tasks this week</div>
-        <div>{g.habits} habits linked</div>
-        <div style={{ marginLeft: 'auto', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600, color: isPrimary ? 'var(--accent-strong)' : 'var(--text-3)' }}>{g.left}</div>
-      </div>
+      {/* Time left */}
+      <div style={{ fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600, color: isPrimary ? 'var(--accent-strong)' : 'var(--text-3)' }}>{g.left}</div>
     </div>
   );
 }
@@ -248,20 +244,50 @@ function GoalDetail() {
 
         <div className="hr" />
 
-        {/* Milestones (management) */}
-        <div style={{ fontSize: 11, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text-3)', fontWeight: 600, marginBottom: 2 }}>Milestones</div>
-        <div className="ms-row">
+        {/* Milestones (management) — each row is a card */}
+        <div style={{ fontSize: 11, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text-3)', fontWeight: 600, marginBottom: 8 }}>Milestones</div>
+        <div className="ms-card">
           <span className="ms-title">Cut &amp; send demo set</span>
           <span className="ms-date" style={{ marginRight: 4 }}>Jun 28</span>
           <span className="ms-hit">Mark hit</span>
         </div>
-        <div className="ms-row">
+        <div className="ms-card">
           <span className="ms-title">Book one open-deck night</span>
           <span className="ms-date" style={{ marginRight: 4 }}>Jul 19</span>
           <span className="ms-hit">Mark hit</span>
         </div>
         <div className="ms-add">
           <Icon name="plus" size={15} stroke={2} /> Add milestone
+        </div>
+
+        <div className="hr" />
+
+        {/* Tasks this week — tasks linked to this goal with this-week assignment */}
+        <div style={{ fontSize: 11, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text-3)', fontWeight: 600, marginBottom: 8 }}>Tasks this week</div>
+        <div className="task" style={{ marginBottom: 8 }}>
+          <div className="check" />
+          <div className="body"><span className="title">Edit the DJ set opener</span></div>
+        </div>
+        <div className="task done" style={{ marginBottom: 8 }}>
+          <div className="check done" />
+          <div className="body"><span className="title" style={{ textDecoration: 'line-through', color: 'var(--text-3)' }}>Record practice session</span></div>
+        </div>
+
+        <div className="hr" />
+
+        {/* All tasks — every task linked to this goal (open + done, excludes archived) */}
+        <div style={{ fontSize: 11, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text-3)', fontWeight: 600, marginBottom: 8 }}>All tasks</div>
+        <div className="task" style={{ marginBottom: 8 }}>
+          <div className="check" />
+          <div className="body"><span className="title">Edit the DJ set opener</span></div>
+        </div>
+        <div className="task" style={{ marginBottom: 8 }}>
+          <div className="check" />
+          <div className="body"><span className="title">Research venues for open-deck nights</span><span style={{ fontSize: 10.5, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginLeft: 8 }}>backlog</span></div>
+        </div>
+        <div className="task done" style={{ marginBottom: 8 }}>
+          <div className="check done" />
+          <div className="body"><span className="title" style={{ textDecoration: 'line-through', color: 'var(--text-3)' }}>Record practice session</span></div>
         </div>
       </div>
 

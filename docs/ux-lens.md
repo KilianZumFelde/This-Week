@@ -12,7 +12,7 @@
 **Day-to-day (any random day of the week):**
 1. User opens the app on phone.
 2. **This Week** screen loads immediately — zero taps to see the day's reality.
-3. User sees, top-down: the active **primary milestone** (one-line header), then **habits with current progress** (e.g., *Gym 2/4*, *Bachata 1/2*, *CVs 0/3*), then **tasks for this week as a single flat list sorted by priority score** (effort × return; high-return/low-effort floats to top). Each task row shows a **colored priority stripe** down its left edge (gold = top priority, mid = grey, low = dim) and a theme chip. Effort/return values themselves are not chips on the card — they live in the Task Detail sheet. There is **no sort toggle** on This Week (it was removed 2026-05-24: priority sort is always on; backlog still has its own sort toggle).
+3. User sees, top-down: a **"Milestones" cursor section** (one compact row per active goal that has tasks committed this week — theme dot, next-milestone title, sm pace Track, chevron → Goal Detail; section omitted when no goal qualifies), then **habits with current progress** (e.g., *Gym 2/4*, *Bachata 1/2*, *CVs 0/3*), then **tasks for this week as a single flat list sorted by priority score** (effort × return; high-return/low-effort floats to top). Each task row shows a **colored priority stripe** down its left edge (gold = top priority, mid = grey, low = dim) and a theme chip. Effort/return values themselves are not chips on the card — they live in the Task Detail sheet. There is **no sort toggle** on This Week (priority sort is always on; backlog still has its own sort toggle).
 4. User taps a habit's progress ring to increment its count (or taps the habit card's text to open its detail/edit sheet), and taps a task's circle to complete it (or its title to open detail).
 5. Throughout the day, user captures new tasks via the **single floating action button** (bottom-right, persistent across primary tabs). **Tap = quick-add modal** (manual entry, empty fields). **Long-press = voice listening overlay** (speech → AI parses into draft cards). Decision 2026-05-24: one button with a press-and-hold gesture for voice, rather than two separate FABs.
 6. User confirms or edits the draft inline (single tap to change theme, effort, return, week vs. backlog). Saves.
@@ -72,6 +72,18 @@ User can flip the type with one tap if AI guesses wrong.
 
 **Multi-item utterance:** AI parses multiple items in one utterance ("add gym 4x a week and also remind me to call Pedro"). Shows two draft cards in sequence.
 
+### Goal Detail Screen
+
+Tapping any goal card on the Goals tab opens a full-screen modal (not a bottom drawer). It contains four sections in order:
+
+1. **Hero** — eyebrow (theme · target date), serif title, optional "why" paragraph.
+2. **Goal health** — large labeled 5-segment Track with current health level and the 8-week HealthDots trend. Muted/placeholder when no health rating has been set yet.
+3. **Milestones** — each milestone displayed as an individual surface card (same card style as task rows — rounded corners, surface background). Active milestones show title, target date, and a "Mark hit" action. Hit milestones are dimmed with a check icon and hit date. "+ Add milestone" link below.
+4. **Tasks this week** — task cards (using the shared TaskRow component: priority stripe, toggle checkbox, theme chip) for all tasks linked to this goal with this-week assignment. Tapping the checkbox completes or reopens the task.
+5. **All tasks** — task cards for every task linked to this goal regardless of week assignment (open + done, excludes archived). Backlog tasks show a quiet "backlog" badge.
+
+**Footer:** Mark goal as hit / Delete (active goals) or Reactivate (past goals). Edit in the header opens the Add/Edit Goal screen pre-filled.
+
 ### Goal-Setting Sub-Journey
 
 **One path from the Goals tab:**
@@ -116,9 +128,9 @@ Per quarter (the real success of the product): the user can name their primary m
 
 | Tab | Default? | Contains |
 |---|---|---|
-| 🏠 **This Week** | ✓ default | Milestone header, habits with progress, tasks grouped by theme (with effort/return chips), collapsible Done section at bottom, persistent mic + button |
+| 🏠 **This Week** | ✓ default | "Milestones" cursor section (compact per-goal pace row, sm Track, omitted when no goal has this-week tasks), habits with progress, tasks sorted by priority (with theme chip), collapsible Done section at bottom, persistent FAB |
 | 📥 **Backlog** | | All "for later" tasks. Always accessible. Direct add, browse, edit, swipe-to-promote into this week. |
-| 🎯 **Goals** | | Active primary + secondaries, + Add Goal, 🪄 Coach me, archive of past/missed goals. |
+| 🎯 **Goals** | | Active primary + secondaries (health dashboard — large Track, nearest-milestone line, time left), + Add Goal, archive of past goals. Tapping a card → Goal Detail full-screen modal. |
 | 📊 **Stats** | | Week raw counts `X/N tasks · Y/Z habits` (no %), habit streaks (current + best ever), past-weeks browser. No per-theme breakdown. |
 
 **Top-right gear icon** on This Week → settings, theme management, reminder config.
