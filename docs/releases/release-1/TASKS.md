@@ -185,31 +185,31 @@ Review the **This Week "Milestones" section** vs `/docs/ui`: confirm the cursor 
 
 ### Tasks
 
-- [ ] **4.1 — Make the Sunday flow fire when there are active goals (even with 0 leftovers)**
+- [x] **4.1 — Make the Sunday flow fire when there are active goals (even with 0 leftovers)**
   - Build: in `performRollover`, also create the ritual (or an equivalent pending marker) when the user has ≥1 active goal, not only when `openPrevTasks.length > 0` — so the goal step runs every Sunday. Keep idempotency (the `week_records` guard) intact. Decide the cleanest shape: reuse `carry_over_rituals` with zero decisions, vs. a separate flag. **Record the choice + rationale in Open Questions.**
   - Files: `backend/src/services/rollover.ts`, possibly `backend/src/routes/carry-over.ts` (pending payload), `backend/src/routes/rollover.ts`.
   - Based on: `ux-lens.md` (goal step runs per active goal every Sunday), `requirements-lens.md` (ordering), `NAVIGATION.md` 16.
   - Validate: 🤖 unit/`.inject()` on the trigger logic (active goal + no leftovers → ritual created; no goals + no leftovers → none); 👤 full ritual on a clean week.
 
-- [ ] **4.2 — Backend: AI goal-task suggestion route**
+- [x] **4.2 — Backend: AI goal-task suggestion route**
   - Build: `POST /ai/suggest-goal-tasks` in `backend/src/routes/ai.ts` (pattern from `/ai/capture`). Input: goal (title, why, target_date, health_level), nearest milestone, the goal's existing this-week + open/backlog task titles, themes, optional clarifying answers. Anthropic **tool use** forced `tool_choice` on `suggest_goal_tasks` → `{title, theme_id?, effort_level?, return_level?}[]` (**effort/return enums = `low|medium|high|unknown`**, matching `request-schemas.ts`); Zod-validate. **Soft-fail:** no tool_use / Zod reject / empty → return `{ items: [] }` (NOT 422). Model `claude-sonnet-4-6`, `max_tokens ≈ 512`. Never auto-create. Optional metadata-only log to `ai_capture_logs`.
   - Files: `backend/src/routes/ai.ts`.
   - Based on: `ai-architecture.md`, `requirements-lens.md` (bounded AI).
   - Validate: 🤖 unit-test the parse/validate/soft-fail path with a stubbed Anthropic response (success, empty, malformed → all return cleanly, no 5xx); 🤖 **live curl** (test-user JWT) with a real goal context → returns additional non-duplicate drafts; bad API key → `{ items: [] }`, no 5xx. 👤 real suggestions in-app.
 
-- [ ] **4.3 — Frontend: Reflect sub-screen**
+- [x] **4.3 — Frontend: Reflect sub-screen**
   - Build: `app/app/carry-goal-reflect.tsx` ported from `screens-r1.jsx` `CarryGoalReflect`: "Goal N of M · reflect" header, step dots, goal title + next-milestone line, two mandatory chip-group questions (Progress: A lot/Some/Barely/Nothing · Confidence: Yes/Maybe/No), "Plan this week →" disabled until both answered. On advance → `useSetGoalHealth` (2.1) with the entered week's `week_start_date`, then go to Plan. **Gap-catch** (no active milestone): show "Add milestone" (→ MilestoneSheet) instead of questions. **Overdue:** brick-red milestone line with inline "Mark hit" (→ SetNextMilestone) / "Push date" (→ MilestoneSheet edit).
   - Files: `app/app/carry-goal-reflect.tsx`.
   - Based on: `ui-brief.md` Screen 5 Reflect, `NAVIGATION.md` 16/16c.
   - Validate: 🤖 `tsc` + component test ("Plan this week" disabled until both questions answered; gap-catch variant shows "Add milestone" instead of questions); 👤 health record written (check DB via live call); overdue path on device.
 
-- [ ] **4.4 — Frontend: Plan sub-screen**
+- [x] **4.4 — Frontend: Plan sub-screen**
   - Build: `app/app/carry-goal-plan.tsx` ported from `screens-r1.jsx` `CarryGoalPlan`: "Goal N of M · plan" header, "Toward: [milestone]" line, **tap-to-add** list of the goal's open/backlog tasks (tap → set `week_assignment='this_week'` + current week via existing task update hook; sage "Added"), **"Anything to add?"** AI button (calls 4.2; draft cards each needing explicit confirm → create real task pre-linked to goal + this week), persistent **"+" FAB** (tap = new task pre-linked to this goal + this week; hold = dictate — reuse existing FAB/quick-add), "Next goal"/"Continue". All Plan actions optional.
   - Files: `app/app/carry-goal-plan.tsx`.
   - Based on: `ui-brief.md` Screen 5 Plan, `NAVIGATION.md` 16b, `requirements-lens.md` (AI never primary / never auto-create).
   - Validate: 🤖 `tsc`; 👤 tap-to-add moves task; AI requires confirm; FAB creates pre-linked task; Continue advances.
 
-- [ ] **4.5 — Wire goal step into the ritual sequence + iteration + guards**
+- [x] **4.5 — Wire goal step into the ritual sequence + iteration + guards**
   - Build: insert the goal step between triage and pull. Today: `carry-recap` → `carry-triage` → (on last decision) `router.replace('/carry-pull')`. New: triage complete → goal 1 Reflect → Plan → goal 2 Reflect → … → after last goal → `/carry-pull`. Track active-goal list + index + answers in `app/lib/stores/rollover-store.ts` (extend it). Handle: **0 active goals** → triage → pull (skip step); **0 leftovers** → recap → (skip empty triage) → goal step → pull (today `carry-triage` renders null on 0 decisions — branch it to the goal step). **Update `_layout.tsx` `inRitual` allow-list (lines 56-66) to include `carry-goal-reflect` + `carry-goal-plan`**, and register both in the `<Stack>`. Update the "X OF 3" step labels in `carry-triage.tsx`/`carry-pull.tsx` to reflect the inserted step (or the design's "goal N of M" sub-labels).
   - Files: `app/app/_layout.tsx`, `app/app/carry-triage.tsx`, `app/app/carry-recap.tsx`, `app/app/carry-pull.tsx`, `app/lib/stores/rollover-store.ts`, the two new screens.
   - Based on: `ux-lens.md` (ritual spine), `NAVIGATION.md` 15→16→17, `requirements-lens.md`.
