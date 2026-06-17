@@ -58,6 +58,8 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     const inRitual =
       segments.includes('carry-recap') ||
       segments.includes('carry-triage') ||
+      segments.includes('carry-goal-reflect') ||
+      segments.includes('carry-goal-plan') ||
       segments.includes('carry-pull') ||
       segments.includes('new-week');
     if (!inRitual) {
@@ -89,6 +91,8 @@ export default function RootLayout() {
             <Stack.Screen name="goal-detail" options={{ presentation: 'modal', headerShown: false }} />
             <Stack.Screen name="carry-recap" options={{ headerShown: false }} />
             <Stack.Screen name="carry-triage" options={{ headerShown: false }} />
+            <Stack.Screen name="carry-goal-reflect" options={{ headerShown: false }} />
+            <Stack.Screen name="carry-goal-plan" options={{ headerShown: false }} />
             <Stack.Screen name="carry-pull" options={{ headerShown: false }} />
             <Stack.Screen name="new-week" options={{ headerShown: false }} />
             <Stack.Screen

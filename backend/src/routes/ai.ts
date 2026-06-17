@@ -160,7 +160,122 @@ Rules:
 - confidence_flags: list the field names you guessed or are uncertain about.`;
 }
 
+// ─── Goal-task suggestion ────────────────────────────────────────────────────
+
+const SuggestGoalTasksRequestSchema = z.object({
+  goal: z.object({
+    id: z.string(),
+    title: z.string(),
+    why: z.string().nullable().optional(),
+    target_date: z.string(),
+    health_level: z.string().nullable().optional(),
+  }),
+  nearest_milestone: z.object({
+    title: z.string(),
+    target_date: z.string(),
+  }).nullable().optional(),
+  existing_task_titles: z.array(z.string()),
+  themes: z.array(z.object({ id: z.string(), name: z.string() })),
+});
+
+const SuggestGoalTaskItemSchema = z.object({
+  title: z.string().min(1),
+  theme_id: z.string().nullable().optional(),
+  effort_level: z.enum(['low', 'medium', 'high', 'unknown']).nullable().optional(),
+  return_level: z.enum(['low', 'medium', 'high', 'unknown']).nullable().optional(),
+});
+
+const SuggestGoalTasksOutputSchema = z.object({
+  items: z.array(SuggestGoalTaskItemSchema),
+});
+
+const SUGGEST_GOAL_TASKS_TOOL: Anthropic.Tool = {
+  name: 'suggest_goal_tasks',
+  description: 'Return task suggestions that would move this goal forward this week',
+  input_schema: {
+    type: 'object',
+    required: ['items'],
+    properties: {
+      items: {
+        type: 'array',
+        items: {
+          type: 'object',
+          required: ['title'],
+          properties: {
+            title: { type: 'string', description: 'Concise, actionable task title' },
+            theme_id: { type: ['string', 'null'], description: 'ID of the closest matching theme, or null' },
+            effort_level: { type: ['string', 'null'], enum: ['low', 'medium', 'high', 'unknown', null] },
+            return_level: { type: ['string', 'null'], enum: ['low', 'medium', 'high', 'unknown', null] },
+          },
+        },
+      },
+    },
+  },
+};
+
 export async function aiRoutes(fastify: FastifyInstance) {
+  fastify.post('/ai/suggest-goal-tasks', { preHandler: [authenticate] }, async (request, reply) => {
+    const parsed = SuggestGoalTasksRequestSchema.safeParse(request.body);
+    if (!parsed.success) return reply.status(400).send({ error: parsed.error.flatten() });
+
+    const { goal, nearest_milestone, existing_task_titles, themes } = parsed.data;
+
+    const themesText = themes.map((t) => `  - "${t.name}" (id: ${t.id})`).join('\n');
+    const milestoneText = nearest_milestone
+      ? `Nearest milestone: "${nearest_milestone.title}" (due ${nearest_milestone.target_date})`
+      : 'No active milestone yet.';
+    const existingText = existing_task_titles.length > 0
+      ? `Already planned or in backlog:\n${existing_task_titles.map((t) => `  - ${t}`).join('\n')}`
+      : 'No tasks planned yet.';
+    const healthText = goal.health_level ? `Current health: ${goal.health_level}` : '';
+
+    const systemPrompt = `You suggest concrete, actionable tasks that will move a goal forward this week.
+
+Goal: "${goal.title}"${goal.why ? `\nWhy: ${goal.why}` : ''}
+Target date: ${goal.target_date}
+${healthText}
+${milestoneText}
+
+${existingText}
+
+Available themes:
+${themesText}
+
+Rules:
+- Suggest 2–4 tasks that are specific, completable in one week, and directly advance the goal or milestone.
+- Do NOT suggest tasks that duplicate the existing ones listed above.
+- Each task should be distinct and additive.
+- title: short, verb-first, actionable.
+- theme_id: match to the most relevant theme, or null if unclear.
+- effort_level / return_level: estimate honestly; use "unknown" only if truly unclear.
+- Fewer focused tasks beat a long generic list.`;
+
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+    try {
+      const msg = await client.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 512,
+        system: systemPrompt,
+        tools: [SUGGEST_GOAL_TASKS_TOOL],
+        tool_choice: { type: 'tool', name: 'suggest_goal_tasks' },
+        messages: [{ role: 'user', content: `Suggest tasks toward: ${goal.title}` }],
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const toolUse = (msg.content as any[]).find((b: any) => b.type === 'tool_use');
+      if (!toolUse) return { items: [] };
+
+      const validated = SuggestGoalTasksOutputSchema.safeParse(toolUse.input);
+      if (!validated.success || validated.data.items.length === 0) return { items: [] };
+
+      return { items: validated.data.items };
+    } catch {
+      // Soft-fail: AI errors never surface as 5xx
+      return { items: [] };
+    }
+  });
+
   fastify.post('/ai/capture', { preHandler: [authenticate] }, async (request, reply) => {
     const parsed = CaptureRequestSchema.safeParse(request.body);
     if (!parsed.success) return reply.status(400).send({ error: parsed.error.flatten() });

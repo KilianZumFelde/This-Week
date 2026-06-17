@@ -141,12 +141,20 @@ export async function performRollover(
       );
   }
 
-  // Step 7–8: Identify open tasks and create carry_over_ritual if needed
+  // Step 7–8: Identify open tasks + active goals, create carry_over_ritual if needed
   const openPrevTasks = allPrevTasks.filter((t) => t.status === 'open');
+
+  const { data: activeGoalsData } = await supabase
+    .from('goals')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('status', 'active');
+  const hasActiveGoals = (activeGoalsData ?? []).length > 0;
 
   let pendingRitualId: string | null = null;
 
-  if (openPrevTasks.length > 0) {
+  // Create ritual when there are leftover tasks OR active goals (goal step runs every Sunday)
+  if (openPrevTasks.length > 0 || hasActiveGoals) {
     const { data: ritual, error: ritualError } = await supabase
       .from('carry_over_rituals')
       .upsert(
@@ -164,16 +172,19 @@ export async function performRollover(
     if (!ritualError && ritual) {
       pendingRitualId = ritual.id;
 
-      const decisionRows = openPrevTasks.map((t) => ({
-        ritual_id: ritual.id,
-        user_id: userId,
-        task_id: t.id,
-        decision: null,
-      }));
+      // Only create decision rows when there are leftover open tasks
+      if (openPrevTasks.length > 0) {
+        const decisionRows = openPrevTasks.map((t) => ({
+          ritual_id: ritual.id,
+          user_id: userId,
+          task_id: t.id,
+          decision: null,
+        }));
 
-      await supabase
-        .from('carry_over_task_decisions')
-        .upsert(decisionRows, { onConflict: 'ritual_id,task_id', ignoreDuplicates: true });
+        await supabase
+          .from('carry_over_task_decisions')
+          .upsert(decisionRows, { onConflict: 'ritual_id,task_id', ignoreDuplicates: true });
+      }
     }
   }
 

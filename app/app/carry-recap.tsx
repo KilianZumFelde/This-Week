@@ -149,14 +149,17 @@ export default function CarryRecap() {
         {/* CTA */}
         <TouchableOpacity
           style={styles.primaryBtn}
-          onPress={() => router.replace('/carry-triage')}
+          onPress={() => router.replace(undecidedCount > 0 ? '/carry-triage' : '/carry-goal-reflect')}
         >
-          <Text style={styles.primaryBtnText}>Review leftovers</Text>
+          <Text style={styles.primaryBtnText}>
+            {undecidedCount > 0 ? 'Review leftovers' : 'Plan this week'}
+          </Text>
           <Icon name="arrow" size={16} color={colors.bg} />
         </TouchableOpacity>
         <Text style={styles.footer}>
-          {undecidedCount} task{undecidedCount !== 1 ? 's' : ''} from last week need a decision
-          before this week starts.
+          {undecidedCount > 0
+            ? `${undecidedCount} task${undecidedCount !== 1 ? 's' : ''} from last week need a decision before this week starts.`
+            : 'No leftovers — time to plan your goals.'}
         </Text>
       </ScrollView>
     </View>

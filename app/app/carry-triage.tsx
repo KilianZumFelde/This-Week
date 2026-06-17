@@ -106,7 +106,7 @@ export default function CarryTriage() {
       );
 
       if (res.ritual_completed) {
-        router.replace('/carry-pull');
+        router.replace('/carry-goal-reflect');
       }
     } finally {
       setSubmitting(false);
