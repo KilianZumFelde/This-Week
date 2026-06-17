@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { colors, radius } from '../../lib/tokens';
-import { useGoals, useGoalStats, useNearestMilestones } from '../../lib/hooks/useGoals';
+import { useGoals, useNearestMilestones } from '../../lib/hooks/useGoals';
 import type { Goal, NearestMilestone } from '../../lib/hooks/useGoals';
 import { useThemes } from '../../lib/hooks/useThemes';
 import { Track, healthByKey } from '../components/HealthTrack';
@@ -75,7 +75,6 @@ function GoalCardBody({
   nearestMs: NearestMilestone | undefined | null;
   isPrimary: boolean;
 }) {
-  const { data: stats } = useGoalStats(goal.id);
   const mo = monthsLeft(goal.target_date);
   const eyebrowColor = isPrimary ? colors.accentStrong : (themeColor ?? colors.slate);
 
@@ -111,20 +110,11 @@ function GoalCardBody({
       {/* Nearest-milestone line */}
       <MilestoneLine ms={nearestMs} />
 
-      {/* Quiet secondary counts */}
-      <View style={styles.goalStats}>
-        <Text style={styles.goalStatText}>
-          <Text style={styles.goalStatN}>{stats?.tasks_this_week ?? 0}</Text> tasks this week
+      {mo > 0 && (
+        <Text style={[styles.goalTimeLeft, { color: isPrimary ? colors.accentStrong : colors.text3 }]}>
+          {mo} mo left
         </Text>
-        <Text style={styles.goalStatText}>
-          <Text style={styles.goalStatN}>{stats?.habits_linked ?? 0}</Text> habits linked
-        </Text>
-        {mo > 0 && (
-          <Text style={[styles.goalTimeLeft, { color: isPrimary ? colors.accentStrong : colors.text3 }]}>
-            {mo} mo left
-          </Text>
-        )}
-      </View>
+      )}
     </>
   );
 }
@@ -443,20 +433,6 @@ const styles = StyleSheet.create({
   healthLevel: {
     fontSize: 12.5,
     fontWeight: '600',
-  },
-  goalStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  goalStatText: {
-    fontSize: 12.5,
-    color: colors.text2,
-  },
-  goalStatN: {
-    color: colors.text,
-    fontWeight: '600',
-    fontSize: 15,
   },
   goalTimeLeft: {
     marginLeft: 'auto',
