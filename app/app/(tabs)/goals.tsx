@@ -62,7 +62,7 @@ const msStyles = StyleSheet.create({
 
 // ─── Goal card ───────────────────────────────────────────────────────────────
 
-function GoalCardBody({
+export function GoalCardBody({
   goal,
   themeColor,
   themeName,

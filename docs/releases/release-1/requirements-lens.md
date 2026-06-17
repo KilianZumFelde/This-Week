@@ -11,16 +11,27 @@
 - Health is **set weekly during the Sunday triage** goal step, from **two subjective questions** asked per goal:
   1. *Progress* — "How much did you move toward [milestone] this week?" → **A lot / Some / Barely / Nothing**
   2. *Confidence* — "Confident you'll hit [milestone] by [date]?" → **Yes / Maybe / No**
-- **Health level = f(progress, confidence)** — a pure function of the two answers. The user is effectively the calculator; the system performs no objective computation. The milestone's date is shown only as **context** to help the user answer (it is NOT a computational input). Proposed mapping (tuning table, adjustable):
+- **Health level = `calculateGoalHealth(current, history)`** — computed from the user's two answers for the current week **plus up to 3 prior contiguous weekly answers** (no gaps; a skipped Sunday resets the window). The inputs are always the user's own subjective answers — never task counts or objective cadence — so the signal remains subjective. The milestone's date is shown only as **context** to help the user answer (it is NOT a computational input).
+
+  **Base score table (score 0–4 → Behind … Well ahead):**
 
   | Progress \ Confidence | Yes | Maybe | No |
   |---|---|---|---|
-  | **A lot** | Well ahead | Ahead | On track |
-  | **Some** | Ahead | On track | Slightly behind |
-  | **Barely** | On track | Slightly behind | Behind |
-  | **Nothing** | Slightly behind | Behind | Behind |
+  | **A lot** | Ahead (3) | On track (2) | Slightly behind (1) |
+  | **Some** | On track (2) | On track (2) | Slightly behind (1) |
+  | **Barely** | Slightly behind (1) | Slightly behind (1) | Behind (0) |
+  | **Nothing** | Slightly behind (1) | Slightly behind (1) | Behind (0) |
 
-- **Health is frozen between Sundays.** It changes only when the user answers the weekly questions — there is no clock-driven or activity-driven drift. (The user explicitly rejected auto-drift: there is no honest objective basis to drift on.)
+  **History adjustments (bounded ±1–2 notches; current week is always dominant):**
+  - A **negative pattern** (any of the three below) lowers the score by 1 or 2 notches. The *strongest single pattern* is used — they do not stack.
+    1. **Repeated low confidence** — 2× consecutive `no` → −1; 3+× `no` → −2; 3+× `!= yes` → −1
+    2. **Repeated stagnation** (`progress ∈ {barely, nothing}` AND `confidence ∈ {maybe, no}`) — 2× → −1; 3+× → −2
+    3. **Repeated nothing progress** — 2× → −1; 3+× → −2
+  - A **positive pattern** lifts the score by 1 notch (only applied when no negative fires): 2+× `a_lot+yes` → +1; 3+× `(some|a_lot)+yes` → +1
+  - The current week always breaks a streak: if this week's answers do not match the pattern, the streak count resets to 0 and no adjustment fires. **Recovery from a bad streak is always possible with a strong current week.**
+  - Final score is clamped to [0, 4] (Behind … Well ahead). Stored `health_level` values from prior weeks are never re-computed; the model reads raw `progress_answer` / `confidence_answer` from `goal_health_records`.
+
+- **Health is frozen between Sundays.** It changes only when the user answers the weekly questions — there is no clock-driven or activity-driven drift. (The user explicitly rejected auto-drift: there is no honest objective basis to drift on.) History adjustments are bounded and read from the user's own prior answers; they never apply automatically without an active Sunday submission.
 - Health applies to **all active goals** (primary and secondaries alike).
 
 **This-week on-track cursor (the micro signal — distinct from health):**

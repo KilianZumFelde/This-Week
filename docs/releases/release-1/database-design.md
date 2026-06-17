@@ -249,9 +249,14 @@ milestones — tasks             NONE (deliberately no relationship)
   - target date **on or before the parent goal's `target_date`** (a cross-table comparison a CHECK
     can't express). Same pattern as the existing secondary-goal cap. Rule changes need no migration;
     the backend is the only writer.
-- **`health_level = f(progress_answer, confidence_answer)`** — computed in the backend from the
-  mapping table (worst→best), then written to both `goals` (current) and `goal_health_records`
-  (snapshot for the entered week). The DB stores the result; it does not compute it.
+- **`health_level = calculateGoalHealth(current, history)`** — computed in the backend from the
+  current week's `progress_answer` + `confidence_answer` **plus up to 3 prior contiguous
+  `goal_health_records` rows** (fetched at write-time, ordered newest→oldest, stopped at the first
+  missing week). The result is then written to both `goals` (current) and `goal_health_records`
+  (snapshot for the entered week). **No schema change / no migration** — the existing NOT-NULL raw
+  answers + `unique(goal_id, week_start_date)` + `goal_health_records_goal_week_idx` already
+  support the history read. Stored `health_level` values from prior weeks are display-only and are
+  never re-computed retroactively.
 - **Both health questions required** to set/confirm a goal's health during triage (mandatory-light).
 - **"1–2 upcoming milestones" rhythm** — a soft guideline only; **not** an enforced cap (no
   trigger, no unique index limiting count).

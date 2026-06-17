@@ -37,3 +37,13 @@ export function getPreviousWeekStartDate(weekStartDate: string): string {
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
+
+/** Returns the YYYY-MM-DD date string n weeks before the given date. */
+export function subtractWeeks(weekStartDate: string, n: number): string {
+  const d = new Date(`${weekStartDate}T00:00:00`);
+  d.setDate(d.getDate() - 7 * n);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}

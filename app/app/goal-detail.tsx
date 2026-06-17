@@ -158,6 +158,10 @@ export default function GoalDetail() {
           )}
         </View>
 
+        <Text style={styles.healthCaption}>
+          Based on this week's answers and recent weekly patterns.
+        </Text>
+
         <View style={styles.hr} />
 
         {/* Trend */}
@@ -394,6 +398,12 @@ const styles = StyleSheet.create({
     color: colors.text3,
     fontStyle: 'italic',
     marginTop: 6,
+  },
+  healthCaption: {
+    fontSize: 11.5,
+    color: colors.text3,
+    marginTop: -10,
+    marginBottom: 4,
   },
   hr: {
     height: 1,

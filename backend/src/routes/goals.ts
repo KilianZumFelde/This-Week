@@ -3,7 +3,7 @@ import { authenticate } from '../middleware/authenticate.js';
 import { supabase } from '../lib/supabase.js';
 import { CreateGoalRequestSchema, UpdateGoalRequestSchema, SetGoalHealthRequestSchema } from '../lib/request-schemas.js';
 import { getCurrentWeekStartDate } from '../lib/week.js';
-import { computeHealthLevel } from '../lib/goalHealth.js';
+import { calculateGoalHealth, type CurrentHealthInput, type HealthRecord } from '../lib/goalHealth.js';
 
 async function getUserTimezone(userId: string): Promise<string> {
   const { data } = await supabase
@@ -130,7 +130,19 @@ export async function goalsRoutes(fastify: FastifyInstance) {
     if (!parsed.success) return reply.status(400).send({ error: parsed.error.flatten() });
 
     const { progress_answer, confidence_answer, week_start_date } = parsed.data;
-    const health_level = computeHealthLevel(progress_answer, confidence_answer);
+
+    // Fetch recent records to feed the history-aware model (up to 4 weeks inc. current)
+    const { data: recentRows } = await supabase
+      .from('goal_health_records')
+      .select('goal_id, week_start_date, progress_answer, confidence_answer')
+      .eq('goal_id', id)
+      .eq('user_id', request.userId)
+      .lte('week_start_date', week_start_date)
+      .order('week_start_date', { ascending: false })
+      .limit(5);
+
+    const current: CurrentHealthInput = { goal_id: id, week_start_date, progress_answer, confidence_answer };
+    const health_level = calculateGoalHealth(current, (recentRows ?? []) as HealthRecord[]);
 
     // Upsert health snapshot for the week
     const { error: recordError } = await supabase

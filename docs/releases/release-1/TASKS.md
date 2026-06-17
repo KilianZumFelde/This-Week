@@ -244,13 +244,13 @@ This means the shipped `computeHealthLevel` (Phase 2.1), its unit test (`goalHea
 
 ### Tasks
 
-- [ ] **5.1 — Date helper: `subtractWeeks(weekStartDate, n)`**
+- [x] **5.1 — Date helper: `subtractWeeks(weekStartDate, n)`**
   - Build: add `subtractWeeks(weekStartDate: string, n: number): string` to `backend/src/lib/dateUtils.ts`, alongside the existing `getPreviousWeekStartDate` (which already does the `n=1` case via `new Date(\`${d}T00:00:00\`)` + `setDate(-7)` — reuse that exact date-only pattern; **do not** use UTC parsing or local-time arithmetic that can drift around DST/midnight). Date-only `YYYY-MM-DD` in/out.
   - Files: `backend/src/lib/dateUtils.ts`.
   - Based on: ChatGPT spec §Date handling; existing `getPreviousWeekStartDate`.
   - Validate: 🤖 vitest — `subtractWeeks("2026-06-15",1)==="2026-06-08"`, `…,2)==="2026-06-01"`, `…,3)==="2026-05-25"`; a case crossing a DST boundary stays exact.
 
-- [ ] **5.2 — Rewrite `goalHealth.ts` as the history-aware pure model**
+- [x] **5.2 — Rewrite `goalHealth.ts` as the history-aware pure model**
   - Build (all pure, no DB, **no floating point**, in `backend/src/lib/goalHealth.ts`):
     - Reuse existing exported types `HealthLevelValue` / `ProgressAnswer` / `ConfidenceAnswer`. Add a `HealthRecord` shape `{ goal_id; week_start_date; progress_answer; confidence_answer; health_level? }` and `CurrentHealthInput` `{ goal_id; week_start_date; progress_answer; confidence_answer }`.
     - **Score maps:** `behind=0 … well_ahead=4` and back (`scoreToHealthLevel`, clamped 0–4).
@@ -264,19 +264,19 @@ This means the shipped `computeHealthLevel` (Phase 2.1), its unit test (`goalHea
   - Based on: ChatGPT spec §Desired model / §Base table / §Historical adjustments / §Suggested implementation shape / §Pseudocode.
   - Validate: 🤖 vitest (5.4). 🤖 `npm run build` (tsc) — strict types, no `any`.
 
-- [ ] **5.3 — Feed history into the set-health endpoint**
+- [x] **5.3 — Feed history into the set-health endpoint**
   - Build: in `POST /goals/:id/health` (`backend/src/routes/goals.ts`, ~line 127), **before** computing: fetch the goal's recent `goal_health_records` (`select progress_answer, confidence_answer, week_start_date, goal_id`, `eq goal_id`, `eq user_id`, `week_start_date <= week_start_date`, `order desc`, `limit 5`). Build `current` from the request body, call `calculateGoalHealth(current, records)` (the pure fn already dedupes/excludes the stored current-week row in favour of the in-memory answers), then upsert + update the `goals` row with the **computed** level exactly as today. Replace the current `computeHealthLevel(progress, confidence)` call.
   - Files: `backend/src/routes/goals.ts`.
   - Based on: ChatGPT spec §Persistence behavior, §Backward compatibility.
   - Validate: 🤖 **live curl** (test-user JWT, local backend) — seed `nothing+maybe` for week N−1, then POST `nothing+maybe` for week N → `behind` (stagnation kicks in); POST `a_lot+yes` for week N after two `nothing+no` weeks → `ahead` (recovery, streak doesn't apply); a non-contiguous prior week → ignored. Confirm one row per `(goal_id, week_start_date)` (no double-count on re-POST of the same week).
 
-- [ ] **5.4 — Tests for the history-aware model** *(replaces the old 12-pair test)*
+- [x] **5.4 — Tests for the history-aware model** *(replaces the old 12-pair test)*
   - Build: rewrite `backend/src/tests/goalHealth.test.ts` to cover **all 14 required cases**: (1) 12 base/no-history pairs against the *new* base table; (2) no-history behavior; (3) 2× `nothing+maybe` → behind; (4) 3× stagnation; (5) 2× `a_lot+no` → behind; (6) 3× `no` confidence; (7) 2× `a_lot+yes` → well_ahead; (8) 3× `some+yes` → ahead; (9) positive **not** applied when a negative applies; (10) missing week breaks streak (`2026-06-01` + `2026-06-15`, missing `06-08` → slightly_behind); (11) records from other goals ignored; (12) existing record for the current week not double-counted (stored differs from in-memory → in-memory wins); (13) final score clamped Behind…Well ahead; (14) recovery (`nothing+no` ×2 then `a_lot+yes` → ahead).
   - Files: `backend/src/tests/goalHealth.test.ts`.
   - Based on: ChatGPT spec §Expected examples / §Testing requirements.
   - Validate: 🤖 `npm test` (backend) green.
 
-- [ ] **5.5 — UI: surface the model honestly (no new questions)**
+- [x] **5.5 — UI: surface the model honestly (no new questions)**
   - Build: **no new ritual/UI questions** and no new health value plumbing (Goals tab + Goal Detail already render the stored `health_level`; this phase only changes how it's computed). *Optional, low-risk:* add one calm explanatory line under the Health section in `app/app/goal-detail.tsx` — "Goal health is based on this week's progress, confidence, and recent patterns." — only if it sits naturally; keep wording non-judgmental (no "At risk"/"Bad"). Confirm `HealthTrack`/`healthByKey` already handle all five DB levels (they do — Phase 1.4).
   - Files: `app/app/goal-detail.tsx` (copy only, optional).
   - Based on: ChatGPT spec §UX expectations.
@@ -306,9 +306,10 @@ On a seeded multi-week goal, confirm the model *feels honest*: one `nothing+mayb
   - Based on: `ui-brief.md` "Pending", `consistency-lens.md` "Deferred / open".
   - Validate: 👤 exercise each variant in-app.
 
-- [ ] **6.2 — Tests for new logic**
+- [x] **6.2 — Tests for new logic**
   - Build: backend Vitest for the **history-aware `calculateGoalHealth`** (the 14 cases — owned by Phase 5.4), `validateMilestoneDate`, the AI soft-fail path, and the 4.1 trigger logic; frontend jest tests for `cursorPosition` + the component tests written across Phases 1–4 (Track, card variants, This Week section omission, Reflect gating). Patterns from `backend/src/tests/` + `app/lib/__tests__/`.
   - Validate: 🤖 `npm test` (backend) and `npm test` (app) both green.
+  - **Done:** `backend/src/lib/aiUtils.ts` (`parseSuggestToolResult`) + `backend/src/tests/ai.test.ts` (8 soft-fail cases); `backend/src/lib/rolloverUtils.ts` (`shouldCreateRitual`) + `backend/src/tests/rollover.test.ts` (4 trigger cases); `app/lib/__tests__/GoalCard.test.tsx` (5 card-variant cases: health-set/muted/no-milestone/milestone/overdue); `app/__mocks__/@expo/vector-icons.js` + jest moduleNameMapper for native font avoidance. Backend: 69/69 ✓  Frontend: 22/22 ✓. Note: This Week section omission (JSX conditional in index.tsx) and Reflect "Plan this week" button gating (covered by logic in carry-goal-reflect.tsx) remain 👤-only — extracting full-screen components for those would require extensive hook mocking without proportional test value.
 
 - [ ] **6.3 — Baseline fold-back (per CLAUDE.md Releases: Fold-Back)**
   - Build: merge release-1 deltas into main `/docs` lenses (product / domain / requirements / ux / database_design / ai-architecture): Milestone + goal health + GoalHealthRecord into domain & database baselines; goal step + two signals into ux/requirements; AI suggestion into ai-architecture; **the history-aware health model + retuned base table (Phase 5) into the requirements & database baselines** (carry over the same wording fixes made to the release-1 deltas in 5.5 admin). Keep `docs/releases/release-1/` as a dated archive. `/docs/ui` already current — no UI fold-back.

@@ -1,6 +1,8 @@
 import { supabase } from '../lib/supabase.js';
 import { getCurrentWeekStartDate } from '../lib/week.js';
 import { getPreviousWeekStartDate } from '../lib/dateUtils.js';
+import { shouldCreateRitual } from '../lib/rolloverUtils.js';
+export { shouldCreateRitual } from '../lib/rolloverUtils.js';
 
 
 export async function performRollover(
@@ -154,7 +156,7 @@ export async function performRollover(
   let pendingRitualId: string | null = null;
 
   // Create ritual when there are leftover tasks OR active goals (goal step runs every Sunday)
-  if (openPrevTasks.length > 0 || hasActiveGoals) {
+  if (shouldCreateRitual(openPrevTasks.length, hasActiveGoals)) {
     const { data: ritual, error: ritualError } = await supabase
       .from('carry_over_rituals')
       .upsert(

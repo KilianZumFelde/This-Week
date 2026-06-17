@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { authenticate } from '../middleware/authenticate.js';
 import { supabase } from '../lib/supabase.js';
 import { localToUTC } from '../lib/dateUtils.js';
+import { parseSuggestToolResult } from '../lib/aiUtils.js';
+export { parseSuggestToolResult } from '../lib/aiUtils.js';
 
 const CaptureRequestSchema = z.object({
   transcript: z.string().min(1),
@@ -343,14 +345,7 @@ Call the suggestion tool with only the suggestions that pass this quality gate.`
         messages: [{ role: 'user', content: `Suggest tasks toward: ${goal.title}` }],
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const toolUse = (msg.content as any[]).find((b: any) => b.type === 'tool_use');
-      if (!toolUse) return { items: [] };
-
-      const validated = SuggestGoalTasksOutputSchema.safeParse(toolUse.input);
-      if (!validated.success || validated.data.items.length === 0) return { items: [] };
-
-      return { items: validated.data.items };
+      return parseSuggestToolResult(msg.content as unknown[]);
     } catch {
       // Soft-fail: AI errors never surface as 5xx
       return { items: [] };
