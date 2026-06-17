@@ -20,7 +20,9 @@
       "Bash(ls node_modules/@testing-library/react-native/dist/index.js)",
       "Bash(node -e \"console.log\\(require\\('jest-expo/package.json'\\).version\\)\")",
       "Bash(node -e \"const r=require\\('@testing-library/react-native'\\); console.log\\('exports:', Object.keys\\(r\\).join\\(', '\\)\\);\")",
-      "Bash(node -e \"const p=require\\('test-renderer/package.json'\\); console.log\\('v',p.version,'| main',p.main,'| peers',JSON.stringify\\(p.peerDependencies||{}\\),'| deps',JSON.stringify\\(p.dependencies||{}\\)\\)\")"
+      "Bash(node -e \"const p=require\\('test-renderer/package.json'\\); console.log\\('v',p.version,'| main',p.main,'| peers',JSON.stringify\\(p.peerDependencies||{}\\),'| deps',JSON.stringify\\(p.dependencies||{}\\)\\)\")",
+      "PowerShell(Get-Command *)",
+      "PowerShell(New-Item *)"
     ]
   },
   "prefersReducedMotion": true

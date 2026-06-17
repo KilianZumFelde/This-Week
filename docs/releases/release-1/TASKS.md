@@ -156,13 +156,13 @@ Review the **Goals tab** dashboard and **Goal Detail** health + 8-week trend vs 
 
 ### Tasks
 
-- [ ] **3.1 — Cursor data (dedicated endpoint or client compute) + pure position fn**
+- [x] **3.1 — Cursor data (dedicated endpoint or client compute) + pure position fn**
   - Build: pure fn `cursorPosition({ committed, completed, dayIndexInWeek })` → 0–1 marker pos (`expected = committed * dayIndex/7`; ahead/behind around it), in `app/lib/` (and/or shared with backend). For the data: **NOT via `/auth/bootstrap`** (that only seeds profile/themes). Choose either (a) a dedicated `GET /goals/cursors` returning per active goal `{ goal_id, next_milestone_title, theme_color, committed_count, completed_count }`, or (b) client-side from existing hooks (`useThisWeekTasks` rows carry `goal_id`; `useGoals`; nearest milestone via `useMilestones`). Default to (a) for one clean call. **Record the choice in Open Questions.** Skip goals with 0 committed this-week tasks.
   - Files: `app/lib/week.ts` (day math) + new helper; `backend/src/routes/goals.ts` if (a).
   - Based on: `requirements-lens.md` (cursor rules), `database-design.md` ("This-Week On-Track Cursor" — derived, existing indexes), `ux-lens.md`.
   - Validate: 🤖 unit-test `cursorPosition` (0 committed → omit; behind/on-pace/ahead; day-1 vs day-7); 👤 marker moves on real completion.
 
-- [ ] **3.2 — Frontend: Milestones section on This Week + remove hero**
+- [x] **3.2 — Frontend: Milestones section on This Week + remove hero**
   - Build: in `app/app/(tabs)/index.tsx`, **remove the "Milestone hero" block (lines ~272-300)** and its now-unused styles (`milestone*`), plus the `primaryGoal`/`primaryGoalStats` wiring if only used by the hero. Add the muted **"Milestones"** section above Habits per `screens-r1.jsx` `ThisWeek` cursor-block: per active goal with this-week tasks, a compact row (theme dot + next-milestone title + light `Track size="sm"` + chevron); tap → `router.push('/goal-detail?goalId=...')`. **Variant:** omit the whole section when none qualify (open straight into Habits). Keep the first-launch empty hero and loading/error states unchanged.
   - Files: `app/app/(tabs)/index.tsx`.
   - Based on: `ui-brief.md` Screen 1 (+ Pending: no-active-goals variant), `NAVIGATION.md` 01, `screens-r1.jsx`.
@@ -259,7 +259,7 @@ Final pass: goals now visibly steer the week (Home cursor, Goals dashboard, Sund
 ## Open questions (running)
 
 - **AI assist shape (4.2):** single-shot first vs. clarifying-question turn (ai-architecture.md Open Questions). Default: single-shot.
-- **Cursor data delivery (3.1):** dedicated endpoint vs. client-side / extend stats — pick the lightest; record the choice.
+- **Cursor data delivery (3.1) — DECIDED:** client-side computation from existing hooks (`useThisWeekTasks` carries `goal_id` + `status`; `useGoals`; `useNearestMilestones`). No new backend endpoint. The home screen already loads all three; per-goal committed/completed counts are derived in a `useMemo`. Avoids an extra round-trip and keeps the backend unchanged.
 - **Trend/health payload (2.2) — DECIDED:** dedicated `GET /goals/nearest-milestones` endpoint + `GET /goals/:id/health-records?limit=8`. Keeps `GET /goals` payload unchanged; avoids N+1 from the client. The static route `/goals/nearest-milestones` is registered in the same `goalsRoutes` function; Fastify's trie router (find-my-way) gives priority to static segments over `:id` params.
 - **Sunday-flow trigger (4.1):** how the ritual fires on a zero-leftover week (reuse `carry_over_rituals` with no decisions vs. a separate marker) — record the chosen shape and why.
 
