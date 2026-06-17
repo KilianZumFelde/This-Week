@@ -78,6 +78,8 @@ Do not define phases that are only abstract setup or documentation unless they a
 
 Prefer vertical slices over large disconnected layers. A vertical slice means implementing enough frontend, backend, database, and validation for one usable piece of functionality where practical.
 
+**Ground every task in real code before writing it.** Do not name a file in a task without having read it. The lenses and `/docs/ui` tell you *what* to build; reading the actual target files tells you *where it goes and what it collides with*. A plan written from the docs alone is a guess. For any change to a flow (navigation, a job, the Sunday ritual, a trigger), trace the existing mechanism end-to-end first and list every gate it passes through — route registration, navigation guards / allow-lists, conditional creation, preconditions — and confirm the new feature's precondition actually fires (e.g. *does the trigger even run in this case?*).
+
 ---
 
 ## Task Rules
@@ -121,6 +123,10 @@ The release's UI brief (in the release folder) states what is new or changed in 
 
 So: `/docs/ui` = what the app should look like. The UI brief = what changed and which code to update to get there. Build the app code to match `/docs/ui`, scoped by the brief.
 
+`/docs/ui` is a **React web prototype** (HTML/CSS, `color-mix`, gradients); the app is **React Native** (`View`/`Text`/`StyleSheet`, hex tokens from `app/lib/tokens.ts`, no `color-mix`/gradients). Each UI task is a **faithful port** — match layout, spacing, hierarchy, density, and component structure as closely as RN allows; pre-compute web-only colors to hex/rgba. This is "port the design," not "loosely based on."
+
+**Every UI/behavior task must name what to remove or replace, not only what to add.** New features usually replace shipped behavior (an old hero, a retired drawer); "add X" without "remove Y" ships both. When adding fields or enums, verify them against the actual existing schema (e.g. `request-schemas.ts`), not the lens prose.
+
 ---
 
 ## Validation Rules
@@ -142,6 +148,8 @@ Examples:
 - reminders/jobs: validate with controlled test records and logs
 
 If a task cannot be validated automatically, include a manual validation step.
+
+**Validate as much as you can yourself before handing back, and tell the user exactly what you need when you genuinely can't.** Do not pre-emptively declare something "user-only" — first check `docs/credentials.md` and `docs/env.md` for test users, tokens, and keys that unlock self-validation. Concretely: mint a JWT for the test user (`test@weeklyfocus.dev`) via the Supabase password grant to make authenticated API calls; run the backend locally and `curl` your new endpoints; apply additive migrations via the service-role / DB password (ask first before DDL on the real dev DB); run `tsc`, backend `vitest`, and the app's `jest`/RNTL component tests. Reserve the user for what truly needs them — rendered-pixel fidelity, touch/transition feel on a device, and explicit sign-off on risky actions. Prefer extracting pure functions (mappings, validators, derivations) so logic is unit-testable cheaply.
 
 ---
 

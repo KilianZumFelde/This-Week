@@ -8,7 +8,19 @@
       "Bash(npx tsc *)",
       "Bash(python -m json.tool)",
       "PowerShell(git add *)",
-      "Bash(curl *)"
+      "Bash(curl *)",
+      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{try{const j=JSON.parse\\(s\\);if\\(j.access_token\\){console.log\\('OK got JWT, length',j.access_token.length,'| token user:',j.user&&j.user.email\\)}else{console.log\\('NO token. Response:',JSON.stringify\\(j\\).slice\\(0,300\\)\\)}}catch\\(e\\){console.log\\('parse err / raw:',s.slice\\(0,300\\)\\)}}\\)\")",
+      "Bash(node -e \"const p=require\\('./app/package.json'\\); console.log\\('scripts:',JSON.stringify\\(p.scripts,null,2\\)\\); console.log\\('has jest dep:', !!\\(p.devDependencies&&\\(p.devDependencies.jest||p.devDependencies['jest-expo']\\)\\)||!!\\(p.dependencies&&p.dependencies.jest\\)\\); console.log\\('has @testing-library/react-native:', !!\\(p.devDependencies&&p.devDependencies['@testing-library/react-native']\\)\\);\")",
+      "Bash(node -e \"const p=require\\('./app/package.json'\\); console.log\\('jest field present:', !!p.jest\\)\")",
+      "Bash(npx jest *)",
+      "Bash(node -e \"console.log\\(require\\('@testing-library/react-native/package.json'\\).version\\)\")",
+      "Bash(node -e \"const p=require\\('@testing-library/react-native/package.json'\\); console.log\\(JSON.stringify\\(p.peerDependencies||{},null,2\\)\\); console.log\\('deps:',JSON.stringify\\(p.dependencies||{},null,2\\)\\)\")",
+      "Bash(find node_modules -path \"*/@testing-library/react-native/package.json\")",
+      "Bash(node -e \"const p=require\\('@testing-library/react-native/package.json'\\); console.log\\('version',p.version,'| main',p.main,'| module',p.module\\); console.log\\('exports', JSON.stringify\\(p.exports\\)\\)\")",
+      "Bash(ls node_modules/@testing-library/react-native/dist/index.js)",
+      "Bash(node -e \"console.log\\(require\\('jest-expo/package.json'\\).version\\)\")",
+      "Bash(node -e \"const r=require\\('@testing-library/react-native'\\); console.log\\('exports:', Object.keys\\(r\\).join\\(', '\\)\\);\")",
+      "Bash(node -e \"const p=require\\('test-renderer/package.json'\\); console.log\\('v',p.version,'| main',p.main,'| peers',JSON.stringify\\(p.peerDependencies||{}\\),'| deps',JSON.stringify\\(p.dependencies||{}\\)\\)\")"
     ]
   },
   "prefersReducedMotion": true
