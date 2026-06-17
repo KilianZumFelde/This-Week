@@ -224,30 +224,101 @@ Walk the **full Sunday ritual**: recap → triage → per-goal Reflect→Plan �
 
 ---
 
-## Phase 5 — Remaining variants, tests, baseline fold-back
+## Phase 5 — History-aware goal health model
+
+**Outcome:** Goal health stops being a static 4×3 lookup of the *current* week only. It becomes a **deterministic, history-aware pure function** (`calculateGoalHealth`) that scores the current week from a retuned base table and then applies **one bounded adjustment** for a clear recent pattern over up to 4 contiguous weeks (current + 3 prior). The current week stays the dominant signal — history only moves the result when the user keeps telling the same risky or healthy story, and a strong current week always allows recovery. No new ritual questions, no UI questions, **no migration** (reads existing `progress_answer` / `confidence_answer` / `week_start_date`). Verified by unit tests for all 14 required cases plus a multi-week live `curl`.
+
+### Why this is a real change, not a tweak (read before implementing)
+
+The **base table itself is retuned** to be more conservative — history is what lifts strong patterns back up. So the *no-history* result for several pairs changes vs. what's shipped today:
+
+| | Current shipped (`goalHealth.ts` `HEALTH_MAP`) | New base (no history) |
+|---|---|---|
+| `a_lot + yes` | well_ahead | **ahead** (history lifts repeats → well_ahead) |
+| `a_lot + no` | on_track | **slightly_behind** (confidence is forward-looking) |
+| `some + yes` | ahead | **on_track** (history lifts repeats → ahead) |
+| `barely + yes` | on_track | **slightly_behind** |
+| `nothing + maybe` | behind | **slightly_behind** (repeats → behind via stagnation) |
+
+This means the shipped `computeHealthLevel` (Phase 2.1), its unit test (`goalHealth.test.ts`, all 12 pairs), and the requirements-lens mapping table are all **superseded** and must be updated together (see admin). Old stored `health_level` values stay as-is for trend display — the new calc depends only on raw answers, never on prior stored levels — so **no backfill / migration**.
+
+### Tasks
+
+- [ ] **5.1 — Date helper: `subtractWeeks(weekStartDate, n)`**
+  - Build: add `subtractWeeks(weekStartDate: string, n: number): string` to `backend/src/lib/dateUtils.ts`, alongside the existing `getPreviousWeekStartDate` (which already does the `n=1` case via `new Date(\`${d}T00:00:00\`)` + `setDate(-7)` — reuse that exact date-only pattern; **do not** use UTC parsing or local-time arithmetic that can drift around DST/midnight). Date-only `YYYY-MM-DD` in/out.
+  - Files: `backend/src/lib/dateUtils.ts`.
+  - Based on: ChatGPT spec §Date handling; existing `getPreviousWeekStartDate`.
+  - Validate: 🤖 vitest — `subtractWeeks("2026-06-15",1)==="2026-06-08"`, `…,2)==="2026-06-01"`, `…,3)==="2026-05-25"`; a case crossing a DST boundary stays exact.
+
+- [ ] **5.2 — Rewrite `goalHealth.ts` as the history-aware pure model**
+  - Build (all pure, no DB, **no floating point**, in `backend/src/lib/goalHealth.ts`):
+    - Reuse existing exported types `HealthLevelValue` / `ProgressAnswer` / `ConfidenceAnswer`. Add a `HealthRecord` shape `{ goal_id; week_start_date; progress_answer; confidence_answer; health_level? }` and `CurrentHealthInput` `{ goal_id; week_start_date; progress_answer; confidence_answer }`.
+    - **Score maps:** `behind=0 … well_ahead=4` and back (`scoreToHealthLevel`, clamped 0–4).
+    - **New base score table** (replaces `HEALTH_MAP`): `a_lot{yes:3,maybe:2,no:1}`, `some{yes:2,maybe:2,no:1}`, `barely{yes:1,maybe:1,no:0}`, `nothing{yes:1,maybe:1,no:0}` → `getBaseScore`.
+    - `getRecentContiguousRecords({ current, historicalRecords, maxWeeks:4 })`: start from current week, walk back only via `subtractWeeks` exact matches; **filter to `current.goal_id`**; **dedupe `goal_id + week_start_date`, preferring the in-memory `current` over any stored record for that same week**; stop at first gap; cap at 4 incl. current. Returns newest→oldest incl. current.
+    - `getNegativeAdjustment(records)`: compute each pattern over the contiguous-from-current streak and **take the strongest (most negative), not the sum**, bounded to `[-2, 0]`: (1) repeated low confidence — 2× `no`→ −1, 3+× `no`→ −2, 3+× `!= yes`→ −1; (2) repeated stagnation (`progress ∈ {barely,nothing} AND confidence ∈ {maybe,no}`) — 2×→ −1, 3+×→ −2; (3) repeated `nothing` progress — 2×→ −1, 3+×→ −2.
+    - `getPositiveAdjustment(records)`: only meaningful when negative is 0; cap `+1`: 2× `a_lot+yes`→ +1; 3+× `(some|a_lot)+yes`→ +1.
+    - `calculateGoalHealth(current, historicalRecords)`: base + (neg<0 ? neg : pos), clamp 0–4, map back. Constants `MAX_HISTORY_WEEKS=4`, `MIN_ADJUSTMENT=-2`, `MAX_ADJUSTMENT=1`.
+    - **Keep a `computeHealthLevel(progress, confidence)`** thin wrapper = `scoreToHealthLevel(getBaseScore(...))` so any existing import keeps working (it now returns the *base* result).
+  - Files: `backend/src/lib/goalHealth.ts`.
+  - Based on: ChatGPT spec §Desired model / §Base table / §Historical adjustments / §Suggested implementation shape / §Pseudocode.
+  - Validate: 🤖 vitest (5.4). 🤖 `npm run build` (tsc) — strict types, no `any`.
+
+- [ ] **5.3 — Feed history into the set-health endpoint**
+  - Build: in `POST /goals/:id/health` (`backend/src/routes/goals.ts`, ~line 127), **before** computing: fetch the goal's recent `goal_health_records` (`select progress_answer, confidence_answer, week_start_date, goal_id`, `eq goal_id`, `eq user_id`, `week_start_date <= week_start_date`, `order desc`, `limit 5`). Build `current` from the request body, call `calculateGoalHealth(current, records)` (the pure fn already dedupes/excludes the stored current-week row in favour of the in-memory answers), then upsert + update the `goals` row with the **computed** level exactly as today. Replace the current `computeHealthLevel(progress, confidence)` call.
+  - Files: `backend/src/routes/goals.ts`.
+  - Based on: ChatGPT spec §Persistence behavior, §Backward compatibility.
+  - Validate: 🤖 **live curl** (test-user JWT, local backend) — seed `nothing+maybe` for week N−1, then POST `nothing+maybe` for week N → `behind` (stagnation kicks in); POST `a_lot+yes` for week N after two `nothing+no` weeks → `ahead` (recovery, streak doesn't apply); a non-contiguous prior week → ignored. Confirm one row per `(goal_id, week_start_date)` (no double-count on re-POST of the same week).
+
+- [ ] **5.4 — Tests for the history-aware model** *(replaces the old 12-pair test)*
+  - Build: rewrite `backend/src/tests/goalHealth.test.ts` to cover **all 14 required cases**: (1) 12 base/no-history pairs against the *new* base table; (2) no-history behavior; (3) 2× `nothing+maybe` → behind; (4) 3× stagnation; (5) 2× `a_lot+no` → behind; (6) 3× `no` confidence; (7) 2× `a_lot+yes` → well_ahead; (8) 3× `some+yes` → ahead; (9) positive **not** applied when a negative applies; (10) missing week breaks streak (`2026-06-01` + `2026-06-15`, missing `06-08` → slightly_behind); (11) records from other goals ignored; (12) existing record for the current week not double-counted (stored differs from in-memory → in-memory wins); (13) final score clamped Behind…Well ahead; (14) recovery (`nothing+no` ×2 then `a_lot+yes` → ahead).
+  - Files: `backend/src/tests/goalHealth.test.ts`.
+  - Based on: ChatGPT spec §Expected examples / §Testing requirements.
+  - Validate: 🤖 `npm test` (backend) green.
+
+- [ ] **5.5 — UI: surface the model honestly (no new questions)**
+  - Build: **no new ritual/UI questions** and no new health value plumbing (Goals tab + Goal Detail already render the stored `health_level`; this phase only changes how it's computed). *Optional, low-risk:* add one calm explanatory line under the Health section in `app/app/goal-detail.tsx` — "Goal health is based on this week's progress, confidence, and recent patterns." — only if it sits naturally; keep wording non-judgmental (no "At risk"/"Bad"). Confirm `HealthTrack`/`healthByKey` already handle all five DB levels (they do — Phase 1.4).
+  - Files: `app/app/goal-detail.tsx` (copy only, optional).
+  - Based on: ChatGPT spec §UX expectations.
+  - Validate: 🤖 `tsc`; 👤 a goal whose answers repeat across weeks now reads worse/better than a one-off week; the copy (if added) reads calm.
+
+### 👤 User check-in (end of Phase 5)
+On a seeded multi-week goal, confirm the model *feels honest*: one `nothing+maybe` reads "Slightly behind" but two in a row reads "Behind"; one `a_lot+yes` is "Ahead" and two is "Well ahead"; and a strong week after bad weeks **recovers** to "Ahead" (history doesn't haunt). Confirm the ritual still asks only the two questions.
+
+### End-of-phase admin
+- Mark tasks; record any tuning decisions in Open Questions.
+- **Docs to update (decision changed — fold this into the baseline in 6.3, and update the release-1 deltas now so they stay coherent):**
+  - `docs/releases/release-1/requirements-lens.md` — replace the `health_level = f(progress, confidence)` line + the 4×3 mapping table (lines ~14–21) with the **history-aware model**: new base table + the bounded pattern adjustments. **Keep the hard constraints true and say so explicitly:** still *subjective* (inputs are the user's own prior *answers*, never task counts / objective cadence — does not violate "must not compute health objectively"), still *frozen between Sundays* and *no auto-drift* (it only ever changes when the user answers on a Sunday).
+  - `docs/releases/release-1/database-design.md` — update the "Computed / derived rules" note (lines ~252–253) from `health_level = f(progress_answer, confidence_answer)` to "computed from the current week's answers **plus up to 3 prior contiguous `goal_health_records` weeks**"; state explicitly **no schema change / no migration** (existing NOT-NULL raw answers + `unique(goal_id, week_start_date)` + `goal_health_records_goal_week_idx` already support the read).
+  - `docs/libraries.md` — no change expected (no new packages).
+- Note for you: nothing to install; the model is server-side only.
+
+---
+
+## Phase 6 — Remaining variants, tests, baseline fold-back
 
 **Outcome:** All ui-brief "Pending" items handled, new logic has tests, and the release is folded into the baseline `/docs`.
 
 ### Tasks
 
-- [ ] **5.1 — Close out Pending variant states**
+- [ ] **6.1 — Close out Pending variant states**
   - Verify/fix the sweep (most landed in 2–4): This Week loading/error + no-active-goals omission (Phase 3); Goals-card no-milestone + overdue tone (Phase 2); triage Reflect overdue mark-hit/push-date (Phase 4).
   - Based on: `ui-brief.md` "Pending", `consistency-lens.md` "Deferred / open".
   - Validate: 👤 exercise each variant in-app.
 
-- [ ] **5.2 — Tests for new logic**
-  - Build: backend Vitest for `computeHealthLevel` (12 pairs), `validateMilestoneDate`, the AI soft-fail path, and the 4.1 trigger logic; frontend jest tests for `cursorPosition` + the component tests written across Phases 1–4 (Track, card variants, This Week section omission, Reflect gating). Patterns from `backend/src/tests/` + `app/lib/__tests__/`.
+- [ ] **6.2 — Tests for new logic**
+  - Build: backend Vitest for the **history-aware `calculateGoalHealth`** (the 14 cases — owned by Phase 5.4), `validateMilestoneDate`, the AI soft-fail path, and the 4.1 trigger logic; frontend jest tests for `cursorPosition` + the component tests written across Phases 1–4 (Track, card variants, This Week section omission, Reflect gating). Patterns from `backend/src/tests/` + `app/lib/__tests__/`.
   - Validate: 🤖 `npm test` (backend) and `npm test` (app) both green.
 
-- [ ] **5.3 — Baseline fold-back (per CLAUDE.md Releases: Fold-Back)**
-  - Build: merge release-1 deltas into main `/docs` lenses (product / domain / requirements / ux / database_design / ai-architecture): Milestone + goal health + GoalHealthRecord into domain & database baselines; goal step + two signals into ux/requirements; AI suggestion into ai-architecture. Keep `docs/releases/release-1/` as a dated archive. `/docs/ui` already current — no UI fold-back.
+- [ ] **6.3 — Baseline fold-back (per CLAUDE.md Releases: Fold-Back)**
+  - Build: merge release-1 deltas into main `/docs` lenses (product / domain / requirements / ux / database_design / ai-architecture): Milestone + goal health + GoalHealthRecord into domain & database baselines; goal step + two signals into ux/requirements; AI suggestion into ai-architecture; **the history-aware health model + retuned base table (Phase 5) into the requirements & database baselines** (carry over the same wording fixes made to the release-1 deltas in 5.5 admin). Keep `docs/releases/release-1/` as a dated archive. `/docs/ui` already current — no UI fold-back.
   - Validate: 🤖 re-read main lenses for dangling release-only language; 👤 sanity confirm.
 
-- [ ] **5.4 — Commit + push**
+- [ ] **6.4 — Commit + push**
   - Build: commit + push to `main` (PowerShell git; quote parenthesized paths; here-string message). Render auto-deploys backend.
   - Validate: 🤖 `git status` clean; 👤 backend healthy at `https://this-week.onrender.com`.
 
-### 👤 User check-in (end of Phase 5)
+### 👤 User check-in (end of Phase 6)
 Final pass: goals now visibly steer the week (Home cursor, Goals dashboard, Sunday goal step). Confirm no baseline regressions.
 
 ### End-of-phase admin
@@ -262,6 +333,7 @@ Final pass: goals now visibly steer the week (Home cursor, Goals dashboard, Sund
 - **Cursor data delivery (3.1) — DECIDED:** client-side computation from existing hooks (`useThisWeekTasks` carries `goal_id` + `status`; `useGoals`; `useNearestMilestones`). No new backend endpoint. The home screen already loads all three; per-goal committed/completed counts are derived in a `useMemo`. Avoids an extra round-trip and keeps the backend unchanged.
 - **Trend/health payload (2.2) — DECIDED:** dedicated `GET /goals/nearest-milestones` endpoint + `GET /goals/:id/health-records?limit=8`. Keeps `GET /goals` payload unchanged; avoids N+1 from the client. The static route `/goals/nearest-milestones` is registered in the same `goalsRoutes` function; Fastify's trie router (find-my-way) gives priority to static segments over `:id` params.
 - **Sunday-flow trigger (4.1):** how the ritual fires on a zero-leftover week (reuse `carry_over_rituals` with no decisions vs. a separate marker) — record the chosen shape and why.
+- **Health model retune (Phase 5):** the base table is deliberately made more conservative and history supplies the lift — so `a_lot+yes` once = Ahead (not Well ahead) and `some+yes` once = On track (not Ahead) vs. the shipped table. Window `MAX_HISTORY_WEEKS=4`, adjustment bounds `[-2, +1]`, negatives take the *strongest* pattern (not the sum), positives apply *only* when no negative. These constants are the tuning knobs — record any change here.
 
 ## Assumptions / confirmed facts (from grounding)
 
