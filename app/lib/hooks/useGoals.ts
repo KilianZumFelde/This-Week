@@ -85,3 +85,62 @@ export function useAbandonGoal() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['goals'] }),
   });
 }
+
+export type GoalHealthRecord = {
+  id: string;
+  goal_id: string;
+  week_start_date: string;
+  health_level: HealthLevelValue;
+  progress_answer: ProgressAnswer;
+  confidence_answer: ConfidenceAnswer;
+  created_at: string;
+  updated_at: string;
+};
+
+export type NearestMilestone = {
+  id: string;
+  title: string;
+  target_date: string;
+  is_overdue: boolean;
+};
+
+export function useSetGoalHealth() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      goalId,
+      progress_answer,
+      confidence_answer,
+      week_start_date,
+    }: {
+      goalId: string;
+      progress_answer: ProgressAnswer;
+      confidence_answer: ConfidenceAnswer;
+      week_start_date: string;
+    }) =>
+      api.post<Goal>(`/goals/${goalId}/health`, {
+        progress_answer,
+        confidence_answer,
+        week_start_date,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['goals'] });
+      qc.invalidateQueries({ queryKey: ['goal-health-records'] });
+    },
+  });
+}
+
+export function useGoalHealthRecords(goalId: string | null) {
+  return useQuery<GoalHealthRecord[]>({
+    queryKey: ['goal-health-records', goalId],
+    queryFn: () => api.get<GoalHealthRecord[]>(`/goals/${goalId}/health-records?limit=8`),
+    enabled: !!goalId,
+  });
+}
+
+export function useNearestMilestones() {
+  return useQuery<Record<string, NearestMilestone | undefined>>({
+    queryKey: ['nearest-milestones'],
+    queryFn: () => api.get<Record<string, NearestMilestone | undefined>>('/goals/nearest-milestones'),
+  });
+}

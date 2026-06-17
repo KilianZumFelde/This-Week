@@ -43,19 +43,19 @@ Still **extract pure functions** (health mapping, milestone date rule, cursor po
 
 ### Tasks
 
-- [ ] **1.1 — DB migration `008_release1_goal_health.sql`**
+- [x] **1.1 — DB migration `008_release1_goal_health.sql`**
   - Build: new file `supabase/migrations/008_release1_goal_health.sql`, in order: (a) `alter table goals add column` the four nullable health columns + CHECKs; (b) `create table milestones` + 3 indexes; (c) `create table goal_health_records` + 2 indexes + inline `unique (goal_id, week_start_date)`; (d) RLS enable + owner policies on both new tables. No backfill.
   - Files: `supabase/migrations/008_release1_goal_health.sql` (latest existing = `007_habit_soft_delete.sql`); also append to `supabase/migrations/run_all.sql` (confirm its format first).
   - Based on: `database-design.md` (Tables / Indexes / RLS / Migration notes).
   - Validate: 🤖 I can apply it to the dev DB myself (DB password / service-role in `credentials.md`) and run a verification query confirming tables/CHECKs/unique/indexes/RLS + the 4 nullable `goals` columns — **with your go-ahead** before running DDL on the real dev DB. Otherwise 👤 you apply it and I provide the SQL + verification query.
 
-- [ ] **1.2 — Milestone Zod schemas**
+- [x] **1.2 — Milestone Zod schemas**
   - Build: `CreateMilestoneRequestSchema` (`title` min 1, `target_date` isoDate) and `UpdateMilestoneRequestSchema` (both optional) in `backend/src/lib/request-schemas.ts`, matching the existing `uuid`/`isoDate` helpers and Goal schema style there.
   - Files: `backend/src/lib/request-schemas.ts`.
   - Based on: `requirements-lens.md` (validation), `database-design.md`.
   - Validate: 🤖 `npm run build` (tsc) in `backend/`.
 
-- [ ] **1.3 — Milestone date-validation pure function + backend routes**
+- [x] **1.3 — Milestone date-validation pure function + backend routes**
   - Build: (a) pure fn `validateMilestoneDate(targetDate, goalTargetDate, today)` in a testable module (e.g. `backend/src/lib/milestones.ts`) returning ok / reason — rules: required, in the future, **≤ parent goal `target_date`**. (b) `backend/src/routes/milestones.ts` registered in `backend/src/index.ts` next to `goalsRoutes`. Routes (all `preHandler: [authenticate]`, scoped by `user_id`, patterns from `routes/goals.ts`):
     - `GET /goals/:goalId/milestones` — list (active + hit), ordered by `target_date`.
     - `POST /goals/:goalId/milestones` — fetch parent goal, run `validateMilestoneDate`, 400 on failure (message names the goal's date), else insert.
@@ -66,18 +66,18 @@ Still **extract pure functions** (health mapping, milestone date rule, cursor po
   - Based on: `requirements-lens.md` (lifecycle + validation), `database-design.md` (backend-enforced rules), `domain-lens.md`.
   - Validate: 🤖 unit-test `validateMilestoneDate` (past date / after-goal-date / valid) in `backend/src/tests/`; 🤖 **live curl** against locally-run backend with a test-user JWT — create rejects past/after-goal dates (400), accepts valid (201), mark-hit flips status + sets `hit_at`, list ordered. 👤 final create/edit/mark-hit through the app (Phase 1 check-in).
 
-- [ ] **1.4 — Frontend: shared HealthTrack + HealthDots (RN port)**
+- [x] **1.4 — Frontend: shared HealthTrack + HealthDots (RN port)**
   - Build: `app/app/components/HealthTrack.tsx` exporting `Track` (5 tonal segments + terracotta marker; `size="lg"` labeled / `size="sm"` light; `muted` no-marker variant), `HealthDots` (8-week, current-week emphasis + "now ↑"), and `HEALTH_LEVELS`/`healthByKey` keyed on **DB enum values**. Port from `docs/ui/components.jsx` (`Track`/`HealthDots`/`HEALTH_LEVELS`). **Pre-compute** the `color-mix` segment colors to hex/rgba using `colors` from `tokens.ts` (`brick #a86b5e`, `sage #8ea076`, `gold #d4b06a`, `surface2`, `surfaceHi`, `accent #c87856`). No CSS gradient.
   - Files: `app/app/components/HealthTrack.tsx`.
   - Based on: `docs/ui/components.jsx`, `ui-brief.md` "The track component"; tokens from `app/lib/tokens.ts`.
   - Validate: 🤖 `tsc` + component test (renders correct segment/marker per level, `size` variants, `muted` hides marker); 👤 visual fidelity vs `/docs/ui` once rendered in Goal Detail (1.6).
 
-- [ ] **1.5 — Frontend: useMilestones hooks**
+- [x] **1.5 — Frontend: useMilestones hooks**
   - Build: `app/lib/hooks/useMilestones.ts` — `Milestone` type + `useMilestones(goalId)`, `useCreateMilestone`, `useUpdateMilestone`, `useMarkMilestoneHit`, `useDeleteMilestone`; invalidate `['milestones', goalId]` and `['goals']` on success. Pattern from `useGoals.ts`.
   - Files: `app/lib/hooks/useMilestones.ts`.
   - Validate: 🤖 `tsc`; 👤 data loads in Goal Detail.
 
-- [ ] **1.6 — Frontend: Goal Detail full-screen + register route + remove drawer**
+- [x] **1.6 — Frontend: Goal Detail full-screen + register route + remove drawer**
   - Build: new route `app/app/goal-detail.tsx` (param `goalId`), ported from `screens-r1.jsx` `GoalDetail`: modal header (X / "Goal" / Edit), hero (eyebrow + serif title + optional why), **Health** (large labeled `Track`; muted "Set a milestone to track this" when `health_level` null), **Health trend · 8 weeks** (placeholder dots until Phase 2 wires records), **Milestones** (rows: title + date + "Mark hit"; "+ Add milestone"), footer (**Mark goal as hit** / **Delete**; Edit in header). Wire: Edit → `/add-goal?goalId=`; Mark hit → `useMarkGoalHit`; Delete → `useAbandonGoal` (reuse from `useGoals.ts`). Graveyard goal → Reactivate-only read-only variant.
   - **Register the route** in `app/app/_layout.tsx` `<Stack>` (e.g. `<Stack.Screen name="goal-detail" options={{ presentation: 'modal', headerShown: false }} />`) — mirrors `add-goal`.
   - **Remove** `app/app/components/GoalActionDrawer.tsx` and its import + `<GoalActionDrawer .../>` usage + `selectedGoal` state in `app/app/(tabs)/goals.tsx`; change `openGoal` to `router.push('/goal-detail?goalId=...')`.
@@ -85,13 +85,13 @@ Still **extract pure functions** (health mapping, milestone date rule, cursor po
   - Based on: `ui-brief.md` Screen 3, `NAVIGATION.md` 07, `ux-lens.md`, `screens-r1.jsx`.
   - Validate: 🤖 `tsc` (no dangling `GoalActionDrawer` import); 👤 tap a goal → full-screen Goal Detail; old drawer gone.
 
-- [ ] **1.7 — Frontend: Add/Edit Milestone sheet**
+- [x] **1.7 — Frontend: Add/Edit Milestone sheet**
   - Build: `app/app/components/MilestoneSheet.tsx` (RN `Modal` bottom sheet — pattern from `GoalActionDrawer`/detail sheets, with the grip/backdrop) ported from `screens-r1.jsx` `MilestoneSheet`: title input, four date chips (1w/2w/1m/6w resolved via `date-fns`), resolved-date pill, Cancel/Save (disabled until title+date). Inline invalid hint when resolved date > goal target ("Must be on or before the goal's date (…)"). Opens from Goal Detail "+ Add milestone" and milestone-row edit.
   - Files: `app/app/components/MilestoneSheet.tsx`.
   - Based on: `ui-brief.md` Screen 4, `NAVIGATION.md` 08.
   - Validate: 🤖 `tsc`; 👤 create + edit a milestone; after-goal-date is blocked.
 
-- [ ] **1.8 — Frontend: Set-Next-Milestone prompt**
+- [x] **1.8 — Frontend: Set-Next-Milestone prompt**
   - Build: `app/app/components/SetNextMilestone.tsx` (small RN bottom sheet, **no confetti**) ported from `screens-r1.jsx` `SetNextMilestone`: sage check + "Nice — [milestone] done.", "Set the next milestone?", **Add next milestone** (→ MilestoneSheet) / **Not now**. Triggered after marking a milestone hit in Goal Detail.
   - Files: `app/app/components/SetNextMilestone.tsx`.
   - Based on: `ui-brief.md` Screen 6, `NAVIGATION.md` 09.
@@ -113,30 +113,30 @@ Review **Goal Detail** vs `/docs/ui`: layout, milestone rows + Mark hit, the Add
 
 ### Tasks
 
-- [ ] **2.1 — Health mapping pure function + set endpoint**
+- [x] **2.1 — Health mapping pure function + set endpoint**
   - Build: (a) pure fn `computeHealthLevel(progress, confidence)` in `backend/src/lib/goalHealth.ts` implementing the **progress × confidence → level** table (requirements-lens.md §Business rules), returning a DB enum value. (b) `POST /goals/:id/health` in `routes/goals.ts` body `{ progress_answer, confidence_answer, week_start_date }` (new Zod schema): compute level, **upsert** `goal_health_records` on `(goal_id, week_start_date)`, update `goals` (`health_level`, `progress_answer`, `confidence_answer`, `health_set_date=week_start_date`).
   - Files: `backend/src/lib/goalHealth.ts`, `backend/src/routes/goals.ts`, `backend/src/lib/request-schemas.ts`.
   - Based on: `requirements-lens.md` (mapping, both required), `database-design.md` (upsert, NOT NULL on records).
   - Validate: 🤖 unit-test `computeHealthLevel` for all 12 pairs (A lot+Yes→well_ahead … Nothing+No→behind, Barely+Maybe→slightly_behind); 🤖 **live curl** (test-user JWT) — POST health twice in the same week → one `goal_health_records` row (upsert), `goals` columns updated. 👤 in-app once wired in Phase 4.
 
-- [ ] **2.2 — Trend read + health/milestone on goal payload**
+- [x] **2.2 — Trend read + health/milestone on goal payload**
   - Build: `GET /goals/:id/health-records?limit=8` (newest-first, uses `goal_health_records_goal_week_idx`). Decide the **lightest** way to give the Goals tab each goal's `health_level` + nearest active milestone without N calls — `health_level` already returns from `GET /goals`; for nearest milestone, either add it to `GET /goals/:id/stats` or a small batch endpoint. **Record the choice in Open Questions.**
   - Files: `backend/src/routes/goals.ts` (+ `milestones.ts` if batching there).
   - Based on: `database-design.md`, `ui-brief.md` Screen 3.
   - Validate: 🤖 `.inject()`/unit where logic is extractable; 👤 trend dots vs seeded data.
 
-- [ ] **2.3 — Frontend: extend Goal type + health hooks**
+- [x] **2.3 — Frontend: extend Goal type + health hooks**
   - Build: add `health_level`, `progress_answer`, `confidence_answer`, `health_set_date` to `Goal` in `useGoals.ts`; add `useSetGoalHealth`, `useGoalHealthRecords(goalId)`; nearest-milestone derivation (min active `target_date`) from `useMilestones` or the 2.2 payload.
   - Files: `app/lib/hooks/useGoals.ts` (+ small helper).
   - Validate: 🤖 `tsc`.
 
-- [ ] **2.4 — Frontend: Goals tab health dashboard**
+- [x] **2.4 — Frontend: Goals tab health dashboard**
   - Build: rework `PrimaryGoalCard`/`SecondaryGoalCard` in `app/app/(tabs)/goals.tsx` per `screens-r1.jsx` `GoalCard`: add the **large labeled `Track`** + level text, the **nearest-milestone line** ("Next: … · by …"), keep quiet tasks/habits counts, **remove the `goalWhy` block** from `PrimaryGoalCard` (lines ~52-54 + `goalWhy` style; why now lives on Goal Detail). Header eyebrow → "How each goal is doing". Variants: **no milestone** → muted track + "+ Add milestone" hint; **overdue milestone** → brick-red tone on the line (resolved in triage, not here).
   - Files: `app/app/(tabs)/goals.tsx`.
   - Based on: `ui-brief.md` Screen 2 (+ Pending: no-milestone, overdue), `NAVIGATION.md` 03, `screens-r1.jsx`.
   - Validate: 🤖 `tsc` + component test (the three card states — health track present / no-milestone muted hint / overdue tone — render from props); 👤 the three on-device.
 
-- [ ] **2.5 — Frontend: real health + trend in Goal Detail**
+- [x] **2.5 — Frontend: real health + trend in Goal Detail**
   - Build: replace Phase-1 placeholders in `goal-detail.tsx` with real `health_level` (large `Track` + "This week · [level]" callout) and `HealthDots` from `useGoalHealthRecords`; muted placeholder when no history.
   - Files: `app/app/goal-detail.tsx`.
   - Validate: 🤖 `tsc`; 👤 health-set vs fresh goal; dots match seeded records.
@@ -259,7 +259,8 @@ Final pass: goals now visibly steer the week (Home cursor, Goals dashboard, Sund
 ## Open questions (running)
 
 - **AI assist shape (4.2):** single-shot first vs. clarifying-question turn (ai-architecture.md Open Questions). Default: single-shot.
-- **Cursor data delivery (3.1)** + **trend/health payload (2.2):** dedicated endpoint vs. client-side / extend stats — pick the lightest; record the choice.
+- **Cursor data delivery (3.1):** dedicated endpoint vs. client-side / extend stats — pick the lightest; record the choice.
+- **Trend/health payload (2.2) — DECIDED:** dedicated `GET /goals/nearest-milestones` endpoint + `GET /goals/:id/health-records?limit=8`. Keeps `GET /goals` payload unchanged; avoids N+1 from the client. The static route `/goals/nearest-milestones` is registered in the same `goalsRoutes` function; Fastify's trie router (find-my-way) gives priority to static segments over `:id` params.
 - **Sunday-flow trigger (4.1):** how the ritual fires on a zero-leftover week (reuse `carry_over_rituals` with no decisions vs. a separate marker) — record the chosen shape and why.
 
 ## Assumptions / confirmed facts (from grounding)

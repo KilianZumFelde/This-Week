@@ -10,9 +10,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { colors, radius } from '../../lib/tokens';
-import { useGoals, useGoalStats } from '../../lib/hooks/useGoals';
-import type { Goal } from '../../lib/hooks/useGoals';
+import { useGoals, useGoalStats, useNearestMilestones } from '../../lib/hooks/useGoals';
+import type { Goal, NearestMilestone } from '../../lib/hooks/useGoals';
 import { useThemes } from '../../lib/hooks/useThemes';
+import { Track, healthByKey } from '../components/HealthTrack';
 import { Icon } from '../components/Icon';
 import { SkeletonCard, ScreenError } from '../components/Skeleton';
 
@@ -25,33 +26,92 @@ function monthsLeft(targetDate: string): number {
   return Math.max(0, months);
 }
 
+// ─── Nearest-milestone line ───────────────────────────────────────────────────
+
+function MilestoneLine({ ms }: { ms: NearestMilestone | undefined | null }) {
+  if (!ms) {
+    return (
+      <Text style={msStyles.noMs}>+ Add milestone to track progress</Text>
+    );
+  }
+  const dateStr = new Date(ms.target_date + 'T00:00:00').toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+  return (
+    <View style={msStyles.row}>
+      <Icon
+        name={ms.is_overdue ? 'bell' : 'target'}
+        size={13}
+        color={ms.is_overdue ? colors.brick : colors.text3}
+      />
+      <Text style={[msStyles.text, ms.is_overdue && { color: colors.brick }]} numberOfLines={1}>
+        <Text style={msStyles.label}>Next: </Text>
+        {ms.title} · by {dateStr}
+      </Text>
+    </View>
+  );
+}
+
+const msStyles = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
+  text: { fontSize: 12.5, color: colors.text2, flex: 1 },
+  label: { color: colors.text3 },
+  noMs: { fontSize: 12.5, color: colors.text3, fontStyle: 'italic', marginBottom: 12 },
+});
+
 // ─── Goal card ───────────────────────────────────────────────────────────────
 
-function PrimaryGoalCard({
+function GoalCardBody({
   goal,
   themeColor,
   themeName,
-  onPress,
+  nearestMs,
+  isPrimary,
 }: {
   goal: Goal;
   themeColor: string | null;
   themeName: string | null;
-  onPress: () => void;
+  nearestMs: NearestMilestone | undefined | null;
+  isPrimary: boolean;
 }) {
   const { data: stats } = useGoalStats(goal.id);
   const mo = monthsLeft(goal.target_date);
+  const eyebrowColor = isPrimary ? colors.accentStrong : (themeColor ?? colors.slate);
 
-  const eyebrow = [themeName, `by ${new Date(goal.target_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`]
+  const eyebrow = [
+    themeName,
+    `by ${new Date(goal.target_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`,
+  ]
     .filter(Boolean)
     .join(' · ');
 
+  const health = goal.health_level ? healthByKey(goal.health_level) : null;
+
   return (
-    <TouchableOpacity style={styles.goalPrimary} onPress={onPress} activeOpacity={0.85}>
-      <Text style={[styles.goalEyebrow, { color: colors.accentStrong }]}>{eyebrow}</Text>
-      <Text style={styles.goalTitle}>{goal.title}</Text>
-      {goal.why ? (
-        <Text style={styles.goalWhy}>"{goal.why}"</Text>
-      ) : null}
+    <>
+      <Text style={[styles.goalEyebrow, { color: eyebrowColor }]}>{eyebrow}</Text>
+      <Text style={[styles.goalTitle, { fontSize: isPrimary ? 20 : 18 }]}>{goal.title}</Text>
+
+      {/* Health track (large, labeled) */}
+      <View style={styles.healthRow}>
+        <View style={styles.healthHeader}>
+          <Text style={styles.healthLabel}>Goal health</Text>
+          {health && (
+            <Text style={[styles.healthLevel, { color: health.color }]}>{health.label}</Text>
+          )}
+        </View>
+        {health ? (
+          <Track pos={health.pos} size="lg" />
+        ) : (
+          <Track pos={0.5} size="lg" muted />
+        )}
+      </View>
+
+      {/* Nearest-milestone line */}
+      <MilestoneLine ms={nearestMs} />
+
+      {/* Quiet secondary counts */}
       <View style={styles.goalStats}>
         <Text style={styles.goalStatText}>
           <Text style={styles.goalStatN}>{stats?.tasks_this_week ?? 0}</Text> tasks this week
@@ -60,11 +120,31 @@ function PrimaryGoalCard({
           <Text style={styles.goalStatN}>{stats?.habits_linked ?? 0}</Text> habits linked
         </Text>
         {mo > 0 && (
-          <Text style={[styles.goalTimeLeft, { color: colors.accentStrong }]}>
+          <Text style={[styles.goalTimeLeft, { color: isPrimary ? colors.accentStrong : colors.text3 }]}>
             {mo} mo left
           </Text>
         )}
       </View>
+    </>
+  );
+}
+
+function PrimaryGoalCard({
+  goal,
+  themeColor,
+  themeName,
+  nearestMs,
+  onPress,
+}: {
+  goal: Goal;
+  themeColor: string | null;
+  themeName: string | null;
+  nearestMs: NearestMilestone | undefined | null;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity style={styles.goalPrimary} onPress={onPress} activeOpacity={0.85}>
+      <GoalCardBody goal={goal} themeColor={themeColor} themeName={themeName} nearestMs={nearestMs} isPrimary />
     </TouchableOpacity>
   );
 }
@@ -73,37 +153,18 @@ function SecondaryGoalCard({
   goal,
   themeColor,
   themeName,
+  nearestMs,
   onPress,
 }: {
   goal: Goal;
   themeColor: string | null;
   themeName: string | null;
+  nearestMs: NearestMilestone | undefined | null;
   onPress: () => void;
 }) {
-  const { data: stats } = useGoalStats(goal.id);
-  const mo = monthsLeft(goal.target_date);
-
-  const eyebrow = [themeName, `by ${new Date(goal.target_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`]
-    .filter(Boolean)
-    .join(' · ');
-
   return (
     <TouchableOpacity style={[styles.goalCard, { marginBottom: 10 }]} onPress={onPress} activeOpacity={0.85}>
-      <Text style={[styles.goalEyebrow, { color: colors.slate }]}>{eyebrow}</Text>
-      <Text style={styles.goalTitle}>{goal.title}</Text>
-      <View style={styles.goalStats}>
-        <Text style={styles.goalStatText}>
-          <Text style={styles.goalStatN}>{stats?.tasks_this_week ?? 0}</Text> tasks this week
-        </Text>
-        <Text style={styles.goalStatText}>
-          <Text style={styles.goalStatN}>{stats?.habits_linked ?? 0}</Text> habits linked
-        </Text>
-        {mo > 0 && (
-          <Text style={[styles.goalTimeLeft, { color: colors.text3 }]}>
-            {mo} mo left
-          </Text>
-        )}
-      </View>
+      <GoalCardBody goal={goal} themeColor={themeColor} themeName={themeName} nearestMs={nearestMs} isPrimary={false} />
     </TouchableOpacity>
   );
 }
@@ -117,6 +178,7 @@ export default function Goals() {
 
   const { data: goals, isLoading, isError, refetch } = useGoals();
   const { data: themes } = useThemes();
+  const { data: nearestMilestones } = useNearestMilestones();
 
   const themeMap = Object.fromEntries((themes ?? []).map((t) => [t.id, t]));
 
@@ -134,7 +196,7 @@ export default function Goals() {
       {/* Page header */}
       <View style={styles.pageHead}>
         <View>
-          <Text style={styles.eyebrow}>What you're working toward</Text>
+          <Text style={styles.eyebrow}>How each goal is doing</Text>
           <Text style={styles.h1}>Goals</Text>
         </View>
         <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/settings')}>
@@ -171,6 +233,7 @@ export default function Goals() {
                 goal={g}
                 themeColor={themeMap[g.theme_id ?? '']?.color ?? null}
                 themeName={themeMap[g.theme_id ?? '']?.name ?? null}
+                nearestMs={nearestMilestones?.[g.id]}
                 onPress={() => openGoal(g)}
               />
             ))
@@ -190,6 +253,7 @@ export default function Goals() {
                 goal={g}
                 themeColor={themeMap[g.theme_id ?? '']?.color ?? null}
                 themeName={themeMap[g.theme_id ?? '']?.name ?? null}
+                nearestMs={nearestMilestones?.[g.id]}
                 onPress={() => openGoal(g)}
               />
             ))
@@ -302,11 +366,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  loader: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   scroll: {
     flex: 1,
     paddingHorizontal: 20,
@@ -335,7 +394,6 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginBottom: 8,
   },
-  // Primary goal card — with radial gradient background approximation
   goalPrimary: {
     borderRadius: radius.lg,
     padding: 18,
@@ -343,8 +401,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     marginBottom: 8,
     overflow: 'hidden',
-    // React Native can't do CSS gradients; we approximate with surface color
-    // The gradient effect is provided by the eyebrow/accent color contrast
   },
   goalCard: {
     borderRadius: radius.lg,
@@ -362,18 +418,31 @@ const styles = StyleSheet.create({
   },
   goalTitle: {
     fontFamily: 'Georgia',
-    fontSize: 20,
     fontWeight: '500',
     lineHeight: 24,
     letterSpacing: -0.2,
     color: colors.text,
-    marginBottom: 12,
+    marginBottom: 10,
   },
-  goalWhy: {
-    fontSize: 13.5,
-    color: colors.text2,
-    lineHeight: 20,
-    marginBottom: 12,
+  healthRow: {
+    marginBottom: 10,
+  },
+  healthHeader: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  healthLabel: {
+    fontSize: 10.5,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: colors.text3,
+    fontWeight: '600',
+  },
+  healthLevel: {
+    fontSize: 12.5,
+    fontWeight: '600',
   },
   goalStats: {
     flexDirection: 'row',
@@ -427,7 +496,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1a1816',
   },
-  // Done bar / graveyard
   doneBar: {
     paddingVertical: 14,
     paddingHorizontal: 4,

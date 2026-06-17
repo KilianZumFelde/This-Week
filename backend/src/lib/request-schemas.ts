@@ -115,6 +115,15 @@ export const UpdateGoalRequestSchema = z.object({
 });
 export type UpdateGoalRequest = z.infer<typeof UpdateGoalRequestSchema>;
 
+// ─── Goal Health ─────────────────────────────────────────────────────────────
+
+export const SetGoalHealthRequestSchema = z.object({
+  progress_answer: z.enum(['a_lot', 'some', 'barely', 'nothing']),
+  confidence_answer: z.enum(['yes', 'maybe', 'no']),
+  week_start_date: isoDate,
+});
+export type SetGoalHealthRequest = z.infer<typeof SetGoalHealthRequestSchema>;
+
 // ─── Milestones ──────────────────────────────────────────────────────────────
 
 export const CreateMilestoneRequestSchema = z.object({

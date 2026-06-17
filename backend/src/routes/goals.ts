@@ -1,8 +1,9 @@
 import { FastifyInstance } from 'fastify';
 import { authenticate } from '../middleware/authenticate.js';
 import { supabase } from '../lib/supabase.js';
-import { CreateGoalRequestSchema, UpdateGoalRequestSchema } from '../lib/request-schemas.js';
+import { CreateGoalRequestSchema, UpdateGoalRequestSchema, SetGoalHealthRequestSchema } from '../lib/request-schemas.js';
 import { getCurrentWeekStartDate } from '../lib/week.js';
+import { computeHealthLevel } from '../lib/goalHealth.js';
 
 async function getUserTimezone(userId: string): Promise<string> {
   const { data } = await supabase
@@ -120,6 +121,95 @@ export async function goalsRoutes(fastify: FastifyInstance) {
     if (error) return reply.status(500).send({ error: error.message });
     if (!data) return reply.status(404).send({ error: 'Not found' });
     return data;
+  });
+
+  // POST /goals/:id/health — set weekly health (upserts goal_health_records + updates goals)
+  fastify.post('/goals/:id/health', { preHandler: [authenticate] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const parsed = SetGoalHealthRequestSchema.safeParse(request.body);
+    if (!parsed.success) return reply.status(400).send({ error: parsed.error.flatten() });
+
+    const { progress_answer, confidence_answer, week_start_date } = parsed.data;
+    const health_level = computeHealthLevel(progress_answer, confidence_answer);
+
+    // Upsert health snapshot for the week
+    const { error: recordError } = await supabase
+      .from('goal_health_records')
+      .upsert(
+        {
+          user_id: request.userId,
+          goal_id: id,
+          week_start_date,
+          health_level,
+          progress_answer,
+          confidence_answer,
+        },
+        { onConflict: 'goal_id,week_start_date' },
+      );
+
+    if (recordError) return reply.status(500).send({ error: recordError.message });
+
+    // Update goal's current health
+    const { data, error } = await supabase
+      .from('goals')
+      .update({ health_level, progress_answer, confidence_answer, health_set_date: week_start_date })
+      .eq('id', id)
+      .eq('user_id', request.userId)
+      .select()
+      .single();
+
+    if (error) return reply.status(500).send({ error: error.message });
+    if (!data) return reply.status(404).send({ error: 'Not found' });
+    return data;
+  });
+
+  // GET /goals/:id/health-records — last N weeks of health snapshots (newest first)
+  fastify.get('/goals/:id/health-records', { preHandler: [authenticate] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const { limit: limitStr } = (request.query as { limit?: string });
+    const limit = Math.min(parseInt(limitStr ?? '8', 10) || 8, 52);
+
+    const { data, error } = await supabase
+      .from('goal_health_records')
+      .select('*')
+      .eq('goal_id', id)
+      .eq('user_id', request.userId)
+      .order('week_start_date', { ascending: false })
+      .limit(limit);
+
+    if (error) return reply.status(500).send({ error: error.message });
+    return data ?? [];
+  });
+
+  // GET /goals/nearest-milestones — nearest active milestone per active goal (for Goals tab)
+  // Returns { [goalId]: { id, title, target_date, is_overdue } | null }
+  // Decision (Open Question 2.2): dedicated endpoint keeps GET /goals payload unchanged
+  // and avoids N+1 calls from the client.
+  fastify.get('/goals/nearest-milestones', { preHandler: [authenticate] }, async (request, reply) => {
+    const today = new Date().toISOString().slice(0, 10);
+
+    const { data, error } = await supabase
+      .from('milestones')
+      .select('id, goal_id, title, target_date')
+      .eq('user_id', request.userId)
+      .eq('status', 'active')
+      .order('target_date', { ascending: true });
+
+    if (error) return reply.status(500).send({ error: error.message });
+
+    // One milestone per goal — take the first (lowest target_date) for each goal_id
+    const nearest: Record<string, { id: string; title: string; target_date: string; is_overdue: boolean }> = {};
+    for (const m of data ?? []) {
+      if (!nearest[m.goal_id]) {
+        nearest[m.goal_id] = {
+          id: m.id,
+          title: m.title,
+          target_date: m.target_date,
+          is_overdue: m.target_date < today,
+        };
+      }
+    }
+    return nearest;
   });
 
   // GET /goals/:id/stats — task counts toward this goal this week

@@ -10,7 +10,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import { colors, radius } from '../lib/tokens';
-import { useGoals, useMarkGoalHit, useAbandonGoal } from '../lib/hooks/useGoals';
+import { useGoals, useMarkGoalHit, useAbandonGoal, useGoalHealthRecords } from '../lib/hooks/useGoals';
 import { useThemes } from '../lib/hooks/useThemes';
 import { useMilestones, useMarkMilestoneHit } from '../lib/hooks/useMilestones';
 import { Track, HealthDots, healthByKey } from './components/HealthTrack';
@@ -26,6 +26,7 @@ export default function GoalDetail() {
   const { data: goals } = useGoals();
   const { data: themes } = useThemes();
   const { data: milestones } = useMilestones(goalId ?? null);
+  const { data: healthRecords } = useGoalHealthRecords(goalId ?? null);
 
   const markGoalHit = useMarkGoalHit();
   const abandonGoal = useAbandonGoal();
@@ -85,8 +86,14 @@ export default function GoalDetail() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 
-  // 8 placeholder weeks for Phase 1 (health_records wired in Phase 2)
-  const trendWeeks: (string | null)[] = Array(8).fill(null);
+  // Real 8-week trend from health records (newest first from API, reverse for display oldest→newest)
+  const trendWeeks: (string | null)[] = (() => {
+    const records = healthRecords ?? [];
+    const filled: (string | null)[] = records.slice(0, 8).map((r) => r.health_level).reverse();
+    // Pad left with nulls to always show 8 slots
+    while (filled.length < 8) filled.unshift(null);
+    return filled;
+  })();
 
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
