@@ -8,13 +8,13 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { colors, radius } from '../../lib/tokens';
 import { useThisWeekTasks, useCompleteTask, useReopenTask, useDeleteTask, Task } from '../../lib/hooks/useTasks';
 import { useHabits, useHabitWeekRecords, useIncrementHabit, useDecrementHabit, Habit } from '../../lib/hooks/useHabits';
 import { useUndoStore } from '../../lib/stores/undo-store';
 import { useThemes, Theme } from '../../lib/hooks/useThemes';
-import { useGoals, useGoalStats } from '../../lib/hooks/useGoals';
+import { useGoals, useNearestMilestones } from '../../lib/hooks/useGoals';
 import { Ring } from '../components/Ring';
 import { Icon } from '../components/Icon';
 import { TapFeedback } from '../components/TapFeedback';
@@ -22,6 +22,8 @@ import { TaskDetailSheet } from '../components/TaskDetailSheet';
 import { SkeletonCard, SkeletonRow, ScreenError } from '../components/Skeleton';
 import { HabitDetailSheet } from '../components/HabitDetailSheet';
 import { getCurrentWeekStartDate, formatWeekLabel } from '../../lib/week';
+import { Track } from '../components/HealthTrack';
+import { cursorPosition } from '../../lib/cursorPosition';
 
 // ─── Theme chip ──────────────────────────────────────────────────────────────
 
@@ -167,9 +169,8 @@ export default function ThisWeek() {
   const { data: weekRecords } = useHabitWeekRecords();
   const { data: themes } = useThemes();
   const { data: goals } = useGoals();
+  const { data: nearestMilestones } = useNearestMilestones();
 
-  const primaryGoal = (goals ?? []).find((g) => g.goal_type === 'primary' && g.status === 'active') ?? null;
-  const { data: primaryGoalStats } = useGoalStats(primaryGoal?.id ?? null);
   const completeTask = useCompleteTask();
   const reopenTask = useReopenTask();
   const deleteTask = useDeleteTask();
@@ -184,6 +185,38 @@ export default function ThisWeek() {
   const themeMap = Object.fromEntries((themes ?? []).map((t) => [t.id, t]));
 
   const openTasks = (tasks ?? []).filter((t) => t.status === 'open');
+
+  // Per-goal this-week committed/completed counts (derived from loaded tasks)
+  const goalTaskCounts = useMemo(() => {
+    const map: Record<string, { committed: number; completed: number }> = {};
+    for (const task of tasks ?? []) {
+      if (!task.goal_id) continue;
+      if (!map[task.goal_id]) map[task.goal_id] = { committed: 0, completed: 0 };
+      map[task.goal_id].committed++;
+      if (task.status === 'done') map[task.goal_id].completed++;
+    }
+    return map;
+  }, [tasks]);
+
+  // Active goals with ≥1 this-week task, mapped to cursor rows
+  const cursorGoals = useMemo(() => {
+    const dayIdx = new Date().getDay(); // 0=Sun, 6=Sat
+    return (goals ?? [])
+      .filter((g) => g.status === 'active' && (goalTaskCounts[g.id]?.committed ?? 0) > 0)
+      .map((g) => {
+        const counts = goalTaskCounts[g.id]!;
+        const pos = cursorPosition({ committed: counts.committed, completed: counts.completed, dayIndexInWeek: dayIdx });
+        const theme = themeMap[g.theme_id ?? ''];
+        const nextMs = nearestMilestones?.[g.id];
+        return {
+          goal: g,
+          pos,
+          themeColor: theme?.color ?? colors.text3,
+          nextMilestoneTitle: nextMs?.title ?? null,
+          hasNoMilestone: !nextMs,
+        };
+      });
+  }, [goals, goalTaskCounts, nearestMilestones, themeMap]);
   const doneTasks = (tasks ?? []).filter((t) => t.status === 'done');
 
   // Priority score from effort × return matrix
@@ -269,35 +302,35 @@ export default function ThisWeek() {
             />
           }
         >
-          {/* Milestone hero */}
-          <View style={styles.milestone}>
-            <View style={styles.milestoneEyebrow}>
-              <Icon name="target" size={12} color={colors.accentStrong} />
-              <Text style={styles.milestoneEyebrowText}>Primary milestone</Text>
-            </View>
-            {primaryGoal ? (
-              <>
-                <Text style={styles.milestoneTitle}>{primaryGoal.title}</Text>
-                <View style={styles.milestoneMeta}>
-                  <View style={styles.milestonePill}>
-                    <Text style={styles.milestonePillText}>
-                      {new Date(primaryGoal.target_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                    </Text>
-                  </View>
-                  <Text style={styles.milestoneMetaText}>
-                    {primaryGoalStats?.tasks_this_week ?? 0} tasks this week toward this
-                  </Text>
-                </View>
-              </>
-            ) : (
-              <>
-                <Text style={styles.milestoneTitle}>No active goal yet</Text>
-                <View style={styles.milestoneMeta}>
-                  <Text style={styles.milestoneMetaText}>{openTasks.length} tasks this week</Text>
-                </View>
-              </>
-            )}
-          </View>
+          {/* Milestones cursor section — omitted when no active goal has this-week tasks */}
+          {cursorGoals.length > 0 && (
+            <>
+              <View style={[styles.sectionLabel, { marginTop: 6 }]}>
+                <Text style={styles.sectionLabelText}>Milestones</Text>
+              </View>
+              <View style={styles.cursorBlock}>
+                {cursorGoals.map((item, idx) => (
+                  <TouchableOpacity
+                    key={item.goal.id}
+                    style={[styles.cursorRow, idx > 0 && styles.cursorRowBorder]}
+                    onPress={() => router.push(`/goal-detail?goalId=${item.goal.id}`)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.cursorLeft}>
+                      <View style={[styles.cursorDot, { backgroundColor: item.themeColor }]} />
+                      <Text style={[styles.cursorName, item.hasNoMilestone && styles.cursorNameMuted]} numberOfLines={1}>
+                        {item.nextMilestoneTitle ?? item.goal.title}
+                      </Text>
+                    </View>
+                    <View style={styles.cursorTrack}>
+                      <Track pos={item.pos} size="sm" muted={item.hasNoMilestone} />
+                    </View>
+                    <Icon name="chevron-right" size={15} color={colors.text3} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
 
           {/* Habits section */}
           {(habits ?? []).length > 0 && (
@@ -457,55 +490,57 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
   },
-  // Milestone
-  milestone: {
+  // Cursor block (Milestones section)
+  cursorBlock: {
     borderRadius: radius.lg,
-    padding: 18,
-    paddingBottom: 16,
     backgroundColor: colors.surface,
+    paddingHorizontal: 14,
     marginBottom: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  cursorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 2,
+  },
+  cursorRowBorder: {
+    borderTopWidth: 1,
+    borderTopColor: colors.hairline,
+  },
+  cursorLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    flex: 0,
+    flexBasis: '46%',
+    minWidth: 0,
+  },
+  cursorDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    flexShrink: 0,
+  },
+  cursorName: {
+    fontFamily: 'Georgia',
+    fontSize: 15,
+    fontWeight: '500',
+    color: colors.text,
+    flex: 1,
     overflow: 'hidden',
   },
-  milestoneEyebrow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 8,
+  cursorNameMuted: {
+    color: colors.text3,
   },
-  milestoneEyebrowText: {
-    fontSize: 10.5,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    color: colors.accentStrong,
-    fontWeight: '600',
-  },
-  milestoneTitle: {
-    fontFamily: 'Georgia',
-    fontSize: 22,
-    fontWeight: '500',
-    lineHeight: 26,
-    letterSpacing: -0.22,
-    color: colors.text,
-    marginBottom: 12,
-  },
-  milestoneMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  milestoneMetaText: {
-    fontSize: 12.5,
-    color: colors.text2,
-  },
-  milestonePill: {
-    backgroundColor: 'rgba(255,245,232,0.06)',
-    paddingVertical: 4,
-    paddingHorizontal: 9,
-    borderRadius: 8,
-  },
-  milestonePillText: {
-    fontSize: 12.5,
-    color: colors.text2,
+  cursorTrack: {
+    flex: 1,
+    minWidth: 0,
   },
   // Section label
   sectionLabel: {
