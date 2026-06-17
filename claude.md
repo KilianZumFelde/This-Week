@@ -21,6 +21,9 @@ At the start of a new Claude Code session:
 1. Read this file.
 2. Check **Current work** above.
    - If it names a release, the work order is `/docs/releases/release-N/TASKS.md`.
+     If that file does not exist yet, your first action is to create it per the
+     Planning Rules (from the release's delta lenses, UI brief, and `/docs/ui`) —
+     do NOT fall back to the root `TASKS.md`.
    - If it says "Initial build", the work order is the root `TASKS.md`.
 3. Read that TASKS.md. Completed tasks are already built; continue from the next incomplete one.
 4. Read any documents the next task names before implementing.
