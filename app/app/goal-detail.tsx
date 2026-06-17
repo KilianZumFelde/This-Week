@@ -80,7 +80,9 @@ export default function GoalDetail() {
   }
 
   function formatDate(d: string) {
-    return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    // date-only strings must get T00:00:00 to parse as local time; timestamps already have time info
+    const date = d.includes('T') ? new Date(d) : new Date(d + 'T00:00:00');
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 
   // 8 placeholder weeks for Phase 1 (health_records wired in Phase 2)
