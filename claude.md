@@ -10,7 +10,7 @@ The goal is finished, working software — not a prototype, mockup, or design ex
 
 The project runs in two modes: an initial from-scratch build, then incremental releases on top of it. The line below states the active mode.
 
-**Current work:** Initial build
+**Current work:** release-1
 
 ---
 
