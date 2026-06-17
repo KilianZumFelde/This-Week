@@ -49,12 +49,16 @@ type TrackProps = {
 
 export function Track({ pos = 0.5, size = 'lg', muted = false }: TrackProps) {
   const lg = size === 'lg';
+  const paddingV = lg ? 7 : 5;
   const trackH = lg ? 8 : 5;
   const markerH = trackH + (lg ? 12 : 8);
   const markerW = lg ? 9 : 7;
+  // Compute exact top so the marker is vertically centered on the track bar,
+  // avoiding the string-percentage `top:'50%'` that doesn't resolve reliably in RN.
+  const markerTop = paddingV - (markerH - trackH) / 2;
 
   return (
-    <View style={{ position: 'relative', width: '100%', paddingVertical: lg ? 7 : 5 }}>
+    <View style={{ position: 'relative', width: '100%', paddingVertical: paddingV }}>
       {/* Segments */}
       <View style={{ flexDirection: 'row', gap: 2, height: trackH }}>
         {TRACK_SEG_COLORS.map((c, i) => (
@@ -80,12 +84,12 @@ export function Track({ pos = 0.5, size = 'lg', muted = false }: TrackProps) {
           style={{
             position: 'absolute',
             left: `${pos * 100}%` as unknown as number,
-            top: '50%' as unknown as number,
+            top: markerTop,
             width: markerW,
             height: markerH,
             borderRadius: 99,
             backgroundColor: colors.accent,
-            transform: [{ translateX: -markerW / 2 }, { translateY: -(markerH / 2) }],
+            transform: [{ translateX: -markerW / 2 }],
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.3,
