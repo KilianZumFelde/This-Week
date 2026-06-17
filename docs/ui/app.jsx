@@ -58,7 +58,7 @@ function App() {
   return (
     <>
       <DesignCanvas>
-        <DCSection id="primary" title="Primary tabs" subtitle="The four tabs the user lives in day-to-day. Tap a task circle or habit ring to interact.">
+        <DCSection id="primary" title="Primary tabs" subtitle="The four tabs the user lives in day-to-day. Home leads with near-term milestone pace (the 'track' component); Goals shows long-term goal health. Tap a task circle or habit ring to interact.">
           <DCArtboard id="this-week" label="01 · This Week" width={PHONE_W} height={PHONE_H}>
             <PhoneFrame label="01 This Week">
               <ThisWeek
@@ -89,7 +89,7 @@ function App() {
           </DCArtboard>
         </DCSection>
 
-        <DCSection id="capture" title="Capture flow" subtitle="The mic-first capture path. Voice → AI-parsed draft → save. The draft card is also reached from the + button (with empty fields).">
+        <DCSection id="capture" title="Capture flow" subtitle="The mic-first capture path. Hold the + to dictate → AI-parsed draft → save. A tap on + opens the same draft with empty fields.">
           <DCArtboard id="voice" label="05 · Voice listening" width={PHONE_W} height={PHONE_H}>
             <PhoneFrame label="05 Voice listening">
               <VoiceListening />
@@ -112,78 +112,103 @@ function App() {
           </DCArtboard>
         </DCSection>
 
-        <DCSection id="coach" title="Goal lifecycle" subtitle="Tap any goal card to open the action drawer. Edit reopens the form. The Coach is an advisory chat that hands off to the same form, pre-filled.">
-          <DCArtboard id="goal-drawer" label="07 · Goal action drawer" width={PHONE_W} height={PHONE_H}>
-            <PhoneFrame label="07 Goal action drawer">
-              <GoalActionDrawer />
+        <DCSection id="goal-lifecycle" title="Goal lifecycle" subtitle="Tap a goal card → the full-page Goal Detail (health, 8-week trend, milestones, actions). Milestones are added/edited from there. The Coach is an advisory chat that hands off to the Add Goal form, pre-filled.">
+          <DCArtboard id="goal-detail" label="07 · Goal detail" width={PHONE_W} height={PHONE_H}>
+            <PhoneFrame label="07 Goal detail">
+              <GoalDetail />
             </PhoneFrame>
           </DCArtboard>
-          <DCArtboard id="goal-drawer-grave" label="07b · Drawer · past goal" width={PHONE_W} height={PHONE_H}>
-            <PhoneFrame label="07b Goal drawer past">
-              <GoalActionDrawer kind="grave" />
+          <DCArtboard id="ms-new" label="08 · Add milestone" width={PHONE_W} height={PHONE_H}>
+            <PhoneFrame label="08 Add milestone">
+              <MilestoneSheet />
             </PhoneFrame>
           </DCArtboard>
-          <DCArtboard id="coach-entry" label="08 · Coach · in conversation" width={PHONE_W} height={PHONE_H}>
-            <PhoneFrame label="08 Coach in conversation">
+          <DCArtboard id="ms-edit" label="08b · Edit milestone" width={PHONE_W} height={PHONE_H}>
+            <PhoneFrame label="08b Edit milestone">
+              <MilestoneSheet editing />
+            </PhoneFrame>
+          </DCArtboard>
+          <DCArtboard id="set-next" label="09 · Set next milestone" width={PHONE_W} height={PHONE_H}>
+            <PhoneFrame label="09 Set next milestone">
+              <SetNextMilestone />
+            </PhoneFrame>
+          </DCArtboard>
+          <DCArtboard id="coach-entry" label="10 · Coach · in conversation" width={PHONE_W} height={PHONE_H}>
+            <PhoneFrame label="10 Coach in conversation">
               <CoachEntry />
             </PhoneFrame>
           </DCArtboard>
-          <DCArtboard id="coach-summary" label="09 · Coach · final summary" width={PHONE_W} height={PHONE_H}>
-            <PhoneFrame label="09 Coach final summary">
+          <DCArtboard id="coach-summary" label="11 · Coach · final summary" width={PHONE_W} height={PHONE_H}>
+            <PhoneFrame label="11 Coach final summary">
               <CoachSummary />
             </PhoneFrame>
           </DCArtboard>
-          <DCArtboard id="goal-empty" label="10 · New goal · empty" width={PHONE_W} height={PHONE_H}>
-            <PhoneFrame label="10 New goal empty">
+          <DCArtboard id="goal-empty" label="12 · New goal · empty" width={PHONE_W} height={PHONE_H}>
+            <PhoneFrame label="12 New goal empty">
               <AddGoalForm />
             </PhoneFrame>
           </DCArtboard>
-          <DCArtboard id="goal-prefilled" label="11 · New goal · from Coach" width={PHONE_W} height={PHONE_H}>
-            <PhoneFrame label="11 New goal prefilled">
+          <DCArtboard id="goal-prefilled" label="13 · New goal · from Coach" width={PHONE_W} height={PHONE_H}>
+            <PhoneFrame label="13 New goal prefilled">
               <AddGoalForm prefilled />
             </PhoneFrame>
           </DCArtboard>
         </DCSection>
 
-        <DCSection id="ritual" title="Sunday set-up ritual" subtitle="Recap → mandatory per-task triage → optional pull-from-backlog. The triage step blocks every app open until cleared.">
-          <DCArtboard id="recap" label="12 · Recap" width={PHONE_W} height={PHONE_H}>
-            <PhoneFrame label="12 Carry-over recap">
+        <DCSection id="ritual" title="Sunday set-up ritual" subtitle="Recap → mandatory per-task triage → per-goal step (reflect, then plan) → optional pull-from-backlog. Triage + the goal health questions block every app open until done.">
+          <DCArtboard id="recap" label="14 · Recap" width={PHONE_W} height={PHONE_H}>
+            <PhoneFrame label="14 Carry-over recap">
               <CarryRecap />
             </PhoneFrame>
           </DCArtboard>
-          <DCArtboard id="triage" label="13 · Triage" width={PHONE_W} height={PHONE_H}>
-            <PhoneFrame label="13 Carry-over triage">
+          <DCArtboard id="triage" label="15 · Triage" width={PHONE_W} height={PHONE_H}>
+            <PhoneFrame label="15 Carry-over triage">
               <CarryTriage />
             </PhoneFrame>
           </DCArtboard>
-          <DCArtboard id="pull" label="14 · Pull from backlog" width={PHONE_W} height={PHONE_H}>
-            <PhoneFrame label="14 Carry-over pull">
+          <DCArtboard id="goal-reflect" label="16 · Goal step · reflect" width={PHONE_W} height={PHONE_H}>
+            <PhoneFrame label="16 Goal step reflect">
+              <CarryGoalReflect />
+            </PhoneFrame>
+          </DCArtboard>
+          <DCArtboard id="goal-plan" label="16b · Goal step · plan" width={PHONE_W} height={PHONE_H}>
+            <PhoneFrame label="16b Goal step plan">
+              <CarryGoalPlan />
+            </PhoneFrame>
+          </DCArtboard>
+          <DCArtboard id="goal-reflect-gap" label="16c · Reflect · no milestone" width={PHONE_W} height={PHONE_H}>
+            <PhoneFrame label="16c Reflect gap-catch">
+              <CarryGoalReflect gapCatch />
+            </PhoneFrame>
+          </DCArtboard>
+          <DCArtboard id="pull" label="17 · Pull from backlog" width={PHONE_W} height={PHONE_H}>
+            <PhoneFrame label="17 Carry-over pull">
               <CarryPull />
             </PhoneFrame>
           </DCArtboard>
         </DCSection>
 
         <DCSection id="empty" title="Empty states" subtitle="Calm first-launch + empty backlog. No mock data, no motivational copy.">
-          <DCArtboard id="empty-home" label="15 · First-launch home" width={PHONE_W} height={PHONE_H}>
-            <PhoneFrame label="15 First-launch home">
+          <DCArtboard id="empty-home" label="18 · First-launch home" width={PHONE_W} height={PHONE_H}>
+            <PhoneFrame label="18 First-launch home">
               <ThisWeekEmpty />
             </PhoneFrame>
           </DCArtboard>
-          <DCArtboard id="empty-backlog" label="16 · Empty backlog" width={PHONE_W} height={PHONE_H}>
-            <PhoneFrame label="16 Empty backlog">
+          <DCArtboard id="empty-backlog" label="19 · Empty backlog" width={PHONE_W} height={PHONE_H}>
+            <PhoneFrame label="19 Empty backlog">
               <BacklogEmpty />
             </PhoneFrame>
           </DCArtboard>
         </DCSection>
 
         <DCSection id="sheets" title="Edit sheets" subtitle="Task Detail reuses the draft-card chip vocabulary (same fields, filled values, different chrome). Habit Detail adds streak + target controls that don't exist anywhere else.">
-          <DCArtboard id="task-detail" label="17 · Task detail" width={PHONE_W} height={PHONE_H}>
-            <PhoneFrame label="17 Task detail">
+          <DCArtboard id="task-detail" label="20 · Task detail" width={PHONE_W} height={PHONE_H}>
+            <PhoneFrame label="20 Task detail">
               <TaskDetail />
             </PhoneFrame>
           </DCArtboard>
-          <DCArtboard id="habit-detail" label="18 · Habit detail" width={PHONE_W} height={PHONE_H}>
-            <PhoneFrame label="18 Habit detail">
+          <DCArtboard id="habit-detail" label="21 · Habit detail" width={PHONE_W} height={PHONE_H}>
+            <PhoneFrame label="21 Habit detail">
               <HabitDetail />
             </PhoneFrame>
           </DCArtboard>

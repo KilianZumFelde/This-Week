@@ -47,94 +47,6 @@ window.TASKS_WEEK = TASKS_WEEK;
 window.HABITS_WEEK = HABITS_WEEK;
 window.BACKLOG = BACKLOG;
 
-// ─────────── This Week (populated) ───────────
-function ThisWeek({ taskState, onToggleTask, habitState, onIncHabit, onMic }) {
-  const tasks = TASKS_WEEK.map(t => ({ ...t, done: taskState[t.id] ?? t.done }));
-  const habits = HABITS_WEEK.map(h => ({ ...h, value: habitState[h.id] ?? h.value }));
-  const open = tasks.filter(t => !t.done);
-  const done = tasks.filter(t => t.done);
-
-  // Group open tasks by theme (in this order)
-  const groupOrder = ['dj', 'job', 'fitness', 'bachata'];
-  const groups = groupOrder.map(g => ({ theme: g, items: open.filter(t => t.theme === g) }))
-                            .filter(g => g.items.length > 0);
-
-  const [sort, setSort] = React.useState('rec');
-  const [doneOpen, setDoneOpen] = React.useState(false);
-
-  return (
-    <div className="page">
-      <div className="page-head">
-        <div>
-          <div style={{ fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-3)', fontWeight: 600, marginBottom: 4 }}>Week of May 12</div>
-          <h1>This week</h1>
-        </div>
-        <button className="icon-btn"><Icon name="settings" size={20} /></button>
-      </div>
-
-      <div className="page-scroll">
-        {/* Milestone hero */}
-        <div className="milestone">
-          <div className="eyebrow"><Icon name="target" size={12} stroke={2}/> Primary milestone</div>
-          <h2>Land first paid DJ gig by September</h2>
-          <div className="meta">
-            <span className="pill">by Sept 2026</span>
-            <span>5 tasks this week toward this</span>
-          </div>
-        </div>
-
-        {/* Habits */}
-        <div className="section-label">
-          <span>Habits</span>
-          <span className="count">{habits.filter(h => (habitState[h.id] ?? h.value) >= h.target).length}/{habits.length} on target</span>
-        </div>
-        {habits.map(h => (
-          <Habit key={h.id} habit={h} onInc={() => onIncHabit(h.id)} />
-        ))}
-
-        {/* Tasks */}
-        <div className="section-label" style={{ marginTop: 26 }}>
-          <span>Tasks · {open.length}</span>
-          <div className="seg" style={{ marginTop: -2 }}>
-            <button className={sort === 'rec' ? 'on' : ''} onClick={() => setSort('rec')}>Recommended</button>
-            <button className={sort === 'theme' ? 'on' : ''} onClick={() => setSort('theme')}>By theme</button>
-          </div>
-        </div>
-
-        {/* Always rendered as theme groups, but the segmented control is decorative */}
-        {groups.map(g => (
-          <div key={g.theme}>
-            <div className="theme-group">
-              <Icon name="chevDown" size={14} stroke={2} />
-              <span className="name">
-                <span className="swatch" style={{ background: THEMES[g.theme].color }} />
-                {THEMES[g.theme].name}
-              </span>
-              <span className="ct">· {g.items.length}</span>
-            </div>
-            {g.items.map(t => (
-              <Task key={t.id} task={t} onToggle={() => onToggleTask(t.id)} />
-            ))}
-          </div>
-        ))}
-
-        {/* Done bar */}
-        <div className="done-bar" onClick={() => setDoneOpen(o => !o)}>
-          <span className="lbl">
-            <Icon name={doneOpen ? 'chevDown' : 'chevRight'} size={14} stroke={2} /> Done ({done.length})
-          </span>
-        </div>
-        {doneOpen && done.map(t => (
-          <Task key={t.id} task={t} onToggle={() => onToggleTask(t.id)} />
-        ))}
-      </div>
-
-      <FabPair onMic={onMic} />
-      <TabBar active="home" />
-    </div>
-  );
-}
-
 // ─────────── This Week (first-launch empty) ───────────
 function ThisWeekEmpty() {
   return (
@@ -250,87 +162,6 @@ function BacklogEmpty() {
   );
 }
 
-// ─────────── Goals ───────────
-function Goals() {
-  const [graveOpen, setGraveOpen] = React.useState(false);
-  return (
-    <div className="page">
-      <div className="page-head">
-        <div>
-          <div style={{ fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-3)', fontWeight: 600, marginBottom: 4 }}>What you're working toward</div>
-          <h1>Goals</h1>
-        </div>
-        <button className="icon-btn"><Icon name="settings" size={20} /></button>
-      </div>
-
-      <div className="page-scroll">
-        <div className="section-label" style={{ marginTop: 0 }}>
-          <span>Primary</span>
-          <span className="count">1 of 1</span>
-        </div>
-        <div className="goal primary">
-          <div className="eyebrow">DJ career · by Sept 2026</div>
-          <h3>Land first paid DJ gig</h3>
-          <p className="why">"Stop describing myself as 'getting into' DJing. I want one paid set on a real lineup before September."</p>
-          <div className="stats">
-            <div><span className="n">5</span> tasks this week</div>
-            <div><span className="n">2</span> habits linked</div>
-            <div style={{ marginLeft: 'auto', color: 'var(--accent-strong)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600 }}>4 mo left</div>
-          </div>
-        </div>
-
-        <div className="section-label">
-          <span>Secondary</span>
-          <span className="count">1 of 2 slots</span>
-        </div>
-        <div className="goal" style={{ marginBottom: 10 }}>
-          <div className="eyebrow" style={{ color: '#7a90a8' }}>Job change · by Oct 2026</div>
-          <h3>New design role at a product co I respect</h3>
-          <div className="stats">
-            <div><span className="n">2</span> tasks this week</div>
-            <div><span className="n">0</span> habits linked</div>
-            <div style={{ marginLeft: 'auto', color: 'var(--text-3)', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600 }}>5 mo left</div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-          <button className="btn btn-ghost" style={{ flex: 1 }}><Icon name="plus" size={16} stroke={2}/> Add directly</button>
-          <button className="btn btn-primary" style={{ flex: 1.3 }}><Icon name="sparkles" size={16} stroke={2}/> Coach me</button>
-        </div>
-
-        {/* Graveyard */}
-        <div className="done-bar" style={{ marginTop: 30 }} onClick={() => setGraveOpen(o => !o)}>
-          <span className="lbl">
-            <Icon name={graveOpen ? 'chevDown' : 'chevRight'} size={14} stroke={2}/> Past goals (3)
-          </span>
-        </div>
-        {graveOpen && (
-          <div style={{ paddingTop: 6 }}>
-            <div className="goal-grave hit">
-              <span className="res">Hit</span>
-              <span className="name">First bachata social — danced 3+ songs</span>
-              <span className="date">Mar 2026</span>
-            </div>
-            <div className="goal-grave missed">
-              <span className="res">Missed</span>
-              <span className="name">Squat 1.5× bodyweight by Feb</span>
-              <span className="date">Feb 2026</span>
-            </div>
-            <div className="goal-grave">
-              <span className="res">Abandoned</span>
-              <span className="name">Learn Mandarin (rethink it)</span>
-              <span className="date">Jan 2026</span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <FabPair />
-      <TabBar active="goals" />
-    </div>
-  );
-}
-
 // ─────────── Stats ───────────
 function Stats() {
   return (
@@ -408,4 +239,4 @@ function Stats() {
   );
 }
 
-Object.assign(window, { ThisWeek, ThisWeekEmpty, Backlog, BacklogEmpty, Goals, Stats });
+Object.assign(window, { ThisWeekEmpty, Backlog, BacklogEmpty, Stats });

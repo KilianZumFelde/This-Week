@@ -147,17 +147,45 @@ const TabBar = ({ active = 'home' }) => {
   );
 };
 
-// ─────────── FAB pair ───────────
-const FabPair = ({ onMic }) => (
-  <div className="fab-pair">
-    <button className="fab small" aria-label="Add">
-      <Icon name="plus" size={20} stroke={2} />
-    </button>
-    <button className="fab" aria-label="Voice" onClick={onMic}>
-      <Icon name="mic" size={22} stroke={1.8} />
-    </button>
-  </div>
-);
+// ─────────── FAB (single "+" · tap = quick-add, hold = voice) ───────────
+const FabPair = ({ onMic, onAdd }) => {
+  const timer = React.useRef(null);
+  const held = React.useRef(false);
+  const [holding, setHolding] = React.useState(false);
+
+  const start = (e) => {
+    e.preventDefault();
+    held.current = false;
+    setHolding(true);
+    timer.current = setTimeout(() => {
+      held.current = true;
+      onMic && onMic();
+    }, 350);
+  };
+  const end = () => {
+    clearTimeout(timer.current);
+    setHolding(false);
+    if (!held.current) onAdd && onAdd();
+  };
+  const cancel = () => {
+    clearTimeout(timer.current);
+    setHolding(false);
+  };
+
+  return (
+    <div className="fab-pair">
+      <button
+        className={`fab${holding ? ' holding' : ''}`}
+        aria-label="Add — tap for quick add, hold to dictate"
+        onPointerDown={start}
+        onPointerUp={end}
+        onPointerLeave={cancel}
+      >
+        <Icon name={holding ? 'mic' : 'plus'} size={holding ? 22 : 24} stroke={2} />
+      </button>
+    </div>
+  );
+};
 
 // ─────────── Task row ───────────
 const Task = ({ task, onToggle }) => {
@@ -205,8 +233,100 @@ const Habit = ({ habit, onInc }) => {
   );
 };
 
+// ─────────── Goal-health track (shared, Release 1) ───────────
+// 5 subtle warm tonal segments (NOT a gradient, NOT generic red/green):
+// brick → warm transition → neutral gray → sage → gold tip. A terracotta
+// marker pill sits at the current position. size="lg" (labeled, Goals) and
+// size="sm" (lighter, unlabeled, This Week cursor).
+const HEALTH_LEVELS = [
+  { key: 'behind',   label: 'Behind',          pos: 0.08, color: 'var(--brick)' },
+  { key: 'slightly', label: 'Slightly behind', pos: 0.30, color: '#b58a72' },
+  { key: 'ontrack',  label: 'On track',        pos: 0.50, color: 'var(--text-2)' },
+  { key: 'ahead',    label: 'Ahead',           pos: 0.72, color: 'var(--sage)' },
+  { key: 'well',     label: 'Well ahead',      pos: 0.92, color: 'var(--gold)' },
+];
+const healthByKey = (k) => HEALTH_LEVELS.find(l => l.key === k) || HEALTH_LEVELS[2];
+
+const TRACK_SEGS = [
+  'color-mix(in oklab, var(--brick) 42%, var(--surface-2))',
+  'color-mix(in oklab, var(--brick) 20%, var(--surface-2))',
+  'var(--surface-hi)',
+  'color-mix(in oklab, var(--sage) 30%, var(--surface-2))',
+  'color-mix(in oklab, var(--gold) 40%, var(--surface-2))',
+];
+
+const Track = ({ pos = 0.5, size = 'lg', muted = false }) => {
+  const lg = size === 'lg';
+  const h = lg ? 8 : 5;
+  return (
+    <div style={{ position: 'relative', width: '100%', padding: lg ? '7px 0' : '5px 0' }}>
+      <div style={{ display: 'flex', gap: 2, height: h }}>
+        {TRACK_SEGS.map((c, i) => (
+          <div key={i} style={{
+            flex: 1,
+            background: muted ? 'var(--surface-hi)' : c,
+            opacity: muted ? 0.5 : 1,
+            borderRadius: i === 0 ? `${h}px 2px 2px ${h}px` : i === 4 ? `2px ${h}px ${h}px 2px` : 2,
+          }} />
+        ))}
+      </div>
+      {!muted && (
+        <div style={{
+          position: 'absolute',
+          left: `calc(${pos} * 100%)`,
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: lg ? 9 : 7,
+          height: h + (lg ? 12 : 8),
+          borderRadius: 99,
+          background: 'var(--accent)',
+          boxShadow: '0 0 0 2.5px var(--surface), 0 2px 6px rgba(0,0,0,0.30)',
+        }} />
+      )}
+    </div>
+  );
+};
+
+// 8-week health-trend dots — one bar per recent week, colored by that week's
+// health level. The current week is emphasized (taller, full strength, named)
+// so the before→now trajectory reads at a glance.
+const HealthDots = ({ weeks }) => {
+  const lastLvl = weeks[weeks.length - 1] ? healthByKey(weeks[weeks.length - 1]) : null;
+  return (
+    <div>
+      {/* Names where you are right now, in words + color */}
+      {lastLvl && (
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
+          <span style={{ fontSize: 12, color: 'var(--text-3)' }}>This week</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: lastLvl.color }}>{lastLvl.label}</span>
+        </div>
+      )}
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6 }}>
+        {weeks.map((k, i) => {
+          const lvl = k ? healthByKey(k) : null;
+          const now = i === weeks.length - 1;
+          return (
+            <div key={i} style={{
+              flex: 1,
+              height: now ? 18 : 7,
+              borderRadius: 3,
+              background: lvl ? lvl.color : 'var(--surface-hi)',
+              opacity: now ? 1 : (lvl ? 0.45 : 0.3),
+            }} />
+          );
+        })}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 10.5, color: 'var(--text-3)', letterSpacing: '0.04em' }}>
+        <span>8 weeks ago</span>
+        <span style={{ color: 'var(--text-2)', fontWeight: 600 }}>now ↑</span>
+      </div>
+    </div>
+  );
+};
+
 // Expose
 Object.assign(window, {
   Icon, THEMES, ThemeChip, EffortChip, ReturnChip, GoalChip,
   Ring, StatusBar, TabBar, FabPair, Task, Habit,
+  HEALTH_LEVELS, healthByKey, Track, HealthDots,
 });

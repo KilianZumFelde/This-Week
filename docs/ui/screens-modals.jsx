@@ -809,116 +809,6 @@ function AddGoalForm({ prefilled = false }) {
   );
 }
 
-// ─────────── Goal Action Drawer (bottom sheet over Goals) ───────────
-// Tapping any active goal card opens this drawer. Three actions:
-// Mark as hit / Edit / Delete. (Graveyard goals → variant with Edit-only.)
-function GoalActionDrawer({ kind = 'active' }) {
-  // Faded Goals backdrop
-  const Backdrop = () => (
-    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-      <div style={{ filter: 'blur(1px)', opacity: 0.5, padding: '0 20px' }}>
-        <div style={{ height: 44 }} />
-        <div style={{ fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-3)', fontWeight: 600, marginTop: 8, marginBottom: 4 }}>What you're working toward</div>
-        <h1 style={{ fontFamily: 'var(--serif)', fontWeight: 500, fontSize: 30, margin: '0 0 14px', color: 'var(--text)', letterSpacing: '-0.02em' }}>Goals</h1>
-        <div style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-3)', fontWeight: 500, margin: '0 0 10px' }}>Primary</div>
-        <div className="goal primary">
-          <div className="eyebrow">DJ career · by Sept 2026</div>
-          <h3>Land first paid DJ gig</h3>
-        </div>
-      </div>
-      <div style={{ position: 'absolute', inset: 0, background: 'rgba(20,18,16,0.55)' }} />
-    </div>
-  );
-
-  return (
-    <div className="page" style={{ position: 'relative' }}>
-      <Backdrop />
-      <div className="sheet">
-        <div className="grip" />
-
-        {/* Goal preview at the top of the sheet */}
-        <div style={{
-          padding: '4px 4px 16px',
-          marginBottom: 18,
-          borderBottom: '1px solid var(--hairline)',
-        }}>
-          <div style={{ fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--accent-strong)', fontWeight: 600, marginBottom: 6 }}>
-            {kind === 'active' ? 'Primary goal' : 'Past goal · abandoned'}
-          </div>
-          <div style={{ fontFamily: 'var(--serif)', fontSize: 22, fontWeight: 500, color: 'var(--text)', lineHeight: 1.25, letterSpacing: '-0.01em', marginBottom: 10 }}>
-            Land first paid DJ gig
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            <span className="chip" style={{ background: `${THEMES.dj.color}22`, color: THEMES.dj.color }}>
-              <span className="dot" style={{ background: THEMES.dj.color }}/> {THEMES.dj.name}
-            </span>
-            <span className="chip">
-              <Icon name="calendar" size={11} stroke={2}/> Sept 2026
-            </span>
-            <span className="chip">5 tasks · 2 habits linked</span>
-          </div>
-        </div>
-
-        {/* Action row */}
-        {kind === 'active' ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <ActionRow icon="check" tone="sage" label="Mark as hit" sub="Move to past goals · keep all the tied tasks for posterity"/>
-            <ActionRow icon="settings" tone="default" label="Edit" sub="Reopen the goal form to refine title, date, theme, or why"/>
-            <ActionRow icon="x" tone="brick" label="Delete" sub="Send to past goals as abandoned · tied tasks stay where they are"/>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <ActionRow icon="refresh" tone="accent" label="Reactivate" sub="Reopen the goal form to rethink it · subject to the 1+2 cap"/>
-          </div>
-        )}
-
-        <div style={{ fontSize: 11.5, color: 'var(--text-3)', textAlign: 'center', marginTop: 18, lineHeight: 1.5 }}>
-          Pull down to dismiss.
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ActionRow({ icon, label, sub, tone = 'default' }) {
-  const colorMap = {
-    default: 'var(--text)',
-    sage:    'var(--sage)',
-    brick:   'var(--brick)',
-    accent:  'var(--accent-strong)',
-  };
-  const bgMap = {
-    default: 'var(--surface-2)',
-    sage:    'color-mix(in oklab, var(--sage-dim) 65%, var(--surface-2))',
-    brick:   'color-mix(in oklab, var(--brick-dim) 65%, var(--surface-2))',
-    accent:  'color-mix(in oklab, var(--accent-dim) 65%, var(--surface-2))',
-  };
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 14,
-      padding: '14px 16px',
-      background: bgMap[tone],
-      borderRadius: 'var(--radius-md)',
-      cursor: 'pointer',
-    }}>
-      <div style={{
-        width: 36, height: 36, borderRadius: 10,
-        background: 'var(--surface)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flex: '0 0 auto',
-        color: colorMap[tone],
-      }}>
-        <Icon name={icon} size={17} stroke={1.7}/>
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14.5, color: colorMap[tone], fontWeight: 500 }}>{label}</div>
-        <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2, lineHeight: 1.4 }}>{sub}</div>
-      </div>
-      <Icon name="chevRight" size={14} stroke={2} color="var(--text-3)"/>
-    </div>
-  );
-}
-
 // ─────────── AI Coach (entry / open) ───────────
 function CoachEntry() {
   return (
@@ -1193,7 +1083,6 @@ function CarryPull() {
 Object.assign(window, {
   VoiceListening, QuickAddDraft, QuickAddDraftInline, QuickAddHabitInline,
   AddGoalForm,
-  GoalActionDrawer,
   CoachEntry, CoachSummary,
   CarryRecap, CarryTriage, CarryPull,
   TaskDetail, HabitDetail,
