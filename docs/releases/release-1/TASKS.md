@@ -315,9 +315,10 @@ On a seeded multi-week goal, confirm the model *feels honest*: one `nothing+mayb
   - Build: merge release-1 deltas into main `/docs` lenses (product / domain / requirements / ux / database_design / ai-architecture): Milestone + goal health + GoalHealthRecord into domain & database baselines; goal step + two signals into ux/requirements; AI suggestion into ai-architecture; **the history-aware health model + retuned base table (Phase 5) into the requirements & database baselines** (carry over the same wording fixes made to the release-1 deltas in 5.5 admin). Keep `docs/releases/release-1/` as a dated archive. `/docs/ui` already current — no UI fold-back.
   - Validate: 🤖 re-read main lenses for dangling release-only language; 👤 sanity confirm.
 
-- [ ] **6.4 — Commit + push**
+- [x] **6.4 — Commit + push**
   - Build: commit + push to `main` (PowerShell git; quote parenthesized paths; here-string message). Render auto-deploys backend.
   - Validate: 🤖 `git status` clean; 👤 backend healthy at `https://this-week.onrender.com`.
+  - **Done:** pushed commits `538896e` (p5+p6.2) + `4d04324` (p6.3). Render auto-deploy triggered.
 
 ### 👤 User check-in (end of Phase 6)
 Final pass: goals now visibly steer the week (Home cursor, Goals dashboard, Sunday goal step). Confirm no baseline regressions.
