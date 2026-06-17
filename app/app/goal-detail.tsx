@@ -174,7 +174,13 @@ export default function GoalDetail() {
         )}
 
         {activeMilestones.map((m) => (
-          <View key={m.id} style={styles.milestoneCard}>
+          <TouchableOpacity
+            key={m.id}
+            style={styles.milestoneCard}
+            onPress={() => { setEditingMilestoneId(m.id); setShowMilestoneSheet(true); }}
+            activeOpacity={0.7}
+            disabled={!isActive}
+          >
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={styles.milestoneTitle}>{m.title}</Text>
               <Text style={styles.milestoneDate}>{formatDate(m.target_date)}</Text>
@@ -188,7 +194,7 @@ export default function GoalDetail() {
                 <Text style={styles.markHitText}>Mark hit</Text>
               </TouchableOpacity>
             )}
-          </View>
+          </TouchableOpacity>
         ))}
 
         {hitMilestones.map((m) => (
