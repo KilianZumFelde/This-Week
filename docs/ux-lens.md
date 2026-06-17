@@ -24,16 +24,22 @@
 3. **Mandatory carry-over ritual** (blocking — no skip/dismiss/defer; re-appears every app open until fully triaged):
    - **Frame 0 — wins-first recap**: last week `X/N tasks · Y/Z habits` (fractions, no %), streak deltas (kept/broken), one forward line "still working toward [primary goal] — N tasks done toward it". Never opens on failure. (No "goals completed" counter — goals rarely complete in a week.)
    - **Then per-task triage**: unfinished tasks one-by-one with exactly three buttons each: *Keep for this week / Send to backlog / Drop*. No fourth option, no skip. ("Drop" = delete the task — the gentle triage word for the same remove operation called "Delete" everywhere else.)
-4. **Pull-from-backlog (optional, non-blocking)**: once triage is cleared, a "Stock this week" step lists backlog items; tap any to add to the week. A "Start week" button is always enabled even if nothing is pulled (pulling is additive, never limbo — so optional, unlike mandatory triage). Same promotion is also available anytime from the Backlog tab; this is the guided ritual surfacing of it.
-5. **New week celebration**: after tapping "Start week", a brief full-screen "New week, fresh start." screen appears with a single "Let's go" button that drops the user into This Week. (Not a planning step — just a calm transition moment so the shift from review to execution feels deliberate.)
-6. (Last week's habit/task results live in the Frame 0 recap above — not a separate step.)
-7. **+ Add new** — voice or manual capture for fresh items.
-8. Total time: 2–5 minutes. Designed to be lightweight, not a 30-minute planning session.
+4. **Goal step (Release 1) — runs once per active goal, after per-task triage and before pull-from-backlog. Split into Reflect → Plan:**
+   - **Reflect** — shows the goal's next milestone and asks the two health questions (mandatory-light). If no active milestone, a gap-catch prompts the user to set one first.
+   - **Plan** — shows the goal's existing open/backlog tasks; tap to pull into this week. AI may suggest additional tasks via a quiet "Anything to add?" button. New task via the persistent "+" FAB.
+5. **Pull-from-backlog (optional, non-blocking)**: once triage and goal steps are cleared, a "Stock this week" step lists backlog items; tap any to add to the week. A "Start week" button is always enabled even if nothing is pulled. Same promotion is also available anytime from the Backlog tab.
+6. **New week celebration**: after tapping "Start week", a brief full-screen "New week, fresh start." screen appears with a single "Let's go" button that drops the user into This Week.
+7. (Last week's habit/task results live in the Frame 0 recap above — not a separate step.)
+8. **+ Add new** — voice or manual capture for fresh items.
+9. Total time: 2–5 minutes. Designed to be lightweight, not a 30-minute planning session.
 
 ### Entry Points
 - **Primary**: opening the mobile app — always lands on **This Week**.
 - **Secondary tabs**: Backlog, Goals, Stats — reached via bottom tab bar.
 - **Settings / theme management / reminder config**: top-right gear icon on This Week (not a dedicated tab — anti-noise).
+- **Goals view** — each goal card now carries its current **health** (set last Sunday). The Goals tab becomes the "how are my goals doing" dashboard. This is where overall goal/milestone health is seen day-to-day.
+- **Goal Detail (full-screen)** — tapping a goal card opens a full-screen **Goal Detail** (replaces the old bottom-sheet Goal Action Drawer). Sections: Health / Health trend / Milestones (add, mark hit, edit) / Tasks this week / All tasks. Footer: Mark-as-hit / Delete for active goals, Reactivate for past goals.
+- **Milestone creation** is reachable three ways: (a) anytime from **Goal Detail**'s Milestones section; (b) automatically prompted when the user marks a milestone **hit**; (c) the triage **Reflect** gap-catch when a goal has no active milestone.
 
 ### Prerequisites
 - User needs at least one **theme** defined (themes are configurable; user creates them e.g., DJ career, fitness, job change, bachata).
@@ -44,6 +50,8 @@
 
 | Moment | Expected behavior |
 |---|---|
+| **Goal health** | A weekly verdict, **not a live meter**. Set by the user's triage answers and **stays frozen until the next Sunday** — it does not drift on its own between check-ins. Subjective by design; no objective tasks-per-week cadence. |
+| **Two distinct goal signals** | **Goal health (macro)** — the subjective standing toward a goal, set weekly by the two triage questions. Lives on the **Goals tab** + triage. **This-week on-track cursor (micro)** — appears on the **This Week view** inside the "Milestones" section; one row per active goal labeled by the goal's next milestone; moves right as goal tasks are completed, drifts left as days pass. These must **never be conflated**. |
 | **Tapping a task** | Strikes through immediately, fades to "Done" section. No confirm modal. |
 | **Tapping a habit** | **Tap the progress ring** → count increments by 1. **Tap the card's text area (name/theme)** → opens Habit Detail/Edit sheet. Two distinct hit-targets on the same card; no added chrome (no kebab). When target is hit (e.g., 4/4), a calm gold "HIT" badge appears on the row. **No confetti. No motivational quotes. No popups.** Anti-Jira is also anti-Duolingo. |
 | **Accidental habit increment** | Caught by the **general Undo snackbar** (see Edge journeys / Key Decisions) — fat-finger Gym to 3/4, tap Undo, back to 2/4. No bespoke decrement control needed; the ring stays a safe small target because Undo is universal. |
@@ -111,7 +119,10 @@ Per quarter (the real success of the product): the user can name their primary m
 
 ### Edge Journeys
 
-- **Carry-over (Sunday):** mandatory blocking ritual — wins-first recap → per-task triage (kept / sent to backlog / dropped) → optional pull-from-backlog → "new week" celebration → This Week. The triage step is blocking and re-appears every app open until cleared. Pulling and the celebration are non-blocking. Never silently moved.
+- **Goal with no active milestone:** the Sunday goal step prompts the user to create one before continuing that goal's step (gap-catch). Outside the ritual, a milestone-less goal simply shows no health until one is set.
+- **Milestone hit mid-rhythm:** marking hit prompts the next milestone so the user stays 1–2 ahead; the user may decline and set it later ad hoc.
+- **Overdue milestone (target date passed):** surfaces in the **next Sunday triage** goal step ("[milestone] was due — did you hit it, or push the date?"). Does NOT raise a blocking app-open prompt.
+- **Carry-over (Sunday):** mandatory blocking ritual — wins-first recap → per-task triage (kept / sent to backlog / dropped) → goal step (Reflect health + Plan tasks, per active goal) → optional pull-from-backlog → "new week" celebration → This Week. The triage step is blocking and re-appears every app open until cleared. Pulling and the celebration are non-blocking. Never silently moved.
 - **Mid-week re-prioritization:** one-tap menu on any task to move/drop/defer.
 - **Missed habit days:** flagged in red on next week's "last week's results" view. No guilt-trip; just visibility.
 - **Streak broken:** resets to 0; "Best ever" persists as motivation.
@@ -128,7 +139,7 @@ Per quarter (the real success of the product): the user can name their primary m
 
 | Tab | Default? | Contains |
 |---|---|---|
-| 🏠 **This Week** | ✓ default | "Milestones" cursor section (compact per-goal pace row, sm Track, omitted when no goal has this-week tasks), habits with progress, tasks sorted by priority (with theme chip), collapsible Done section at bottom, persistent FAB |
+| 🏠 **This Week** | ✓ default | **"Milestones" cursor section** (compact per-goal pace row labeled by next milestone, sm Track, omitted when no active goal qualifies), habits with progress, tasks sorted by priority (with theme chip), collapsible Done section at bottom, persistent FAB |
 | 📥 **Backlog** | | All "for later" tasks. Always accessible. Direct add, browse, edit, swipe-to-promote into this week. |
 | 🎯 **Goals** | | Active primary + secondaries (health dashboard — large Track, nearest-milestone line, time left), + Add Goal, archive of past goals. Tapping a card → Goal Detail full-screen modal. |
 | 📊 **Stats** | | Week raw counts `X/N tasks · Y/Z habits` (no %), habit streaks (current + best ever), past-weeks browser. No per-theme breakdown. |

@@ -201,6 +201,46 @@ system
 
 Stored on `user_settings.theme_mode`. Not currently a Postgres enum or CHECK constraint — validated at the backend layer (Zod) on update.
 
+### milestone_status (Release 1)
+
+```txt
+active
+hit
+```
+
+### goal_health_level (Release 1)
+
+5-level, worst→best. Display → stored:
+
+```txt
+Behind          → behind
+Slightly behind → slightly_behind
+On track        → on_track
+Ahead           → ahead
+Well ahead      → well_ahead
+```
+
+### goal_progress_answer (Release 1)
+
+The retrospective "how much did you move this week" answer.
+
+```txt
+A lot   → a_lot
+Some    → some
+Barely  → barely
+Nothing → nothing
+```
+
+### goal_confidence_answer (Release 1)
+
+The "confident you'll hit it by [date]" answer.
+
+```txt
+Yes   → yes
+Maybe → maybe
+No    → no
+```
+
 ---
 
 ## Tables
@@ -296,10 +336,24 @@ create table goals (
   completed_at timestamptz,
   archived_at timestamptz,
   sort_order integer not null default 0,
+
+  -- Release 1: subjective weekly health (nullable until first triage / first milestone)
+  health_level text check (health_level in
+    ('behind', 'slightly_behind', 'on_track', 'ahead', 'well_ahead')),
+  progress_answer text check (progress_answer in ('a_lot', 'some', 'barely', 'nothing')),
+  confidence_answer text check (confidence_answer in ('yes', 'maybe', 'no')),
+  health_set_date date,
+
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 ```
+
+Notes:
+
+- `health_set_date` is the **Sunday the current health was set** — used to tell whether this week's health has been answered yet and to detect a stale (pre-this-week) value.
+- All four health columns are nullable: existing goals migrate cleanly without a backfill, and the "no health yet" UI state is a real, designed state — not an error.
+- The 5-level set deliberately has **no "at risk"** value and **adds "well_ahead"** at the top.
 
 Indexes:
 
@@ -319,6 +373,89 @@ where goal_type = 'primary' and status = 'active';
 ```
 
 Recommended enforcement for max 2 active secondary goals should be handled in backend business logic. It can also be enforced with a trigger if desired.
+
+---
+
+## milestones (Release 1)
+
+A dated checkpoint belonging to a goal — a near-term marker, distinct from the goal's own (often distant) target date. Lifecycle `active → hit` (`hit` terminal). "Overdue" and "nearest upcoming" are **derived**, not stored.
+
+```sql
+create table milestones (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  goal_id uuid not null references goals(id) on delete cascade,
+  title text not null,
+  target_date date not null,
+  status text not null default 'active' check (status in ('active', 'hit')),
+  hit_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+Indexes:
+
+```sql
+-- All milestones for a goal (Goal Detail milestone list)
+create index milestones_goal_id_idx on milestones(goal_id);
+
+-- Nearest upcoming milestone per goal: min(target_date) where status='active'
+create index milestones_goal_active_due_idx on milestones(goal_id, target_date)
+  where status = 'active';
+
+-- Ownership / RLS scans
+create index milestones_user_id_idx on milestones(user_id);
+```
+
+Notes:
+
+- `on delete cascade` on `goal_id`: a milestone makes no sense without its goal, so deleting a goal takes its milestones with it.
+- Hard delete is allowed even though the v1 UI exposes only *Mark hit* and *Edit*.
+- **No Task relationship** — deliberate anti-Jira scoping. Tasks link to goals only; a milestone never owns or tags tasks.
+- Duplicate titles within a goal are allowed — internal ID only, no business uniqueness.
+- `hit_at` is set when the user marks the milestone hit; null while active.
+
+---
+
+## goal_health_records (Release 1)
+
+A snapshot of a goal's health for a given week, archived alongside the existing `week_records` weekly boundary. One row per goal per week. Powers the 8-week health-trend dot row on Goal Detail.
+
+```sql
+create table goal_health_records (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  goal_id uuid not null references goals(id) on delete cascade,
+  week_start_date date not null,
+  health_level text not null check (health_level in
+    ('behind', 'slightly_behind', 'on_track', 'ahead', 'well_ahead')),
+  progress_answer text not null check (progress_answer in ('a_lot', 'some', 'barely', 'nothing')),
+  confidence_answer text not null check (confidence_answer in ('yes', 'maybe', 'no')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+
+  unique (goal_id, week_start_date)
+);
+```
+
+Indexes:
+
+```sql
+-- Trend read: a goal's last N weeks, newest first (8-week dot row)
+create index goal_health_records_goal_week_idx
+  on goal_health_records(goal_id, week_start_date desc);
+
+-- Ownership / RLS scans
+create index goal_health_records_user_week_idx
+  on goal_health_records(user_id, week_start_date);
+```
+
+Notes:
+
+- `week_start_date` is the **Sunday of the week being entered** — same `date` (local Sunday) convention as `week_records`.
+- `unique (goal_id, week_start_date)` enforces at most one snapshot per goal per week; re-running the goal step in the same week upserts this row.
+- `health_level`, `progress_answer`, `confidence_answer` are all **NOT NULL** here (unlike on `goals`): a snapshot only exists once the mandatory triage questions have been answered.
 
 ---
 
@@ -695,6 +832,8 @@ auth.users 1:N habits
 auth.users 1:N week_records
 auth.users 1:N reminders
 auth.users 1:N notification_tokens
+auth.users 1:N milestones           (Release 1)
+auth.users 1:N goal_health_records  (Release 1)
 
 themes 1:N goals
 themes 1:N tasks
@@ -702,6 +841,10 @@ themes 1:N habits
 
 goals 1:N tasks
 goals 1:N habits
+goals 1:N milestones           (Release 1 — cascade delete)
+goals 1:N goal_health_records  (Release 1 — cascade delete)
+
+milestones — tasks             NONE (deliberately no relationship)
 
 habits 1:N habit_week_records
 
@@ -727,6 +870,10 @@ carry_over_task_decisions N:1 tasks
 - Unique active primary goal per user via partial unique index.
 - Once-per-habit-per-week nudge log.
 - Unique carry-over ritual per user/from-week/to-week.
+- Milestone `status` validity (`active` / `hit`) via CHECK. (Release 1)
+- Goal health enum validity (`health_level`, `progress_answer`, `confidence_answer`) via CHECK on both `goals` and `goal_health_records`. (Release 1)
+- At most one health snapshot per goal per week via `unique (goal_id, week_start_date)` on `goal_health_records`. (Release 1)
+- Cascade delete of milestones and health records when a goal (or user) is deleted. (Release 1)
 
 ### Enforced in Backend
 
@@ -743,6 +890,13 @@ carry_over_task_decisions N:1 tasks
 - Notification dispatch.
 - AI output validation before writes.
 - User confirmation before saving AI-generated drafts where required.
+- **Milestone target-date validation** (Release 1): target date required + in the future at creation; target date on or before the parent goal's `target_date` (cross-table comparison, backend-only).
+- **`health_level = calculateGoalHealth(current, history)`** (Release 1): computed from the current week's answers **plus up to 3 prior contiguous `goal_health_records` rows** (fetched at write-time, ordered newest→oldest, stopped at the first missing week). Written to both `goals` (current) and `goal_health_records` (snapshot). Stored values from prior weeks are never re-computed retroactively.
+- **Both health questions required** to set/confirm a goal's health during triage (mandatory-light). (Release 1)
+- **Mark-hit flow** (Release 1): set `status='hit'` + `hit_at`, then prompt to create the next milestone.
+- **Overdue surfacing** (Release 1): derived (`status='active'` AND `target_date < today`); surfaced in the next Sunday triage goal step. No blocking app-open prompt.
+- **Health freeze between Sundays** (Release 1): no clock- or activity-driven drift; `goals` health columns change only when the user answers the weekly questions.
+- **Carry-over ritual creation** (Release 1): ritual is created when there are open leftover tasks OR active goals (not only when there are leftover tasks, so the goal step runs every Sunday even with a clean task slate).
 
 ---
 
@@ -760,8 +914,40 @@ At Sunday 00:00 local time, or on first app open after the week changes, backend
    - preserve `best_streak`
 6. Create new `habit_week_records` for active habits for the new week.
 7. Identify unfinished previous-week tasks.
-8. If unfinished tasks exist, create a pending `carry_over_ritual` and `carry_over_task_decisions`.
+8. If unfinished tasks exist OR active goals exist, create a pending `carry_over_ritual` and `carry_over_task_decisions`. (Release 1: ritual fires even with no leftover tasks so the goal step — Reflect health + Plan tasks — always runs on Sundays with active goals.)
 9. Block normal app entry until the pending ritual is completed.
+
+**Release 1 — goal step (within the ritual, after per-task triage):**
+
+For each active goal, the ritual presents:
+- **Reflect**: next-milestone + two health questions (mandatory-light); gap-catch if no active milestone.
+- **Plan**: existing open/backlog tasks to pull into this week + optional AI task suggestions.
+
+The goal step runs per-active-goal before the optional pull-from-backlog step.
+
+**Release 1 — This-week on-track cursor (derived — no storage):**
+
+The Home-screen "Milestones" section cursor is **fully derived** and adds **no table or column**. Per goal with tasks committed this week:
+
+```txt
+position = (this week's completed goal tasks) vs (expected-by-now)
+expected-by-now ≈ committed_goal_tasks_this_week * (day_index_in_week / 7)
+```
+
+Resets at the Sunday flip. If a goal has no tasks committed this week, the row shows a neutral "nothing planned this week" state. Distinct from the stored `goals.health_level`; does not feed it. The existing `tasks_goal_id_idx` and `tasks_user_this_week_open_idx` already support this query; no new index required.
+
+**Release 1 — RLS for new tables:**
+
+```sql
+alter table milestones enable row level security;
+alter table goal_health_records enable row level security;
+
+create policy milestones_owner on milestones
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+create policy goal_health_records_owner on goal_health_records
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+```
 
 ---
 

@@ -311,7 +311,7 @@ On a seeded multi-week goal, confirm the model *feels honest*: one `nothing+mayb
   - Validate: 🤖 `npm test` (backend) and `npm test` (app) both green.
   - **Done:** `backend/src/lib/aiUtils.ts` (`parseSuggestToolResult`) + `backend/src/tests/ai.test.ts` (8 soft-fail cases); `backend/src/lib/rolloverUtils.ts` (`shouldCreateRitual`) + `backend/src/tests/rollover.test.ts` (4 trigger cases); `app/lib/__tests__/GoalCard.test.tsx` (5 card-variant cases: health-set/muted/no-milestone/milestone/overdue); `app/__mocks__/@expo/vector-icons.js` + jest moduleNameMapper for native font avoidance. Backend: 69/69 ✓  Frontend: 22/22 ✓. Note: This Week section omission (JSX conditional in index.tsx) and Reflect "Plan this week" button gating (covered by logic in carry-goal-reflect.tsx) remain 👤-only — extracting full-screen components for those would require extensive hook mocking without proportional test value.
 
-- [ ] **6.3 — Baseline fold-back (per CLAUDE.md Releases: Fold-Back)**
+- [x] **6.3 — Baseline fold-back (per CLAUDE.md Releases: Fold-Back)**
   - Build: merge release-1 deltas into main `/docs` lenses (product / domain / requirements / ux / database_design / ai-architecture): Milestone + goal health + GoalHealthRecord into domain & database baselines; goal step + two signals into ux/requirements; AI suggestion into ai-architecture; **the history-aware health model + retuned base table (Phase 5) into the requirements & database baselines** (carry over the same wording fixes made to the release-1 deltas in 5.5 admin). Keep `docs/releases/release-1/` as a dated archive. `/docs/ui` already current — no UI fold-back.
   - Validate: 🤖 re-read main lenses for dangling release-only language; 👤 sanity confirm.
 

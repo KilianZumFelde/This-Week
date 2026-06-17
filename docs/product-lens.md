@@ -64,6 +64,40 @@ Makeshift PWA with voice → speech-to-text → AI-parsed task creation. Capture
 
 ---
 
+## Release 1 — Goals Drive the Week
+
+### Problem (Release 1)
+The shipped goal layer is **passive dead weight**. A goal exists in the Goals tab with a target date and some optionally-linked tasks/habits, but it does no work for the user. The user's words: *"This passive 'there is a goal somewhere here' is simply no use at all."*
+
+The root cause is that **a goal has no expected trajectory** — no sense of "by now I should have done roughly X toward this." With nothing to be on-track *against*:
+
+1. **Mid-stream blindness:** the user cannot sense, within a week, whether they are working toward the goal and how on track they are. Off-track is only noticed months later.
+2. **Week-start paralysis:** when a new week begins, the user has no guidance for *which* tasks to do or *what* to create next toward the goal.
+
+The operative felt quality the user is chasing is **consistency** — sensing whether they are consistently moving the goal forward.
+
+### Success looks like (Release 1)
+This release's success is felt at the **weekly** timescale:
+
+- **Within a week or two**, the user can sense whether they are working toward the goal and **how far behind / on track / ahead** they are. The signal is a **gradient, not binary**.
+- **At week planning**, the user has a good feeling of what to add or do to keep progressing toward the goal — week-start is no longer a blank-page decision.
+- The user senses **consistency** toward the goal rather than sporadic, untracked effort.
+
+User confirmation: *"Success is that. I can sense inside of a week if I'm behind, if I'm on track... when I plan a next week, I have a good feeling of what I should add or do to continue with my goal."*
+
+### Scope boundaries (Release 1)
+
+**In scope:**
+- The on-track signal + week-start guidance applies to **all active goals** (primary and secondary alike).
+- The yardstick mechanism combines **milestone-style checkpoints and a pace/consistency notion** ("something about milestones, and also the pace thing — both").
+- Guidance is **suggestive**: the app proposes what to do/add; the user accepts, edits, or ignores.
+
+**Out of scope (deferred):**
+- Multi-step Gantt charts, task dependencies, or sub-milestone hierarchies — explicitly rejected.
+- Automatic re-forecasting / shifting of goal target dates.
+
+---
+
 ## Q&A
 
 - **Q1: Real problem behind the feature?**

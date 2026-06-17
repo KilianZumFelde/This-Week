@@ -108,6 +108,12 @@
 - Must **not** auto-save voice captures — always require user confirmation on draft.
 - Must **not** send notifications other than (a) per-task user-set reminders, and (b) per-habit weekly nudge in danger zone.
 - Must **not** allow re-opening a completed task after the Sunday flip — preserves history integrity.
+- Must **not** compute health objectively (no tasks-per-week cadence, no task counting) — difficulty varies too much; an objective formula would "become Jira."
+- Must **not** assign tasks to milestones (no task↔milestone relationship); tasks link to goals only.
+- Must **not** drift health automatically between Sundays (no clock-driven or activity-driven change).
+- AI must **not** generate the goal's plan unprompted or auto-create tasks; it assists only after the user reviews their own tasks and always requires confirmation.
+- Must **not** hard-cap the number of milestones ("1–2 ahead" is a soft rhythm, not an enforced limit).
+- Must **not** add a blocking app-open prompt for overdue milestones (triage surfacing only).
 
 ### Triggers / Events
 
@@ -123,6 +129,73 @@
 | Goal target date passes | App surfaces an Overdue Goal bottom-sheet prompt with: *Mark as hit / Extend (re-opens Edit form) / Abandon*. |
 | User exceeds goal cap on Add Goal save | Backend returns `HTTP 400`; the form shows a generic error. User must abandon an existing goal manually and retry. |
 | Recurring "until done" reminder fires daily | Fires until task is marked done, then auto-cancels |
+| Sunday ritual reaches the goal step | For each active goal: **Reflect** (next-milestone line + two mandatory health questions; gap-catch if no milestone) → **Plan** (optional task pick + AI suggestions; new task via the "+" FAB) |
+| Goal has no active milestone at triage | Gap-catch: prompt to create a milestone before proceeding for that goal |
+| User marks a milestone **hit** | Milestone → `hit`; immediate prompt to set the next milestone |
+| Milestone target date passes without being hit | Surfaced in the **next** Sunday triage goal step (not a blocking app-open prompt) |
+| User answers the two health questions | Goal's health level is (re)set per `calculateGoalHealth(current, history)`; frozen until next Sunday |
+
+---
+
+## Release 1 additions — Goals Drive the Week
+
+### Business rules (new)
+
+**Goal/milestone health (the core new rule):**
+- Each active goal has a **health** with a 5-level position (worst→best): **Behind · Slightly behind · On track · Ahead · Well ahead**.
+- Health is **set weekly during the Sunday triage** goal step, from **two subjective questions** asked per goal:
+  1. *Progress* — "How much did you move toward [milestone] this week?" → **A lot / Some / Barely / Nothing**
+  2. *Confidence* — "Confident you'll hit [milestone] by [date]?" → **Yes / Maybe / No**
+- **Health level = `calculateGoalHealth(current, history)`** — computed from the user's two answers for the current week **plus up to 3 prior contiguous weekly answers** (no gaps; a skipped Sunday resets the window). The milestone's date is shown only as **context** to help the user answer (it is NOT a computational input).
+
+  **Base score table (score 0–4 → Behind … Well ahead):**
+
+  | Progress \ Confidence | Yes | Maybe | No |
+  |---|---|---|---|
+  | **A lot** | Ahead (3) | On track (2) | Slightly behind (1) |
+  | **Some** | On track (2) | On track (2) | Slightly behind (1) |
+  | **Barely** | Slightly behind (1) | Slightly behind (1) | Behind (0) |
+  | **Nothing** | Slightly behind (1) | Slightly behind (1) | Behind (0) |
+
+  **History adjustments (bounded ±1–2 notches; current week is always dominant):**
+  - A **negative pattern** (any of the three below) lowers the score by 1 or 2 notches. The *strongest single pattern* is used — they do not stack.
+    1. **Repeated low confidence** — 2× consecutive `no` → −1; 3+× `no` → −2; 3+× `!= yes` → −1
+    2. **Repeated stagnation** (`progress ∈ {barely, nothing}` AND `confidence ∈ {maybe, no}`) — 2× → −1; 3+× → −2
+    3. **Repeated nothing progress** — 2× → −1; 3+× → −2
+  - A **positive pattern** lifts the score by 1 notch (only applied when no negative fires): 2+× `a_lot+yes` → +1; 3+× `(some|a_lot)+yes` → +1
+  - The current week always breaks a streak: if this week's answers do not match the pattern, the streak count resets to 0 and no adjustment fires. **Recovery from a bad streak is always possible with a strong current week.**
+  - Final score is clamped to [0, 4] (Behind … Well ahead). Stored `health_level` values from prior weeks are never re-computed; the model reads raw `progress_answer` / `confidence_answer` from `goal_health_records`.
+
+- **Health is frozen between Sundays.** It changes only when the user answers the weekly questions.
+- Health applies to **all active goals** (primary and secondaries alike).
+
+**This-week on-track cursor (the micro signal — distinct from health):**
+- Separate from the subjective Goal health. This is an **objective, derived, live** signal shown **on the This Week view**, inside a dedicated **"Milestones" section**, one row per active goal — each row **labeled by the goal's next milestone**.
+- Position = **this week's completed goal tasks vs. time elapsed in the week.** Expected-by-now scales with the day of the week.
+- **Moves right** when the user completes a this-week goal task; **drifts left** as days pass with them incomplete (clock-driven within the week).
+- **Resets each week** at the Sunday flip.
+- If a goal has **no tasks committed this week**, the cursor shows a neutral "nothing planned this week" state, not "behind".
+
+**Milestone lifecycle:**
+- A milestone is a **dated checkpoint belonging to a goal**. A goal should have 1–2 upcoming milestones at a time.
+- `active → hit` (manual mark). Marking a milestone **hit** triggers an immediate prompt to **set the next milestone**.
+- A milestone may be **edited** (e.g., push its date).
+- **Overdue milestone** (target date passes without being marked hit): surfaces in the **next Sunday triage** goal step (not a blocking app-open prompt).
+
+**Sunday ritual goal step (two sub-steps per goal: Reflect → Plan):**
+- Runs once per active goal, inserted after per-task triage and before pull-from-backlog.
+  - **Reflect** — shows the goal's next-milestone line and asks the **two health questions** (mandatory-light). The **gap-catch** (no active milestone) lives here.
+  - **Plan** — pick existing goal tasks into the week and/or accept AI-suggested additions (all optional). New task via the persistent **"+" FAB**.
+- Only the Reflect health questions are mandatory; all Plan/task actions are optional.
+
+**Bounded AI assist (goal step):**
+- AI may suggest **additional** tasks only *after* the user has reviewed the goal's own existing tasks.
+- AI **never auto-creates** tasks and every AI suggestion requires the user's explicit **confirmation tap**.
+
+### Validation rules (new)
+
+- **Milestone target date**: required; must be in the future; must be **on or before the parent goal's target date**.
+- **Health answers**: both questions required to set/confirm a goal's health during triage (mandatory-light).
 
 ### Concurrency
 Not relevant in v1 — single-user, single-device, mobile-only. No simultaneous edits, no sync conflicts.

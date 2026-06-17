@@ -83,6 +83,19 @@ where its lower writing quality doesn't matter.
 - **Streaming:** No — batch (`max_tokens: 256`).
 - **Estimated cost per call:** ~$0.001–0.002 (Haiku, tiny prompt). Negligible.
 
+### Goal task-suggestion assist ("Anything to add?") — Release 1
+
+- **Trigger:** During the Sunday triage **goal step → Plan** sub-screen, after the user has been shown the goal's own existing open/backlog tasks, they may tap a quiet **"Anything to add?"** button. Only then does the app call `POST /ai/suggest-goal-tasks`. The assist is **never** invoked automatically and **never** before the user's own tasks are shown — both are hard requirements.
+- **Input:** A compact goal-planning context: the goal (title, `why`, `target_date`, `health_level`), its **nearest upcoming milestone** (title + date), the goal's **existing this-week + open/backlog task titles** (so the model suggests *additional*, non-duplicate tasks), the user's themes (id + name). Deliberately **not** sent: unrelated goals, full task history beyond this goal, stats, any stored health-record history.
+- **Output:** Structured — a short list of **suggested task drafts**, each `{title, theme_id?, effort_level?, return_level?}`. Suggestions are *additions toward the goal*, pre-linkable to the goal and defaulted to this week, but **nothing is created** by the model.
+- **Output schema:** Anthropic **tool use** with a forced `tool_choice` on a `suggest_goal_tasks` tool, then **Zod** validation of the tool input on the backend before returning. Reuses the existing task-draft field conventions (effort/return enums, theme_id) so the app's confirm-card UI is consistent with capture.
+- **Validation / soft-fail:** No `tool_use` block, or Zod rejection, or an empty list → return `{ items: [] }` cleanly (the assist is optional). Never return an unvalidated draft. **This differs from capture**: capture fails to 422; goal-suggest fails soft (no suggestions shown, rest of triage unaffected).
+- **User confirmation required:** Yes — each suggested task renders as a draft card that requires an **explicit confirm tap** before it becomes a real task (inherits the standing "never auto-save AI output" rule).
+- **Failure behavior:** Soft. On any AI error/timeout/empty result the Plan screen shows no suggestions; the rest of the triage goal step is completely unaffected. AI being down must never block the mandatory Sunday ritual.
+- **Streaming:** No — batch. The user taps and waits for a small reviewable set of draft cards.
+- **Model:** **Claude Sonnet 4.6** (`claude-sonnet-4-6`) — same as capture.
+- **Estimated cost per call:** ~$0.01. Invoked at most a few times per Sunday, per goal — negligible at single-user volume.
+
 ### Goal coach ("Coach me") — placeholder, not implemented
 
 - The Goals tab has a non-functional **"Coach me"** button (per the baseline UI brief). There is
@@ -93,26 +106,20 @@ where its lower writing quality doesn't matter.
 
 ## Prompt Architecture
 
-- **System prompt location:** In code (`backend/src/routes/ai.ts`) — `buildSystemPrompt()` for
-  capture, an inline template string for reminder parsing. No external markdown prompt files.
-- **Templating:** The capture system prompt is built per-request from the user's themes, primary
-  goal, timezone, and current time. The reminder prompt interpolates the current local time.
+- **System prompt location:** In code (`backend/src/routes/ai.ts`) — `buildSystemPrompt()` for capture, an inline template string for reminder parsing, and a per-request builder for the goal-suggestion route. No external markdown prompt files.
+- **Templating:** The capture system prompt is built per-request from the user's themes, primary goal, timezone, and current time. The reminder prompt interpolates the current local time. The goal-suggestion prompt is built from the goal/milestone/existing-tasks/themes context.
 - **Versioning:** Prompts are versioned with the code (git). No runtime prompt store.
 - **Who can change them:** Developers, via a code change + deploy.
 
 ## Structured Output and Validation
 
-- Every AI-to-app flow uses **Anthropic tool use with forced `tool_choice`** to constrain shape,
-  then **Zod** to validate on the backend before returning.
-- On validation failure the current code **fails fast to 422** (no automatic retry). A
-  single-retry-with-the-validation-error-fed-back step is a reasonable future hardening but is not
-  implemented today — documented so the absence is intentional, not overlooked.
+- Every AI-to-app flow uses **Anthropic tool use with forced `tool_choice`** to constrain shape, then **Zod** to validate on the backend before returning.
+- On validation failure: **capture and reminder parsing fail fast to 422** (user retries or acts manually). The **goal-suggestion assist fails soft** — invalid/missing tool-use returns `{ items: [] }` (no suggestions shown, triage continues). This distinction is intentional: capture is user-initiated with a direct retry path; goal-suggest is optional and must never block the Sunday ritual.
+- A single-retry-with-the-validation-error-fed-back step is a reasonable future hardening but is not implemented today — documented so the absence is intentional, not overlooked.
 
 ## Tool Use / Function Calling
 
-- Tools are used **only** as the structured-output mechanism (`capture_items`, `parse_reminder`),
-  not to give the model agency. The model never calls back into the app, reads the database, or
-  takes actions. No multi-step agent loop.
+- Tools are used **only** as the structured-output mechanism (`capture_items`, `parse_reminder`, `suggest_goal_tasks` — Release 1), not to give the model agency. The model never calls back into the app, reads the database, or takes actions. No multi-step agent loop.
 
 ## Caching Strategy
 
@@ -146,7 +153,11 @@ Per-field intent for what the backend sends to Anthropic:
 | Capture transcript / reminder text | **Sent** | The user's own words — required for the task. |
 | Theme names + ids, primary goal title + id | **Sent** | Needed for accurate theming/linking. Low sensitivity (the user's own labels). |
 | Timezone / current local time | **Sent** | Needed for date resolution. |
+| Goal `why` (motivation text) | **Sent (goal-suggest, Release 1)** | More personal/reflective than capture's inputs, but needed for relevant suggestions. Backend-only, not stored. |
+| Goal title, target date, `health_level`, nearest milestone | **Sent (goal-suggest, Release 1)** | Planning context for relevance. |
+| The goal's existing task titles | **Sent (goal-suggest, Release 1)** | Required so suggestions are *additional* and non-duplicate. |
 | Full task/habit history, other goals, stats | **Never sent** | Not needed; keeps the prompt minimal and the surface small. |
+| Health-record history, raw transcripts | **Never sent / never stored** | Same stance as baseline. |
 | Auth tokens, user id, email | **Never sent** | Stay server-side; AI calls are scoped by the authenticated session, but identity is not part of any prompt. |
 | Raw AI transcripts/responses | **Never stored** | `ai_capture_logs` is metadata-only by design (see DB doc). |
 
