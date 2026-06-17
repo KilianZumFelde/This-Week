@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/kilia/.claude/skills/discover/**)",
+      "Read(//c/Users/kilia/.claude/skills/discover-domain/**)",
+      "Read(//c/Users/kilia/.claude/skills/discover-product/**)",
+      "Read(//c/Users/kilia/.claude/skills/discover-requirements/**)",
+      "Read(//c/Users/kilia/.claude/skills/discover-ux/**)",
+      "Read(//c/Users/kilia/.claude/skills/discover-ui/**)",
+      "Read(//c/Users/kilia/.claude/skills/discover-security/**)",
+      "PowerShell(Remove-Item \"$env:USERPROFILE\\\\.claude\\\\skills\\\\discover-stitch\" -Recurse -Force; Get-ChildItem \"$env:USERPROFILE\\\\.claude\\\\skills\" -Directory | Select-Object Name)",
+      "Edit(~/.claude/skills/discover-product/**)",
+      "Edit(~/.claude/skills/discover-ux/**)",
+      "Edit(~/.claude/skills/discover-requirements/**)",
+      "Edit(~/.claude/skills/discover-domain/**)",
+      "Edit(~/.claude/skills/discover-security/**)",
+      "Edit(~/.claude/skills/discover-ui/**)",
+      "Read(//c/Users/kilia/.claude/skills/**)",
+      "Edit(~/.claude/skills/architect-stack/**)",
+      "Edit(~/.claude/skills/architect-database/**)"
+    ]
+  }
+}

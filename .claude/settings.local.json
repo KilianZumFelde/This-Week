@@ -4,7 +4,11 @@
       "Bash(npm run *)",
       "Bash(curl -s http://localhost:3000/health)",
       "Bash(git rm *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(npx tsc *)",
+      "Bash(python -m json.tool)",
+      "PowerShell(git add *)",
+      "Bash(curl *)"
     ]
   },
   "prefersReducedMotion": true
