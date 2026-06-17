@@ -61,7 +61,9 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       segments.includes('carry-goal-reflect') ||
       segments.includes('carry-goal-plan') ||
       segments.includes('carry-pull') ||
-      segments.includes('new-week');
+      segments.includes('new-week') ||
+      segments.includes('quick-add') ||  // allow quick-add modal opened from ritual
+      segments.includes('goal-detail');   // allow goal-detail opened from ritual
     if (!inRitual) {
       router.replace('/carry-recap');
     }

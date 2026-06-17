@@ -55,8 +55,10 @@ export default function CarryGoalPlan() {
   const createTask = useCreateTask();
 
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
+  const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
   const [aiLoading, setAiLoading] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<AiSuggestion[]>([]);
+  const [aiEmpty, setAiEmpty] = useState(false);
   const [confirmedSuggestions, setConfirmedSuggestions] = useState<Set<number>>(new Set());
   const [submitting, setSubmitting] = useState(false);
 
@@ -73,19 +75,27 @@ export default function CarryGoalPlan() {
 
   async function toggleAddTask(task: Task) {
     const weekStart = getCurrentWeekStartDate();
-    if (addedIds.has(task.id)) return; // no un-add once committed
+    if (addedIds.has(task.id)) return;
     setAddedIds((prev) => new Set(prev).add(task.id));
-    await updateTask.mutateAsync({
-      id: task.id,
-      week_assignment: 'this_week',
-      week_start_date: weekStart,
-    });
+    setFailedIds((prev) => { const s = new Set(prev); s.delete(task.id); return s; });
+    try {
+      await updateTask.mutateAsync({
+        id: task.id,
+        week_assignment: 'this_week',
+        week_start_date: weekStart,
+      });
+    } catch {
+      // Roll back visual state and mark as failed
+      setAddedIds((prev) => { const s = new Set(prev); s.delete(task.id); return s; });
+      setFailedIds((prev) => new Set(prev).add(task.id));
+    }
   }
 
   async function loadAiSuggestions() {
     if (!goal || aiLoading) return;
     setAiLoading(true);
     setAiSuggestions([]);
+    setAiEmpty(false);
     try {
       const existingTitles = [
         ...(backlogGoalTasks.map((t: Task) => t.title)),
@@ -105,9 +115,12 @@ export default function CarryGoalPlan() {
         existing_task_titles: existingTitles,
         themes: (themes ?? []).map((t) => ({ id: t.id, name: t.name })),
       });
-      setAiSuggestions(res.items ?? []);
+      const items = res.items ?? [];
+      setAiSuggestions(items);
+      if (items.length === 0) setAiEmpty(true);
     } catch {
       setAiSuggestions([]);
+      setAiEmpty(true);
     } finally {
       setAiLoading(false);
     }
@@ -204,6 +217,7 @@ export default function CarryGoalPlan() {
         ) : (
           backlogGoalTasks.map((task: Task) => {
             const isAdded = addedIds.has(task.id);
+            const isFailed = failedIds.has(task.id);
             const theme = themeMap.get(task.theme_id);
             return (
               <TouchableOpacity
@@ -221,7 +235,10 @@ export default function CarryGoalPlan() {
                 </View>
                 <View style={styles.taskBody}>
                   <Text style={styles.taskTitle}>{task.title}</Text>
-                  {(theme || task.effort_level) && (
+                  {isFailed && (
+                    <Text style={styles.failedHint}>Couldn't add — tap to retry</Text>
+                  )}
+                  {(theme || task.effort_level) && !isFailed && (
                     <View style={styles.chipRow}>
                       {theme && (
                         <View style={[styles.chip, { backgroundColor: `${theme.color ?? colors.text2}22` }]}>
@@ -258,6 +275,10 @@ export default function CarryGoalPlan() {
           }
           <Text style={styles.aiBtnText}>Anything to add?</Text>
         </TouchableOpacity>
+
+        {aiEmpty && aiSuggestions.length === 0 && (
+          <Text style={styles.aiHint}>No suggestions right now — try again later.</Text>
+        )}
 
         {aiSuggestions.length > 0 && (
           <>
@@ -469,6 +490,11 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: 12,
     fontWeight: '500',
+  },
+  failedHint: {
+    fontSize: 11.5,
+    color: colors.brick,
+    marginTop: 2,
   },
   addedBadge: {
     fontSize: 10.5,
