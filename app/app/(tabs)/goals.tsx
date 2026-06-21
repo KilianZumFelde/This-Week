@@ -159,6 +159,26 @@ function SecondaryGoalCard({
   );
 }
 
+// ─── Past goal card ───────────────────────────────────────────────────────────
+
+export function PastGoalCard({ goal, onPress }: { goal: Goal; onPress: () => void }) {
+  const resLabel =
+    goal.status === 'completed' ? 'Hit' : goal.status === 'archived' ? 'Abandoned' : 'Missed';
+  const resColor =
+    goal.status === 'completed' ? colors.sage : goal.status === 'archived' ? colors.text3 : colors.brick;
+  const dateStr = new Date(
+    (goal.completed_at ?? goal.archived_at ?? goal.updated_at)
+  ).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
+  return (
+    <TouchableOpacity style={styles.graveRow} onPress={onPress} activeOpacity={0.7}>
+      <Text style={[styles.graveRes, { color: resColor }]}>{resLabel}</Text>
+      <Text style={styles.graveName} numberOfLines={1}>{goal.title}</Text>
+      <Text style={styles.graveDate}>{dateStr}</Text>
+    </TouchableOpacity>
+  );
+}
+
 // ─── Main screen ─────────────────────────────────────────────────────────────
 
 export default function Goals() {
@@ -261,13 +281,6 @@ export default function Goals() {
               <Icon name="plus" size={16} color={colors.text} />
               <Text style={styles.btnGhostText}>Add directly</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.btn, styles.btnPrimary, { flex: 1.3 }]}
-              activeOpacity={0.7}
-            >
-              <Icon name="sparkles" size={16} color="#1a1816" />
-              <Text style={styles.btnPrimaryText}>Coach me</Text>
-            </TouchableOpacity>
           </View>
 
           {/* Graveyard */}
@@ -285,28 +298,9 @@ export default function Goals() {
               </TouchableOpacity>
               {graveOpen && (
                 <View style={{ paddingTop: 6 }}>
-                  {pastGoals.map((g) => {
-                    const resLabel =
-                      g.status === 'completed' ? 'Hit' : g.status === 'archived' ? 'Abandoned' : 'Missed';
-                    const resColor =
-                      g.status === 'completed' ? colors.sage : g.status === 'archived' ? colors.text3 : colors.brick;
-                    const dateStr = new Date(
-                      (g.completed_at ?? g.archived_at ?? g.updated_at)
-                    ).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-
-                    return (
-                      <TouchableOpacity
-                        key={g.id}
-                        style={styles.graveRow}
-                        onPress={() => openGoal(g)}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[styles.graveRes, { color: resColor }]}>{resLabel}</Text>
-                        <Text style={styles.graveName}>{g.title}</Text>
-                        <Text style={styles.graveDate}>{dateStr}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
+                  {pastGoals.map((g) => (
+                    <PastGoalCard key={g.id} goal={g} onPress={() => openGoal(g)} />
+                  ))}
                 </View>
               )}
             </>
@@ -464,14 +458,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.text,
   },
-  btnPrimary: {
-    backgroundColor: colors.accent,
-  },
-  btnPrimaryText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1a1816',
-  },
   doneBar: {
     paddingVertical: 14,
     paddingHorizontal: 4,
@@ -493,9 +479,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.hairline,
+    padding: 13,
+    paddingHorizontal: 14,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    marginBottom: 8,
   },
   graveRes: {
     fontSize: 11,

@@ -58,7 +58,7 @@ function App() {
   return (
     <>
       <DesignCanvas>
-        <DCSection id="primary" title="Primary tabs" subtitle="The four tabs the user lives in day-to-day. Home leads with near-term milestone pace (the 'track' component); Goals shows long-term goal health. Tap a task circle or habit ring to interact.">
+        <DCSection id="primary" title="Primary tabs" subtitle="The three tabs the user lives in day-to-day (This Week / Backlog / Goals; Stats moved into Settings 2026-06-18). Home leads with near-term milestone pace (the 'track' component); Goals shows long-term goal health. Tap a task circle or habit ring to interact.">
           <DCArtboard id="this-week" label="01 · This Week" width={PHONE_W} height={PHONE_H}>
             <PhoneFrame label="01 This Week">
               <ThisWeek

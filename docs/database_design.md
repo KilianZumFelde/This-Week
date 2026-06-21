@@ -411,7 +411,7 @@ create index milestones_user_id_idx on milestones(user_id);
 Notes:
 
 - `on delete cascade` on `goal_id`: a milestone makes no sense without its goal, so deleting a goal takes its milestones with it.
-- Hard delete is allowed even though the v1 UI exposes only *Mark hit* and *Edit*.
+- Hard delete is allowed; the UI exposes it as a "Delete milestone" action in the milestone edit sheet (alongside *Mark hit* and *Edit*).
 - **No Task relationship** — deliberate anti-Jira scoping. Tasks link to goals only; a milestone never owns or tags tasks.
 - Duplicate titles within a goal are allowed — internal ID only, no business uniqueness.
 - `hit_at` is set when the user marks the milestone hit; null while active.

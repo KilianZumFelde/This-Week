@@ -9,7 +9,6 @@ const TABS = [
   { name: 'index', label: 'This Week', icon: 'home' },
   { name: 'backlog', label: 'Backlog', icon: 'inbox' },
   { name: 'goals', label: 'Goals', icon: 'target' },
-  { name: 'stats', label: 'Stats', icon: 'bar-chart' },
 ];
 
 export function TabBar({ state, navigation }: BottomTabBarProps) {

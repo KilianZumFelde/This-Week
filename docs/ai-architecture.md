@@ -96,11 +96,11 @@ where its lower writing quality doesn't matter.
 - **Model:** **Claude Sonnet 4.6** (`claude-sonnet-4-6`) — same as capture.
 - **Estimated cost per call:** ~$0.01. Invoked at most a few times per Sunday, per goal — negligible at single-user volume.
 
-### Goal coach ("Coach me") — placeholder, not implemented
+### Goal coach ("Coach me") — dropped, button removed
 
-- The Goals tab has a non-functional **"Coach me"** button (per the baseline UI brief). There is
-  **no backend route, prompt, or model wired to it** as of this baseline — it is a deliberate
-  placeholder. When it is built it must follow the same rules: backend-only, structured/validated,
+- The Goal coach feature was **dropped from scope (2026-05-24)** and the non-functional **"Coach me"**
+  button was **removed from the Goals tab (2026-06-18)**. There is **no backend route, prompt, or model**
+  wired to it. If it is ever revived it must follow the same rules: backend-only, structured/validated,
   user-confirmed, with a defined failure path. Documented here so the gap is explicit, not
   silently assumed-built.
 

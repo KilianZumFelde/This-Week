@@ -63,6 +63,22 @@ export default function Settings() {
           <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />
         ) : (
           <>
+            {/* Insights */}
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Insights</Text>
+              <TouchableOpacity
+                style={styles.row}
+                onPress={() => router.push('/settings/stats')}
+                activeOpacity={0.7}
+              >
+                <Icon name="bar-chart" size={16} color={colors.text2} />
+                <Text style={styles.rowLabel}>Stats</Text>
+                <View style={{ marginLeft: 'auto' }}>
+                  <Icon name="chevron-right" size={14} color={colors.text3} />
+                </View>
+              </TouchableOpacity>
+            </View>
+
             {/* Themes */}
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>Themes</Text>

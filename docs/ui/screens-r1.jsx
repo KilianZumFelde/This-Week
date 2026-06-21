@@ -181,7 +181,6 @@ function Goals() {
 
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
           <button className="btn btn-ghost" style={{ flex: 1 }}><Icon name="plus" size={16} stroke={2}/> Add directly</button>
-          <button className="btn btn-primary" style={{ flex: 1.3 }}><Icon name="sparkles" size={16} stroke={2}/> Coach me</button>
         </div>
 
         <div className="done-bar" style={{ marginTop: 30 }} onClick={() => setGraveOpen(o => !o)}>
@@ -306,7 +305,7 @@ function GoalDetail() {
 function MilestoneSheet({ editing = false }) {
   const [title, setTitle] = React.useState(editing ? 'Cut & send demo set' : '');
   const [pick, setPick] = React.useState(editing ? '2w' : null);
-  const dateFor = { '1w': 'Jun 23, 2026', '2w': 'Jun 30, 2026', '1m': 'Jul 16, 2026', '6w': 'Jul 28, 2026' };
+  const dateFor = { '1w': 'Jun 23, 2026', '2w': 'Jun 30, 2026', '3w': 'Jul 7, 2026', '1m': 'Jul 16, 2026', '5w': 'Jul 21, 2026', '6w': 'Jul 28, 2026' };
   const canSave = title.trim().length > 0 && pick !== null;
 
   return (
@@ -335,7 +334,7 @@ function MilestoneSheet({ editing = false }) {
         {/* Date chips — near-term presets */}
         <div style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-3)', fontWeight: 600, marginBottom: 10 }}>Target date</div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-          {[['1w', '1 week'], ['2w', '2 weeks'], ['1m', '1 month'], ['6w', '6 weeks']].map(([v, l]) => (
+          {[['1w', '1 week'], ['2w', '2 weeks'], ['3w', '3 weeks'], ['1m', '1 month'], ['5w', '5 weeks'], ['6w', '6 weeks']].map(([v, l]) => (
             <button key={v} className={`date-chip ${pick === v ? 'on' : ''}`} onClick={() => setPick(v)}>{l}</button>
           ))}
         </div>
@@ -351,6 +350,9 @@ function MilestoneSheet({ editing = false }) {
           <button className="btn btn-ghost" style={{ flex: 1 }}>Cancel</button>
           <button className="btn btn-primary" style={{ flex: 1.4, opacity: canSave ? 1 : 0.45, pointerEvents: canSave ? 'auto' : 'none' }}>Save milestone</button>
         </div>
+        {editing && (
+          <button style={{ display: 'block', width: '100%', background: 'none', border: 'none', color: 'var(--brick)', fontSize: 14, fontWeight: 500, padding: '14px 0 4px', marginTop: 4, cursor: 'pointer' }}>Delete milestone</button>
+        )}
       </div>
     </div>
   );
@@ -454,7 +456,6 @@ function CarryGoalPlan({ onMic }) {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
           <span style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-3)', fontWeight: 600 }}>Pull in this week's work</span>
-          <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>+ to add a new one</span>
         </div>
         {goalTasks.map(t => {
           const on = added[t.id];

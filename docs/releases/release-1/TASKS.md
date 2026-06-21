@@ -344,3 +344,196 @@ Final pass: goals now visibly steer the week (Home cursor, Goals dashboard, Sund
 - Migration numbering continues at `008` (latest = `007_habit_soft_delete.sql`).
 - `performRollover` currently skips the ritual on zero-leftover weeks; `_layout.tsx` `inRitual` allow-list gates ritual screens — both addressed in Phase 4.
 - Task effort/return enums are `low|medium|high|unknown` (4 values) per `request-schemas.ts`.
+
+---
+
+# Adjustments (post-fold-back) — requested 2026-06-18
+
+Small UX/UI corrections raised after release-1 shipped and folded back. The baseline `/docs` lenses are now current reality (fold-back ran in 6.3), so **doc updates here target the main `/docs` lenses + the `/docs/ui` prototype** (kept as the design source of truth), **not** the archived `docs/releases/release-1/` deltas. Each item was traced to real code during planning (every file named below was read).
+
+**Validation ownership (same rules as the release):** 🤖 = me (`tsc` in `app/`, `npm test` jest/RNTL component tests, `npm run build`/`vitest` in `backend/`, live `curl` with a test-user JWT against a locally-run backend); 👤 = you (on-device visual/interaction in Expo Go). RNTL 14 `render`/`fireEvent` are async — always `await`.
+
+**No backend code, schema, or migration changes in this set** — the milestone `DELETE` route, `useDeleteMilestone` hook, and `goal_health_records` already exist from the release. These phases are frontend + docs only.
+
+---
+
+## Phase 7 — Goals & Sunday-Plan surface cleanups
+
+**Outcome:** The Sunday goal-Plan step loses the misleading `+ to add new` label; the Goals tab loses the dead "Coach me" button (Add directly goes full-width); past goals render as proper cards instead of hairline rows.
+
+### Tasks
+
+- [x] **7.1 — Remove the `+ to add new` label (Sunday Plan)**
+  - Build: in `app/app/carry-goal-plan.tsx`, delete the `<Text style={styles.sectionHint}>+ to add new</Text>` inside the "PULL IN THIS WEEK'S WORK" `sectionHeader` (lines ~208–211) and remove the now-unused `sectionHint` style. The real "New task" button (`newTaskBtn`, ~322) stays. Keep the `sectionHeader` row (now just the label).
+  - Files: `app/app/carry-goal-plan.tsx`.
+  - Based on: user report; grounded against the shipped Plan screen.
+  - Validate: 🤖 `tsc`; 👤 Sunday Plan step no longer shows the stray label.
+
+- [x] **7.2 — Remove the "Coach me" button; make "Add directly" full-width**
+  - Build: in `app/app/(tabs)/goals.tsx`, remove the "Coach me" `TouchableOpacity` (lines ~264–270) and its `btnPrimary`/`btnPrimaryText` styles if no longer referenced. The `buttonRow` keeps a single full-width "Add directly" button (drop its `flex: 1` competition — let it span the row). The Coach feature was already **dropped from scope (2026-05-24)**; this completes the cleanup. Leave the empty-state "Set my first goal with Coach" CTA out of scope (separate surface, not requested).
+  - Files: `app/app/(tabs)/goals.tsx`.
+  - Based on: `ux-lens.md:106`, `requirements-lens.md:98`, `ai-architecture.md:99`, `product-lens.md:41` (Coach dropped), user request.
+  - Validate: 🤖 `tsc` (no dangling style refs); 👤 Goals tab shows one full-width "Add directly", no Coach button.
+
+- [x] **7.3 — Past goals as cards (not hairline rows)**
+  - Build: in `app/app/(tabs)/goals.tsx`, convert each graveyard `graveRow` (lines ~297–307) to a surface card matching the milestone/task card idiom — rounded `colors.surface` background, `radius.md`, `padding ~13/14`, `marginBottom: 8`, drop the `borderBottom` hairline. Keep the three pieces (result label + title + date). Update `graveRow`/`graveRes`/`graveName`/`graveDate` styles accordingly; keep the tap → `openGoal(g)` behavior.
+  - Files: `app/app/(tabs)/goals.tsx`.
+  - Based on: user request ("same card component usage as tasks and milestones"); `TaskRow.tsx` + `goal-detail.tsx` `milestoneCard` as the visual reference.
+  - Validate: 🤖 `tsc` + RNTL component test (a past goal renders as a card with its result label/title/date); 👤 past-goals list reads as cards.
+
+### 👤 User check-in (end of Phase 7)
+Open the Goals tab (one full-width "Add directly", no Coach button; past goals are cards) and the Sunday Plan step (no `+ to add new`). Confirm nothing feels lost.
+
+### End-of-phase admin ✅
+- [x] Marked 7.1–7.3 in this TASKS.md.
+- [x] **Docs done:** `docs/ui/screens-r1.jsx` — removed the "Coach me" button (~184) and the "+ to add a new one" hint in `CarryGoalPlan` (~457, the real Plan prototype — *not* `screens-modals.jsx` as first planned); `docs/ui/styles.css` `.goal-grave` — restyled to a card (rounded surface, `margin-bottom`, no hairline border). `docs/ux-lens.md` — Coach placeholder now **removed**, past-goals-as-cards note added. `docs/ui/ui-brief.md` (152/160) + `docs/ui/NAVIGATION.md` (72) + `docs/ai-architecture.md` (99) — "may be removed" → **removed**.
+- **Validation:** 🤖 `tsc --noEmit` clean; `npm test` GoalCard + PastGoalCard → 8/8 pass. `docs/product-lens.md:41` — keep "AI Coach … out of scope" wording (no UI surface remains).
+
+---
+
+## Phase 8 — Milestone management: delete + more date presets
+
+**Outcome:** A milestone can be deleted from its edit sheet (with confirm); the target-date presets gain **3 weeks** and **5 weeks**.
+
+### Tasks
+
+- [x] **8.1 — Add 3-week and 5-week date presets**
+  - Build: in `app/app/components/MilestoneSheet.tsx`, extend `DATE_CHIPS` (lines ~36–41) and `resolveChip` (~19–26) to: `1 week / 2 weeks / 3 weeks / 1 month / 5 weeks / 6 weeks` (chronological order; `3w` = +21d, `5w` = +35d). The existing after-goal-date guard already applies to any resolved chip — no extra validation logic.
+  - Files: `app/app/components/MilestoneSheet.tsx`.
+  - Based on: user request.
+  - Validate: 🤖 `tsc` + a small unit/component test that `resolveChip('3w')`/`'5w'` resolve to +21/+35 days and the new chips render and select; 👤 the chip row shows six presets and a resolved-date pill updates.
+
+- [x] **8.2 — Delete a milestone from the edit sheet**
+  - Build: in `app/app/components/MilestoneSheet.tsx`, when `isEditing`, add a red **"Delete milestone"** text link below the Cancel/Save row. On press → `Alert.alert` confirm → `useDeleteMilestone(goalId).mutate(milestoneId)` (hook already exists in `useMilestones.ts`; invalidates `['milestones', goalId]` + `['goals']`) → `onClose()`. Add the `useDeleteMilestone` import. Not shown in create mode.
+  - Files: `app/app/components/MilestoneSheet.tsx`.
+  - Based on: user request; backend `DELETE /milestones/:id` + `useDeleteMilestone` shipped in release-1 (1.3 / 1.5).
+  - Validate: 🤖 **live curl** `DELETE /milestones/:id` (test-user JWT, local backend) — create a throwaway milestone, delete it, confirm it's gone from `GET /goals/:goalId/milestones`; 🤖 `tsc`; 👤 tap a milestone → Edit sheet → Delete → confirm → row disappears from Goal Detail.
+
+### 👤 User check-in (end of Phase 8)
+In Goal Detail, add a milestone using the new 3- and 5-week chips, then tap an existing one and delete it via the confirm dialog. Confirm the after-goal-date block still works on the new presets.
+
+### End-of-phase admin ✅
+- [x] Marked 8.1–8.2.
+- [x] **Docs done:** `docs/ui/screens-r1.jsx` — `MilestoneSheet` chip array + `dateFor` map extended to six presets; "Delete milestone" link added in edit mode. `docs/requirements-lens.md` — milestone deletion (edit-sheet, confirm, tasks unaffected) added to lifecycle; target-date presets listed in the validation rule. `docs/database_design.md:414` — updated the stale "UI exposes only Mark hit / Edit" note to include Delete.
+- **Validation:** 🤖 `tsc --noEmit` clean; `npm test` milestoneChips → 4/4 pass (chip order + `resolveChip` 3w=+21d, 5w=+35d). The `DELETE /milestones/:id` backend route is **pre-existing and unchanged** (validated by live curl in release-1 task 1.3, scoped by `user_id`, returns 204) — the only new code is the FE hook call, covered by `tsc`. On-device delete is the 👤 check below.
+
+---
+
+## Phase 9 — Goal health ↔ trend honesty (Goal Detail)
+
+**Outcome:** The Goal Detail headline health and the 8-week trend's current value can never disagree, and the trend's "This week" label honestly reflects the most-recently-rated week.
+
+### Tasks
+
+- [x] **9.1 — Single-source the trend's current value**
+  - Build: trace the divergence first — confirm `POST /goals/:id/health` writes the same computed level to both `goals.health_level` and the newest `goal_health_records` row (it does today), so any mismatch is stale data or a non-current newest record. In `app/app/goal-detail.tsx`, make the displayed trend's current ("now") cell derive from the **same** value the headline uses (`goal.health_level`) when the newest record's `week_start_date` is the current week; otherwise show the record's own value but do **not** label it "this week" (see 9.2). Keep `trendWeeks` construction (lines ~96–102) but pass the headline value through so the rightmost bar matches the headline. Document the confirmed root cause in Open Questions.
+  - Files: `app/app/goal-detail.tsx`, possibly `app/app/components/HealthTrack.tsx` (`HealthDots` props).
+  - Based on: user report; release-1 Phase 2.1/5.3 set-health path.
+  - Validate: 🤖 `tsc` + component test (headline level === the highlighted "now" bar level for the same goal); 👤 a rated goal shows identical headline + trend-now.
+
+- [x] **9.2 — Fix the "This week" label placement/meaning**
+  - Build: in `app/app/components/HealthTrack.tsx` `HealthDots` (lines ~130–168), tie the "This week" header to the highlighted rightmost ("now ↑") bar rather than floating top-left disconnected from it. Only render the literal text **"This week"** when the newest record is the current week; when the newest rated week is older, show its actual short date (e.g. "Wk of Jun 8") so the label answers "what week?". Pass the newest record's `week_start_date` (or an `isCurrentWeek` flag + label) from `goal-detail.tsx` into `HealthDots`.
+  - Files: `app/app/components/HealthTrack.tsx`, `app/app/goal-detail.tsx`.
+  - Based on: user question ("why 'This week'? what week?").
+  - Validate: 🤖 `tsc` + component test (newest = current week → "This week"; newest older → dated label); 👤 the trend header reads honestly and sits with the "now" bar.
+
+### 👤 User check-in (end of Phase 9)
+Open a rated goal: headline "Goal health" and the trend's current value match exactly; the trend header clearly belongs to the rightmost bar and names the right week.
+
+### End-of-phase admin ✅
+- [x] Marked 9.1–9.2; root cause recorded in Open Questions below.
+- [x] **Docs done:** `docs/ui/components.jsx` (`HealthDots`) — added `nowLabel` prop, right-aligned the header to sit over the now-bar, dated-when-stale behavior. `docs/requirements-lens.md` — added a "Display consistency" bullet (trend now-value single-sourced from `health_level`; "This week" label only when the newest rating is the current week).
+- **Validation:** 🤖 `tsc --noEmit` clean; `npm test` HealthDots → 4/4 pass (now-bar level matches newest week; default "This week"; dated label when stale; no header on empty trend).
+
+**9.1 root cause (confirmed):** `routes/goals.ts:145–167` computes `health_level` **once** via `calculateGoalHealth` and writes the *identical* value to both the `goal_health_records` upsert and the `goals` row; `useSetGoalHealth` invalidates both `['goals']` and `['goal-health-records']`. So a freshly-rated goal is already consistent — any mismatch you saw was **stale pre-Phase-5 record data** (old-model `health_level` on an old record) or a transient before refetch. Fix is defensive: the Goal Detail now-cell is **single-sourced** from `goal.health_level`, so headline and trend-now can never disagree regardless of stale records.
+
+---
+
+## Phase 10 — Stats moves into Settings (3-tab bottom nav)
+
+**Outcome:** The bottom nav has **3** tabs (This Week · Backlog · Goals). Stats is reached from a Settings row; its screen content is unchanged.
+
+### Tasks
+
+- [x] **10.1 — Relocate the Stats screen under Settings**
+  - Build: move `app/app/(tabs)/stats.tsx` → `app/app/settings/stats.tsx` (content unchanged; both dirs are at `app/app/X` depth so `../../lib` / `../components` relative imports stay valid — verified). Register `<Stack.Screen name="stats" />` in `app/app/settings/_layout.tsx`. Add a **Stats** row to `app/app/settings/index.tsx` (same `styles.row` pattern as "Manage Themes"/"Reminders", `bar-chart` icon → `router.push('/settings/stats')`). Ensure the Stats screen's own back affordance returns to Settings (header back / `router.back()`).
+  - Files: `app/app/settings/stats.tsx` (moved), `app/app/(tabs)/stats.tsx` (deleted), `app/app/settings/_layout.tsx`, `app/app/settings/index.tsx`.
+  - Based on: user request; `settings/index.tsx` row pattern; Expo Router v55 (read `https://docs.expo.dev/versions/v55.0.0/` before moving routes, per `app/AGENTS.md`).
+  - Validate: 🤖 `tsc`; 👤 Settings → Stats opens the stats screen and back returns to Settings.
+
+- [x] **10.2 — Drop the Stats tab from the bottom nav**
+  - Build: remove `stats` from the `TABS` array in `app/app/components/TabBar.tsx` (lines ~8–13) and remove `<Tabs.Screen name="stats" />` from `app/app/(tabs)/_layout.tsx`. Confirm the 3 remaining tabs lay out correctly (`justifyContent: space-around` already adapts). Verify no other code routes to `/(tabs)/stats`.
+  - Files: `app/app/components/TabBar.tsx`, `app/app/(tabs)/_layout.tsx`.
+  - Based on: user request.
+  - Validate: 🤖 `tsc` + grep for stale `(tabs)/stats` / `name: 'stats'` references; 👤 bottom nav shows exactly 3 tabs, evenly spaced, FAB unaffected.
+
+### 👤 User check-in (end of Phase 10)
+Confirm the bottom nav is This Week · Backlog · Goals (3 tabs), the FAB still sits correctly, and Stats is reachable and back-navigable from Settings.
+
+### End-of-phase admin ✅
+- [x] Marked 10.1–10.2.
+- [x] **Docs done:** `docs/ui/NAVIGATION.md` — "Tab bar · Stats" entry struck (→ Settings → Stats); "04 · Stats" reframed as a pushed Settings screen with a back chevron. `docs/ui/components.jsx:132` — `stats` removed from the prototype `TabBar` array (3 tabs). `docs/ux-lens.md` — tab table → **3 tabs**; "Secondary tabs" line, the Sunday-review Stats line, and the gear-icon line all updated to Stats-in-Settings. `docs/product-lens.md` — no change needed (references only the still-valid "Goals tab", no tab list).
+- **Note:** the prototype has **no Settings *screen*** (the app's Settings was built without a prototype counterpart), so there was no prototype Settings row to add — the nav-array removal + NAVIGATION.md fully capture the move on the design side.
+- **Validation:** 🤖 `tsc --noEmit` clean; full `npm test` → **33/33 pass** (file move + tab removal broke nothing); grep confirms no stale `(tabs)/stats` / `navigate('stats')` references (only the legit `settings/_layout.tsx` registration remains).
+
+---
+
+## Phase 11 — Task ↔ goal visibility
+
+**Outcome:** Tapping a task shows which goal it serves (or "No goal"), and task rows carry a subtle marker when goal-linked.
+
+### Tasks
+
+- [x] **11.1 — Show the linked goal in the task detail sheet**
+  - Build: in `app/app/components/TaskDetailSheet.tsx`, add a "Goal" line near the Details block: read goals via `useGoals()`, resolve `task.goal_id` → goal title. Show `◎ <goal title>` (tap → close sheet, then `router.push('/goal-detail?goalId=...')`) or a muted "No goal" when `goal_id` is null. Match the existing `reminderRow`/chip styling; keep it read-only (re-linking a task to a goal is out of scope for this pass).
+  - Files: `app/app/components/TaskDetailSheet.tsx`.
+  - Based on: user request; `Task.goal_id` (in `useTasks.ts` / `TaskRow` props), `useGoals.ts`.
+  - Validate: 🤖 `tsc` + component test (goal-linked task → goal title renders; unlinked → "No goal"); 👤 tap a goal-linked task → sheet shows its goal and tapping it opens Goal Detail.
+
+- [x] **11.2 — Subtle goal marker on task rows**
+  - Build: add a quiet goal-linked indicator (small `target` icon or dot in the meta row, low-emphasis `colors.text3`) when `task.goal_id` is set, in BOTH row renderers: shared `app/app/components/TaskRow.tsx` (used by This Week + Goal Detail) `taskMeta` block, and `app/app/(tabs)/backlog.tsx` `BacklogTaskRow` (~73). Keep it subtle — not a full chip. (Goal Detail's own task lists may suppress it since every row there is the same goal — optional prop to hide.)
+  - Files: `app/app/components/TaskRow.tsx`, `app/app/(tabs)/backlog.tsx`.
+  - Based on: user request ("subtle, but something").
+  - Validate: 🤖 `tsc` + component test (`TaskRow` shows the marker when `goal_id` set, hides when null); 👤 goal-linked tasks are visually distinguishable in This Week + Backlog without clutter.
+
+- [x] **11.3 — Goal Detail task rows open the Task detail sheet** *(done early — user-requested 2026-06-18, ahead of 11.1/11.2)*
+  - Build: in `app/app/goal-detail.tsx`, the "Tasks this week" + "All tasks" `TaskRow`s were display-only (checkbox toggle only). Wired `onPressBody={() => setSelectedTask(task)}` on both lists and rendered the shared `<TaskDetailSheet task={selectedTask} themes={themes ?? []} onClose={…} />` — identical behavior to This Week / Backlog. `useGoalTasks` keys on `['tasks','goal',…]`, and the sheet's update/delete mutations invalidate the `['tasks']` prefix, so the goal lists refresh after an edit/delete.
+  - Files: `app/app/goal-detail.tsx`.
+  - Validate: 🤖 `tsc --noEmit` clean; full `npm test` → 33/33 (no regressions); 👤 in Goal Detail, tap a task body → Task detail sheet opens; edits/deletes reflect back in the goal's lists.
+  - **Docs done:** `docs/ui/NAVIGATION.md` screen 07 — documented the Tasks-this-week / All-tasks sections + "Task row · body → 20 · Task detail" / "circle → toggle"; `docs/ux-lens.md` Goal Detail sections 4–5 — tap-body-opens-Task-detail noted (and "four"→"five sections"). *(Also fixed while here: NAVIGATION.md screen 08 milestone chips were still "1w/2w/1m/6w" — updated to the six presets + added the Delete-milestone row, completing Phase 8's design-doc coherence.)*
+
+### 👤 User check-in (end of Phase 11)
+Scan This Week + Backlog (goal-linked tasks carry a subtle marker), then tap a task to confirm the sheet names its goal and links through to Goal Detail. **Also:** in Goal Detail, tap a task in "Tasks this week" / "All tasks" → the same Task detail sheet opens.
+
+### End-of-phase admin ✅
+- [x] Marked 11.1–11.3.
+- [x] **Docs done:** `docs/ui/screens-modals.jsx` (`TaskDetail`) — replaced the static "Goal" chip with a **tappable Goal row** (→ Goal detail) matching the shipped design + approved preview. `docs/ui/components.jsx` (`Task`) — swapped the labeled `GoalChip` for a **subtle target glyph** (the agreed "subtle, not a chip" decision). `docs/ux-lens.md` — added a "Seeing a task's goal" row (subtle marker on rows + Goal row in the detail sheet; read-only; suppressed inside Goal Detail). `domain-lens.md` — unchanged (already models the task↔goal link; this is surfacing only).
+- **Validation:** 🤖 `tsc --noEmit` clean; full `npm test` → **36/36 pass** (incl. new `TaskRowGoalMarker` 3/3: marker shown when linked, hidden when not, suppressed via `hideGoalMarker`). 11.1's goal-row lookup is a simple `find` over `useGoals` — covered by `tsc`; the sheet is a heavy multi-hook modal so its render is a 👤 device check (consistent with the 6.2 stance on full-screen components).
+
+---
+
+## Phase 12 — Baseline coherence + commit
+
+**Outcome:** The main `/docs` lenses + `/docs/ui` prototype are internally coherent with the adjustments, and the changes are committed.
+
+### Tasks
+
+- [x] **12.1 — Coherence pass**
+  - **Done:** swept `/docs` for stale phrases. Fixed in the **main baseline**: `ui/ui-brief.md` (4-tab table → 3 tabs + Stats-in-Settings; Coach "may be removed" → removed), `ui/app.jsx` (design-canvas "four tabs" → three), `ui/NAVIGATION.md:171` (Coach scope-flag → button removed, no entry point). Left intentionally: discovery Q&A history (`ux-lens.md:213`), the dated `docs/releases/release-1/*` archive, and `techstack.md:29` ("may be removed" = unused deps, not Coach).
+  - Build: re-read the touched main lenses (`product-lens`, `ux-lens`, `requirements-lens`, `domain-lens`, `ai-architecture`, `database_design`) + `NAVIGATION.md` for dangling references (no lingering "4 tabs", "Coach me button present", "+ to add new", old milestone presets). Confirm `/docs/ui` prototype matches the shipped adjustments.
+  - Validate: 🤖 grep the lenses + prototype for the stale phrases above; 👤 quick sanity read.
+
+- [ ] **12.2 — Commit + push** *(on your go-ahead)*
+  - Build: PowerShell git — quote parenthesized paths (`"app/app/(tabs)/goals.tsx"`, `"app/app/(tabs)/_layout.tsx"`), here-string commit message. Push to `main` (Render auto-deploys backend — no backend change here, so deploy is a no-op).
+  - Validate: 🤖 `git status` clean after; 👤 confirm.
+
+### End-of-phase admin
+- Mark 12.1–12.2 and all adjustment tasks complete.
+- `CLAUDE.md` **Current work** can move past `release-1` once you accept these adjustments.
+
+---
+
+## Open questions (adjustments)
+
+- **9.1 root cause:** confirm during implementation whether the headline/trend mismatch you saw was stale pre-Phase-5 data or a non-current newest record; record the finding. Default fix (single-source the "now" cell + honest label) covers both regardless.
+- **11.2 scope:** marker is read-only visibility only; re-assigning a task's goal from the row/sheet is intentionally out of scope unless you ask for it.

@@ -1139,6 +1139,15 @@ function TaskDetail() {
           <Icon name="chevDown" size={16} stroke={1.8} style={{ color: 'var(--text-3)', marginTop: 6, flex: '0 0 auto' }} />
         </div>
 
+        {/* Linked goal — tappable row that opens Goal detail (or "No goal" when unlinked).
+            Read-only link in v1: re-assigning a task's goal here is out of scope. */}
+        <div style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-3)', fontWeight: 600, marginBottom: 10 }}>Goal</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', marginBottom: 18, cursor: 'pointer' }}>
+          <Icon name="target" size={15} stroke={2} style={{ color: 'var(--accent-strong)' }}/>
+          <span style={{ flex: 1, fontSize: 13.5, fontWeight: 500, color: 'var(--text)' }}>First paid gig</span>
+          <Icon name="chevRight" size={14} stroke={2} style={{ color: 'var(--text-3)' }}/>
+        </div>
+
         {/* Field chips — same vocabulary as the draft card */}
         <div style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-3)', fontWeight: 600, marginBottom: 10 }}>Details</div>
         <div className="qa-chips" style={{ marginBottom: 22 }}>
@@ -1150,10 +1159,6 @@ function TaskDetail() {
           <div className="qa-chip"><span className="key">Effort</span>low</div>
           <div className="qa-chip"><span className="key">Return</span>high</div>
           <div className="qa-chip"><span className="key">Week</span>this week</div>
-          <div className="qa-chip">
-            <span className="key">Goal</span>
-            <Icon name="link" size={10} stroke={2}/>First paid gig
-          </div>
         </div>
 
         {/* Reminder — inline editable row, not a chip */}

@@ -57,9 +57,12 @@ export type TaskRowProps = {
   theme: Theme | undefined;
   onToggle: () => void;
   onPressBody?: () => void;
+  // Hide the goal-linked marker where it's contextually redundant (e.g. inside
+  // Goal Detail, where every row belongs to the same goal).
+  hideGoalMarker?: boolean;
 };
 
-export function TaskRow({ task, theme, onToggle, onPressBody }: TaskRowProps) {
+export function TaskRow({ task, theme, onToggle, onPressBody, hideGoalMarker }: TaskRowProps) {
   const done = task.status === 'done';
   const borderColor = done ? colors.surfaceHi : PRIORITY_BORDER[derivePriority(task.effort_level, task.return_level)];
   return (
@@ -79,6 +82,11 @@ export function TaskRow({ task, theme, onToggle, onPressBody }: TaskRowProps) {
         <Text style={[styles.taskTitle, done && styles.taskTitleDone]}>{task.title}</Text>
         <View style={styles.taskMeta}>
           <ThemeChip theme={theme} />
+          {task.goal_id && !hideGoalMarker && (
+            <View testID="goal-marker">
+              <Icon name="target" size={12} color={colors.text3} />
+            </View>
+          )}
         </View>
       </TouchableOpacity>
     </View>

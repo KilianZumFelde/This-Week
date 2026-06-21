@@ -35,7 +35,7 @@
 
 ### Entry Points
 - **Primary**: opening the mobile app — always lands on **This Week**.
-- **Secondary tabs**: Backlog, Goals, Stats — reached via bottom tab bar.
+- **Secondary tabs**: Backlog, Goals — reached via bottom tab bar (3 tabs total). **Stats** moved into **Settings → Stats** (2026-06-18).
 - **Settings / theme management / reminder config**: top-right gear icon on This Week (not a dedicated tab — anti-noise).
 - **Goals view** — each goal card now carries its current **health** (set last Sunday). The Goals tab becomes the "how are my goals doing" dashboard. This is where overall goal/milestone health is seen day-to-day.
 - **Goal Detail (full-screen)** — tapping a goal card opens a full-screen **Goal Detail** (replaces the old bottom-sheet Goal Action Drawer). Sections: Health / Health trend / Milestones (add, mark hit, edit) / Tasks this week / All tasks. Footer: Mark-as-hit / Delete for active goals, Reactivate for past goals.
@@ -58,6 +58,7 @@
 | **FAB (single button)** | Persistent floating button bottom-right above the tab bar, on all primary tabs. **Tap → quick-add modal** (manual entry, empty fields, defaults to this-week or backlog based on which tab you're on). **Long-press (~300ms) → voice listening overlay** (AI parses speech into draft cards). |
 | **Editing a draft** | All AI-inferred fields are tappable inline. Single tap changes value. No nested modals. |
 | **Editing existing item** | Same — tap to edit inline, "right then and there", no navigation. |
+| **Seeing a task's goal** | Goal-linked tasks carry a **subtle target marker** in their meta row (This Week + Backlog); not a labeled chip — just a quiet glyph. Opening the **Task detail sheet** shows a "Goal" row naming the linked goal (or "No goal"); tapping it opens Goal Detail. Read-only in v1 — re-assigning a task's goal from here is out of scope. (Inside Goal Detail the marker is suppressed, since every row shares that goal.) |
 | **Mid-week change of mind** | Tap a task → menu offers *Move to backlog / Delete*. Tap a habit → *Pause* (stops counting until resumed). One tap into a menu, not surfaced on the main view. (No "move to next week" — there is no next-week state; backlog + Sunday pull is the forward-staging mechanism. "Drop" is NOT used here — it's only the gentle triage label for the same delete operation.) |
 | **Streak broken** | Resets to 0. "Best ever" stays visible alongside current — motivating without punishing. |
 | **Habit nudge** | When user is in "danger zone" of missing weekly target (e.g., Friday, gym at 1/4), the app fires a smart push notification. Not user-configured per-habit; system-triggered based on progress state. |
@@ -82,13 +83,13 @@ User can flip the type with one tap if AI guesses wrong.
 
 ### Goal Detail Screen
 
-Tapping any goal card on the Goals tab opens a full-screen modal (not a bottom drawer). It contains four sections in order:
+Tapping any goal card on the Goals tab opens a full-screen modal (not a bottom drawer). It contains five sections in order:
 
 1. **Hero** — eyebrow (theme · target date), serif title, optional "why" paragraph.
 2. **Goal health** — large labeled 5-segment Track with current health level and the 8-week HealthDots trend. Muted/placeholder when no health rating has been set yet.
 3. **Milestones** — each milestone displayed as an individual surface card (same card style as task rows — rounded corners, surface background). Active milestones show title, target date, and a "Mark hit" action. Hit milestones are dimmed with a check icon and hit date. "+ Add milestone" link below.
-4. **Tasks this week** — task cards (using the shared TaskRow component: priority stripe, toggle checkbox, theme chip) for all tasks linked to this goal with this-week assignment. Tapping the checkbox completes or reopens the task.
-5. **All tasks** — task cards for every task linked to this goal regardless of week assignment (open + done, excludes archived). Backlog tasks show a quiet "backlog" badge.
+4. **Tasks this week** — task cards (using the shared TaskRow component: priority stripe, toggle checkbox, theme chip) for all tasks linked to this goal with this-week assignment. Tapping the checkbox completes or reopens the task; **tapping the task body opens the same Task detail sheet used on This Week / Backlog** (edit title, theme, effort, return, week, reminder; move to backlog; delete).
+5. **All tasks** — task cards for every task linked to this goal regardless of week assignment (open + done, excludes archived). Backlog tasks show a quiet "backlog" badge. Tapping the body opens the Task detail sheet, same as above.
 
 **Footer:** Mark goal as hit / Delete (active goals) or Reactivate (past goals). Edit in the header opens the Add/Edit Goal screen pre-filled.
 
@@ -103,7 +104,9 @@ Tapping any goal card on the Goals tab opens a full-screen modal (not a bottom d
 - Theme — picked from a list (no AI suggestion in v1).
 - Optional "why" paragraph (surfaced occasionally to maintain motivation).
 
-**AI Coach feature: DROPPED FROM SCOPE (2026-05-24).** The previously-planned "🪄 Coach me on a goal" conversational flow is not being built. The direct Add Goal form is sufficient.
+**AI Coach feature: DROPPED FROM SCOPE (2026-05-24).** The previously-planned "🪄 Coach me on a goal" conversational flow is not being built. The direct Add Goal form is sufficient. The non-functional "Coach me" placeholder button was **removed from the Goals tab (2026-06-18)**, leaving a single full-width "Add directly" button.
+
+**Past goals (graveyard) presentation (2026-06-18):** past goals render as cards (rounded surface, matching the task/milestone card idiom), not hairline-separated list rows. Each card shows its resolution label (Hit / Abandoned / Missed), title, and date; tapping opens Goal Detail.
 
 **Hard cap enforcement (v1):** the 1 primary + 2 secondary cap is enforced **at the backend on save**. If saving would exceed the cap, the backend returns `HTTP 400` and the Add Goal form shows a generic error. There is no inline demote/replace/cancel modal in v1 — the user resolves the conflict by going to Goals, abandoning an existing goal manually, then re-saving.
 
@@ -113,7 +116,7 @@ Tapping any goal card on the Goals tab opens a full-screen modal (not a bottom d
 
 Per micro-action: completion is subtle and satisfying. Tap → strike-through + fade. Habit target hit → brief glow/color change.
 
-Per week: the user feels the success at the **Sunday review** — looking at the week's raw counts (tasks done, habits that hit target), habit streaks alive, and tasks done toward the active milestone. The Stats tab makes this glanceable. (Raw fractions, not percentages — decided in the Stitch-iteration pass; see discovery.md Key Decisions.)
+Per week: the user feels the success at the **Sunday review** — looking at the week's raw counts (tasks done, habits that hit target), habit streaks alive, and tasks done toward the active milestone. The Stats view (Settings → Stats) makes this glanceable. (Raw fractions, not percentages — decided in the Stitch-iteration pass; see discovery.md Key Decisions.)
 
 Per quarter (the real success of the product): the user can name their primary milestone instantly, knows the next 3 actions toward it, and feels they're "actually on track" rather than drifting.
 
@@ -135,16 +138,17 @@ Per quarter (the real success of the product): the user can name their primary m
 
 ### Navigation
 
-**Bottom tab bar — 4 tabs:**
+**Bottom tab bar — 3 tabs** (Stats moved into Settings, 2026-06-18):
 
 | Tab | Default? | Contains |
 |---|---|---|
 | 🏠 **This Week** | ✓ default | **"Milestones" cursor section** (compact per-goal pace row labeled by next milestone, sm Track, omitted when no active goal qualifies), habits with progress, tasks sorted by priority (with theme chip), collapsible Done section at bottom, persistent FAB |
 | 📥 **Backlog** | | All "for later" tasks. Always accessible. Direct add, browse, edit, swipe-to-promote into this week. |
 | 🎯 **Goals** | | Active primary + secondaries (health dashboard — large Track, nearest-milestone line, time left), + Add Goal, archive of past goals. Tapping a card → Goal Detail full-screen modal. |
-| 📊 **Stats** | | Week raw counts `X/N tasks · Y/Z habits` (no %), habit streaks (current + best ever), past-weeks browser. No per-theme breakdown. |
 
-**Top-right gear icon** on This Week → settings, theme management, reminder config.
+**Stats** (📊 Week raw counts `X/N tasks · Y/Z habits` (no %), habit streaks current + best, past-weeks browser; no per-theme breakdown) is reached from **Settings → Stats** — a pushed screen with a back chevron, not a bottom-nav tab.
+
+**Top-right gear icon** on This Week → settings (which now also holds Stats), theme management, reminder config.
 
 ### Cross-Lens Flags Raised
 - No mandatory date/time on tasks (hard constraint) → Requirements

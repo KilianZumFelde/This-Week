@@ -168,6 +168,7 @@
 
 - **Health is frozen between Sundays.** It changes only when the user answers the weekly questions.
 - Health applies to **all active goals** (primary and secondaries alike).
+- **Display consistency:** the Goal Detail 8-week trend's current ("now") value is the goal's displayed `health_level` (single-sourced — the two can never disagree). The trend's now-bar is labeled **"This week"** only when the newest rated week *is* the current week; if the user skipped a Sunday, the bar is labeled with that rating's actual week (e.g. "Wk of Jun 8"), not "This week".
 
 **This-week on-track cursor (the micro signal — distinct from health):**
 - Separate from the subjective Goal health. This is an **objective, derived, live** signal shown **on the This Week view**, inside a dedicated **"Milestones" section**, one row per active goal — each row **labeled by the goal's next milestone**.
@@ -180,6 +181,7 @@
 - A milestone is a **dated checkpoint belonging to a goal**. A goal should have 1–2 upcoming milestones at a time.
 - `active → hit` (manual mark). Marking a milestone **hit** triggers an immediate prompt to **set the next milestone**.
 - A milestone may be **edited** (e.g., push its date).
+- A milestone may be **deleted** (hard delete, escape hatch) — surfaced as a destructive "Delete milestone" action in the milestone edit sheet, with a confirm dialog. Deleting a milestone does not affect the goal's linked tasks.
 - **Overdue milestone** (target date passes without being marked hit): surfaces in the **next Sunday triage** goal step (not a blocking app-open prompt).
 
 **Sunday ritual goal step (two sub-steps per goal: Reflect → Plan):**
@@ -194,7 +196,7 @@
 
 ### Validation rules (new)
 
-- **Milestone target date**: required; must be in the future; must be **on or before the parent goal's target date**.
+- **Milestone target date**: required; must be in the future; must be **on or before the parent goal's target date**. Offered as relative presets in the create/edit sheet: **1 week / 2 weeks / 3 weeks / 1 month / 5 weeks / 6 weeks** (each resolved to a concrete date, then validated against the rule above).
 - **Health answers**: both questions required to set/confirm a goal's health during triage (mandatory-light).
 
 ### Concurrency

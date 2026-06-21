@@ -129,11 +129,11 @@ const StatusBar = ({ time = '9:41', tint = 'var(--text)' }) => (
 
 // ─────────── Tab bar ───────────
 const TabBar = ({ active = 'home' }) => {
+  // Stats moved into Settings (2026-06-18) — bottom nav is 3 tabs.
   const tabs = [
     { id: 'home', label: 'This Week', icon: 'home' },
     { id: 'backlog', label: 'Backlog', icon: 'inbox' },
     { id: 'goals', label: 'Goals', icon: 'target' },
-    { id: 'stats', label: 'Stats', icon: 'bar' },
   ];
   return (
     <nav className="tabbar">
@@ -200,7 +200,9 @@ const Task = ({ task, onToggle }) => {
           <ThemeChip theme={task.theme} />
           {task.effort && <EffortChip level={task.effort} />}
           {task.ret && <ReturnChip level={task.ret} />}
-          {task.goal && <GoalChip label={task.goal} />}
+          {/* Subtle goal-linked marker (2026-06-18) — a quiet target glyph, not a
+              labeled chip. Tap the row body to open the task and see/visit its goal. */}
+          {task.goal && <Icon name="target" size={12} stroke={2} style={{ color: 'var(--text-3)' }} />}
         </div>
       </div>
     </div>
@@ -290,14 +292,17 @@ const Track = ({ pos = 0.5, size = 'lg', muted = false }) => {
 // 8-week health-trend dots — one bar per recent week, colored by that week's
 // health level. The current week is emphasized (taller, full strength, named)
 // so the before→now trajectory reads at a glance.
-const HealthDots = ({ weeks }) => {
+const HealthDots = ({ weeks, nowLabel = 'This week' }) => {
   const lastLvl = weeks[weeks.length - 1] ? healthByKey(weeks[weeks.length - 1]) : null;
   return (
     <div>
-      {/* Names where you are right now, in words + color */}
+      {/* Names where you are right now, in words + color. Right-aligned so the
+          label + level sit over the highlighted "now" bar (which "now ↑" also
+          points to). nowLabel is "This week" only when the newest rating is the
+          current week; otherwise a dated label like "Wk of Jun 8". */}
       {lastLvl && (
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
-          <span style={{ fontSize: 12, color: 'var(--text-3)' }}>This week</span>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: 6, marginBottom: 12 }}>
+          <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{nowLabel} ·</span>
           <span style={{ fontSize: 13, fontWeight: 600, color: lastLvl.color }}>{lastLvl.label}</span>
         </div>
       )}

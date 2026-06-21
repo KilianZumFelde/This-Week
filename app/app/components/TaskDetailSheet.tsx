@@ -14,9 +14,11 @@ import {
 import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { colors, radius } from '../../lib/tokens';
 import { Icon } from './Icon';
 import { Task, useUpdateTask, useDeleteTask, useCreateTask, useTaskReminder, ReminderSpec } from '../../lib/hooks/useTasks';
+import { useGoals } from '../../lib/hooks/useGoals';
 import { Theme } from '../../lib/hooks/useThemes';
 import { useUndoStore } from '../../lib/stores/undo-store';
 import { api } from '../../lib/api';
@@ -120,11 +122,13 @@ type Props = {
 
 export function TaskDetailSheet({ task, themes, onClose }: Props) {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
   const createTask = useCreateTask();
   const showUndo = useUndoStore((s) => s.show);
   const qc = useQueryClient();
+  const { data: goals } = useGoals();
   const { data: fetchedReminder } = useTaskReminder(task?.id ?? null);
 
   const [title, setTitle] = useState('');
@@ -186,6 +190,15 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
       });
     }
     onClose();
+  }
+
+  const taskGoal = task?.goal_id ? (goals ?? []).find((g) => g.id === task.goal_id) ?? null : null;
+
+  function openGoal() {
+    if (!task?.goal_id) return;
+    const goalId = task.goal_id;
+    handleClose(); // persist any dirty edits + close the sheet
+    router.push({ pathname: '/goal-detail', params: { goalId } });
   }
 
   function handleDelete() {
@@ -420,6 +433,21 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
                 </View>
               </TouchableOpacity>
 
+              {/* Linked goal */}
+              <Text style={styles.sectionLabel}>Goal</Text>
+              {taskGoal ? (
+                <TouchableOpacity style={styles.goalRow} onPress={openGoal} activeOpacity={0.7}>
+                  <Icon name="target" size={15} color={colors.accentStrong} />
+                  <Text style={styles.goalRowText} numberOfLines={1}>{taskGoal.title}</Text>
+                  <Icon name="chevron-right" size={14} color={colors.text3} />
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.goalRow}>
+                  <Icon name="target" size={15} color={colors.text3} />
+                  <Text style={styles.goalRowMuted}>No goal</Text>
+                </View>
+              )}
+
               {/* Details label */}
               <Text style={styles.sectionLabel}>Details</Text>
 
@@ -613,6 +641,28 @@ const styles = StyleSheet.create({
     color: colors.text3,
     fontWeight: '600',
     marginBottom: 10,
+  },
+  // Linked goal
+  goalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    backgroundColor: colors.surface2,
+    borderRadius: radius.md,
+    marginBottom: 18,
+  },
+  goalRowText: {
+    flex: 1,
+    fontSize: 13.5,
+    color: colors.text,
+    fontWeight: '500',
+  },
+  goalRowMuted: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.text3,
   },
   // Chips
   chipsRow: {

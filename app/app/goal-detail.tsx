@@ -13,8 +13,10 @@ import { colors, radius } from '../lib/tokens';
 import { useGoals, useMarkGoalHit, useAbandonGoal, useGoalHealthRecords } from '../lib/hooks/useGoals';
 import { useThemes } from '../lib/hooks/useThemes';
 import { useMilestones, useMarkMilestoneHit } from '../lib/hooks/useMilestones';
-import { useGoalTasks, useCompleteTask, useReopenTask } from '../lib/hooks/useTasks';
+import { useGoalTasks, useCompleteTask, useReopenTask, Task } from '../lib/hooks/useTasks';
 import { TaskRow } from './components/TaskRow';
+import { TaskDetailSheet } from './components/TaskDetailSheet';
+import { getCurrentWeekStartDate } from '../lib/week';
 import { Track, HealthDots, healthByKey } from './components/HealthTrack';
 import { Icon } from './components/Icon';
 import { SetNextMilestone } from './components/SetNextMilestone';
@@ -41,6 +43,7 @@ export default function GoalDetail() {
   const [hitMilestoneTitle, setHitMilestoneTitle] = useState('');
   const [showMilestoneSheet, setShowMilestoneSheet] = useState(false);
   const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const goal = (goals ?? []).find((g) => g.id === goalId);
   const theme = (themes ?? []).find((t) => t.id === goal?.theme_id);
@@ -98,8 +101,19 @@ export default function GoalDetail() {
     const filled: (string | null)[] = records.slice(0, 8).map((r) => r.health_level).reverse();
     // Pad left with nulls to always show 8 slots
     while (filled.length < 8) filled.unshift(null);
+    // Single-source the current ("now") cell to the headline value so the trend's
+    // now-bar can never disagree with the displayed Goal health (defends against
+    // any stale record value).
+    if (goal.health_level && filled.length) filled[filled.length - 1] = goal.health_level;
     return filled;
   })();
+
+  // The newest rating may not be the current week (a Sunday was skipped). Label the
+  // "now" bar "This week" only when it really is this week; otherwise show its date.
+  const newestRecord = (healthRecords ?? [])[0] ?? null;
+  const nowLabel = newestRecord && newestRecord.week_start_date !== getCurrentWeekStartDate()
+    ? `Wk of ${formatDate(newestRecord.week_start_date)}`
+    : 'This week';
 
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
@@ -166,7 +180,7 @@ export default function GoalDetail() {
 
         {/* Trend */}
         <Text style={styles.trendLabel}>Health trend · 8 weeks</Text>
-        <HealthDots weeks={trendWeeks} />
+        <HealthDots weeks={trendWeeks} nowLabel={nowLabel} />
 
         <View style={styles.hr} />
 
@@ -238,6 +252,8 @@ export default function GoalDetail() {
                   ? reopenTask.mutate(task.id)
                   : completeTask.mutate(task.id)
               }
+              onPressBody={() => setSelectedTask(task)}
+              hideGoalMarker
             />
           ))
         )}
@@ -258,6 +274,8 @@ export default function GoalDetail() {
                   ? reopenTask.mutate(task.id)
                   : completeTask.mutate(task.id)
               }
+              onPressBody={() => setSelectedTask(task)}
+              hideGoalMarker
             />
           ))
         )}
@@ -306,6 +324,13 @@ export default function GoalDetail() {
         goalTargetDate={goal.target_date}
         milestoneId={editingMilestoneId}
         onClose={() => { setShowMilestoneSheet(false); setEditingMilestoneId(null); }}
+      />
+
+      {/* Task detail — same sheet as This Week / Backlog */}
+      <TaskDetailSheet
+        task={selectedTask}
+        themes={themes ?? []}
+        onClose={() => setSelectedTask(null)}
       />
     </View>
   );

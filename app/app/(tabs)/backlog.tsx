@@ -86,6 +86,7 @@ function BacklogTaskRow({ task, theme, onPromote, onPressBody }: BacklogTaskRowP
         <Text style={styles.taskTitle}>{task.title}</Text>
         <View style={styles.taskMeta}>
           <ThemeChip theme={theme} />
+          {task.goal_id && <Icon name="target" size={12} color={colors.text3} />}
         </View>
       </TouchableOpacity>
     </View>

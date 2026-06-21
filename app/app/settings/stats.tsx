@@ -107,13 +107,16 @@ export default function Stats() {
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
       <View style={styles.pageHead}>
+        <TouchableOpacity
+          style={styles.iconBtn}
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/settings'))}
+        >
+          <Icon name="chevron-left" size={22} color={colors.text2} />
+        </TouchableOpacity>
         <View>
           <Text style={styles.eyebrow}>Quiet progress</Text>
           <Text style={styles.h1}>Stats</Text>
         </View>
-        <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/settings')}>
-          <Icon name="settings" size={20} color={colors.text2} />
-        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -165,9 +168,9 @@ const styles = StyleSheet.create({
   },
   pageHead: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 12,
   },
@@ -187,10 +190,9 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   iconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: colors.surface,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 4,

@@ -65,16 +65,17 @@ Key feel: **calm, warm, quietly-serious, soft-modern minimalism**. Closer to a t
 
 ## Navigation
 
-**Bottom tab bar with 4 tabs** — fixed, always visible:
+**Bottom tab bar with 3 tabs** — fixed, always visible (Stats moved into Settings, 2026-06-18):
 
 | Tab | Icon | Label | Default |
 |---|---|---|---|
 | 1 | House | This Week | ✓ default |
 | 2 | Inbox / tray | Backlog | |
 | 3 | Target / bullseye | Goals | |
-| 4 | Bar chart | Stats | |
 
-**Top-right gear icon** on the This Week screen (and other primary screens) → opens Settings (full-screen, slides up).
+**Stats** (bar-chart) is no longer a tab — it lives in **Settings → Stats** (a pushed screen with a back chevron).
+
+**Top-right gear icon** on the This Week screen (and other primary screens) → opens Settings (full-screen, slides up; also holds Stats).
 
 **Single floating action button (FAB)** — terracotta, bottom-right above the tab bar, persistent across all primary tabs. **Tap → quick-add modal** (manual entry with empty fields, defaults to this-week or backlog based on the active tab). **Long-press (~300ms) → voice listening overlay** (AI parses speech into draft cards). Decision 2026-05-24 — single button with a press-and-hold gesture for voice replaces the earlier "mic FAB + smaller + button" dual-FAB design.
 
@@ -149,16 +150,16 @@ Modal patterns: bottom sheets for quick edits (task detail, habit detail, goal a
 **Layout hierarchy**:
 1. **Primary section** at top: header "Primary · N of 1"; the single primary goal as a card showing eyebrow (`theme · by Mon Year`), title, optional "why" excerpt, tasks-this-week + habits-linked counts, and a "N mo left" badge.
 2. **Secondaries section**: header "Secondary · N of 2 slots"; up to 2 secondary goal cards, slightly smaller styling than the primary.
-3. **Buttons row**: two side-by-side buttons — **"Add directly"** (ghost button, opens Add Goal form) and **"Coach me"** (primary accent button — currently a visible-but-non-functional button; the Coach feature was dropped 2026-05-24. May be removed in a later code cleanup pass).
-4. **Graveyard section** (collapsed by default): "Past goals (N)" — expands to reveal hit / abandoned / missed goals with their resolution label and date.
+3. **Buttons row**: a single full-width **"Add directly"** button (ghost button, opens Add Goal form). The "Coach me" placeholder was **removed** (2026-06-18) — the Coach feature had been dropped 2026-05-24 and the non-functional button is now gone.
+4. **Graveyard section** (collapsed by default): "Past goals (N)" — expands to reveal hit / abandoned / missed goals as cards (rounded surface, matching the task/milestone card idiom), each with its resolution label and date.
 
 **Interaction**: tapping any goal card (primary, secondary, or a graveyard goal) opens the **Goal Action Drawer** (see its screen). Active goals → drawer with Mark as hit / Delete / Edit. Graveyard goals → drawer with Reactivate (re-opens Edit form, subject to cap).
 
 **Key UI elements**:
 - Primary goal card (warm-surface background; no gradient in v1); tappable → drawer
 - Secondary goal cards (similar style, lighter eyebrow color); tappable → drawer
-- Two buttons — Add directly (ghost) and Coach me (accent, non-functional placeholder for now)
-- Graveyard collapsible section with each past goal showing resolution label (Hit / Abandoned / Missed), title, and a date; tappable → drawer (Reactivate)
+- One full-width button — Add directly (ghost). (The Coach me placeholder was removed 2026-06-18.)
+- Graveyard collapsible section with each past goal rendered as a card showing resolution label (Hit / Abandoned / Missed), title, and a date; tappable → Goal Detail (Reactivate)
 
 **Dynamic content shown**:
 - All **Goals** with status = active, sorted: primary first, then secondaries
@@ -232,7 +233,7 @@ Modal patterns: bottom sheets for quick edits (task detail, habit detail, goal a
 
 ### 6. AI Coach Conversation — DROPPED FROM SCOPE (2026-05-24)
 
-The AI Coach conversational feature is no longer planned for v1. The direct Add Goal form (Screen 7) is the only goal-creation path. The "Coach me" button on the Goals screen is currently a non-functional placeholder and may be removed in a later code cleanup pass.
+The AI Coach conversational feature is no longer planned for v1. The direct Add Goal form (Screen 7) is the only goal-creation path. The "Coach me" button on the Goals screen was **removed (2026-06-18)** — it had been a non-functional placeholder; the Goals tab now shows a single full-width "Add directly" button.
 
 ---
 

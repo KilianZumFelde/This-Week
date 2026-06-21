@@ -207,7 +207,6 @@ export default function CarryGoalPlan() {
         {/* Pull in this week's work */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionLabel}>PULL IN THIS WEEK'S WORK</Text>
-          <Text style={styles.sectionHint}>+ to add new</Text>
         </View>
 
         {goalTasksQuery.isLoading ? (
@@ -421,10 +420,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
     color: colors.text3,
     fontWeight: '600',
-  },
-  sectionHint: {
-    fontSize: 11.5,
-    color: colors.text3,
   },
   emptyHint: {
     fontSize: 13,

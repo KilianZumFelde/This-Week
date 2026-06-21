@@ -28,7 +28,7 @@ The passive milestone hero is gone. The screen now opens with a muted **"Milesto
 | Done section header | the row | inline expand/collapse |
 | Tab bar · Backlog | tab button | → 02 · Backlog |
 | Tab bar · Goals | tab button | → 03 · Goals |
-| Tab bar · Stats | tab button | → 04 · Stats |
+| ~~Tab bar · Stats~~ | — | **Removed from bottom nav (2026-06-18).** Stats now lives in **Settings → Stats** (→ 04 · Stats). Bottom nav is 3 tabs. |
 | **FAB (single terracotta button)** · tap | the FAB | ⤴ 06 · Quick-add draft (empty fields, default-week derived from active tab) |
 | **FAB (single terracotta button)** · long-press (~300ms) | the FAB | ⤴ 05 · Voice listening |
 
@@ -68,10 +68,10 @@ Each goal card shows: eyebrow (`theme · by Mon Year`), serif title, the large l
 | Settings gear | ⤴ Settings |
 | Primary goal card | → 07 · Goal detail (full-page) |
 | Secondary goal card | → 07 · Goal detail (full-page) |
-| "Add directly" button | ⤴ 12 · New goal · empty form |
-| "Coach me" button | ⚠ **Non-functional placeholder in v1** — AI Coach feature was dropped (2026-05-24). Button has no onPress. May be removed in a code cleanup pass. |
+| "Add directly" button | ⤴ 12 · New goal · empty form (single full-width button) |
+| ~~"Coach me" button~~ | **Removed (2026-06-18)** — AI Coach feature was dropped (2026-05-24); the non-functional placeholder button is gone. |
 | Past goals header | inline expand/collapse |
-| Past goal row | → 07 · Goal detail (graveyard mode — Reactivate / read-only) |
+| Past goal card | → 07 · Goal detail (graveyard mode — Reactivate / read-only) |
 | Tab bar tabs | → corresponding tab |
 | FAB · tap / long-press | as elsewhere (no Backlog-default scope on the Goals tab) |
 
@@ -79,14 +79,14 @@ Each goal card shows: eyebrow (`theme · by Mon Year`), serif title, the large l
 
 ## 04 · Stats (`Stats`)
 
+**Reached from Settings → Stats** (2026-06-18). No longer a bottom-nav tab; it's a pushed screen inside the Settings stack with a back chevron returning to Settings.
+
 | Element | Destination |
 |---|---|
-| Settings gear | ⤴ Settings |
+| Back chevron (header, left) | ← Settings |
 | Top summary band | (no nav) |
 | Habit streak row | (no nav in v1 — row is display-only; tap-to-open Habit detail is deferred) |
 | Past-week row | (no nav in v1 — rows are display-only; tap-to-expand is deferred) |
-| Tab bar tabs | → corresponding tab |
-| FAB · tap / long-press | as elsewhere |
 
 ---
 
@@ -124,7 +124,7 @@ Full-screen modal. No tab bar.
 
 > **Baseline-reversal note (for `domain-lens.md`):** the baseline had *retired* the standalone Goal Detail page in favor of the drawer. Release 1 **un-retires it** and makes it canonical; the drawer is removed. Record this as an intentional change.
 
-Full-screen modal. Sections, top→bottom: hero (eyebrow + title + optional "why"), **Goal health** (large labeled track), **Health trend · 8 weeks** (one bar per week colored by that week's level; current week emphasized + named in words), **Milestones** (rows of title + date + "Mark hit", then "+ Add milestone"). Footer holds the goal-level actions.
+Full-screen modal. Sections, top→bottom: hero (eyebrow + title + optional "why"), **Goal health** (large labeled track), **Health trend · 8 weeks** (one bar per week colored by that week's level; current week emphasized + named in words), **Milestones** (rows of title + date + "Mark hit", then "+ Add milestone"), **Tasks this week** + **All tasks** (this goal's linked tasks). Footer holds the goal-level actions.
 
 | Element | Destination |
 |---|---|
@@ -132,6 +132,8 @@ Full-screen modal. Sections, top→bottom: hero (eyebrow + title + optional "why
 | Edit (top-right) | ⤴ 12 · New / Edit goal (pre-filled — edits the goal's own fields only) |
 | Milestone row · "Mark hit" | mark milestone hit → ↓ 09 · Set-next-milestone prompt |
 | "+ Add milestone" | ↓ 08 · Add milestone sheet |
+| Task row · **circle** | inline toggle done/reopen (no nav) |
+| Task row · **title body** | ↓ 20 · Task detail (same sheet as This Week / Backlog) |
 | "Mark goal as hit" (footer) | mark goal `completed` → × back to Goals; goal moves to graveyard |
 | "Delete" (footer) | mark goal `archived` → × back to Goals; goal moves to graveyard |
 
@@ -146,7 +148,8 @@ Bottom sheet. Reached from Goal detail's "+ Add milestone" (empty), a milestone 
 | Element | Destination |
 |---|---|
 | Title field | inline edit |
-| Date quick-chip (1 week / 2 weeks / 1 month / 6 weeks) | inline pick; resolved date shows in a pill below |
+| Date quick-chip (1 week / 2 weeks / 3 weeks / 1 month / 5 weeks / 6 weeks) | inline pick; resolved date shows in a pill below |
+| "Delete milestone" (edit mode only) | confirm dialog → hard delete → back |
 | Cancel | × back to caller |
 | Save | validate (title + date set, date ≤ goal's target date) → save → × back to caller. Disabled until valid. |
 
@@ -165,7 +168,7 @@ Small bottom sheet. Fires right after a milestone is marked **hit** (from Goal d
 
 ## 10 / 11 · Coach screens (`CoachEntry` / `CoachSummary`)
 
-> **Scope flag:** `NAVIGATION.md` previously recorded the AI Coach as *dropped from v1 scope (2026-05-24)*. These screens still exist in the **design canvas** as a designed-but-not-shipped flow. Decide whether v1 ships them; if not, the Goals "Coach me" button stays a placeholder. Kept here for design completeness only.
+> **Scope flag:** the AI Coach was *dropped from v1 scope (2026-05-24)* and the Goals "Coach me" placeholder button was **removed (2026-06-18)**. These screens still exist in the **design canvas** as a designed-but-not-shipped flow, kept for design completeness only — there is no longer any entry point to them in the app.
 
 Advisory chat that, on conclusion, hands off to the Add Goal form pre-filled via "Create this goal". Never creates a goal inline.
 

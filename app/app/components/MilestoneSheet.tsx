@@ -13,14 +13,16 @@ import { useState, useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius } from '../../lib/tokens';
 import { Icon } from './Icon';
-import { useCreateMilestone, useUpdateMilestone, useMilestones } from '../../lib/hooks/useMilestones';
+import { useCreateMilestone, useUpdateMilestone, useDeleteMilestone, useMilestones } from '../../lib/hooks/useMilestones';
 
 // Resolve a relative chip to an ISO date string (YYYY-MM-DD)
-function resolveChip(chip: string): string {
+export function resolveChip(chip: string): string {
   const d = new Date();
   if (chip === '1w') d.setDate(d.getDate() + 7);
   else if (chip === '2w') d.setDate(d.getDate() + 14);
+  else if (chip === '3w') d.setDate(d.getDate() + 21);
   else if (chip === '1m') d.setMonth(d.getMonth() + 1);
+  else if (chip === '5w') d.setDate(d.getDate() + 35);
   else if (chip === '6w') d.setDate(d.getDate() + 42);
   return d.toISOString().slice(0, 10);
 }
@@ -33,10 +35,12 @@ function formatDisplayDate(iso: string): string {
   });
 }
 
-const DATE_CHIPS: { key: string; label: string }[] = [
+export const DATE_CHIPS: { key: string; label: string }[] = [
   { key: '1w', label: '1 week' },
   { key: '2w', label: '2 weeks' },
+  { key: '3w', label: '3 weeks' },
   { key: '1m', label: '1 month' },
+  { key: '5w', label: '5 weeks' },
   { key: '6w', label: '6 weeks' },
 ];
 
@@ -55,6 +59,7 @@ export function MilestoneSheet({ visible, goalId, goalTargetDate, milestoneId, o
   const { data: milestones } = useMilestones(goalId);
   const createMilestone = useCreateMilestone(goalId);
   const updateMilestone = useUpdateMilestone(goalId);
+  const deleteMilestone = useDeleteMilestone(goalId);
 
   const [title, setTitle] = useState('');
   const [chip, setChip] = useState<string | null>(null);
@@ -106,6 +111,29 @@ export function MilestoneSheet({ visible, goalId, goalTargetDate, milestoneId, o
         { onSuccess: () => { setSaving(false); onClose(); }, onError },
       );
     }
+  }
+
+  function handleDelete() {
+    if (!milestoneId) return;
+    Alert.alert(
+      'Delete milestone?',
+      'This removes it permanently. Tasks linked to the goal are not affected.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () =>
+            deleteMilestone.mutate(milestoneId, {
+              onSuccess: () => onClose(),
+              onError: (err) => {
+                const msg = err instanceof Error ? err.message : 'Something went wrong. Try again.';
+                Alert.alert('Could not delete', msg);
+              },
+            }),
+        },
+      ],
+    );
   }
 
   return (
@@ -179,6 +207,17 @@ export function MilestoneSheet({ visible, goalId, goalTargetDate, milestoneId, o
               <Text style={styles.btnPrimaryText}>Save milestone</Text>
             </TouchableOpacity>
           </View>
+
+          {isEditing && (
+            <TouchableOpacity
+              style={styles.deleteBtn}
+              onPress={handleDelete}
+              disabled={deleteMilestone.isPending}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.deleteBtnText}>Delete milestone</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -330,5 +369,15 @@ const styles = StyleSheet.create({
   },
   btnDisabled: {
     opacity: 0.4,
+  },
+  deleteBtn: {
+    alignItems: 'center',
+    paddingVertical: 14,
+    marginTop: 4,
+  },
+  deleteBtnText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.brick,
   },
 });

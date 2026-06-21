@@ -125,17 +125,23 @@ export function LabeledTrack({ healthKey, muted = false }: LabeledTrackProps) {
 
 type HealthDotsProps = {
   weeks: (HealthLevelKey | string | null)[];
+  // Label for the highlighted current ("now") bar. Defaults to "This week";
+  // pass a dated label (e.g. "Wk of Jun 8") when the newest rating isn't the current week.
+  nowLabel?: string;
 };
 
-export function HealthDots({ weeks }: HealthDotsProps) {
+export function HealthDots({ weeks, nowLabel = 'This week' }: HealthDotsProps) {
   const lastKey = weeks[weeks.length - 1];
   const lastLvl = lastKey ? healthByKey(lastKey) : null;
 
   return (
     <View>
       {lastLvl && (
+        // Right-aligned so the label + level sit over the highlighted "now" bar
+        // (which the footer's "now ↑" also points to), instead of floating top-left.
         <View style={styles.dotsHeader}>
-          <Text style={styles.dotsThisWeek}>This week</Text>
+          <Text style={styles.dotsThisWeek}>{nowLabel}</Text>
+          <Text style={styles.dotsSep}> · </Text>
           <Text style={[styles.dotsLevel, { color: lastLvl.color }]}>{lastLvl.label}</Text>
         </View>
       )}
@@ -179,10 +185,14 @@ const styles = StyleSheet.create({
   dotsHeader: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     marginBottom: 12,
   },
   dotsThisWeek: {
+    fontSize: 12,
+    color: colors.text3,
+  },
+  dotsSep: {
     fontSize: 12,
     color: colors.text3,
   },
