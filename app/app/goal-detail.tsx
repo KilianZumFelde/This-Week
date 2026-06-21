@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Modal,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -44,6 +45,7 @@ export default function GoalDetail() {
   const [showMilestoneSheet, setShowMilestoneSheet] = useState(false);
   const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [showActions, setShowActions] = useState(false);
 
   const goal = (goals ?? []).find((g) => g.id === goalId);
   const theme = (themes ?? []).find((t) => t.id === goal?.theme_id);
@@ -108,12 +110,13 @@ export default function GoalDetail() {
     return filled;
   })();
 
-  // The newest rating may not be the current week (a Sunday was skipped). Label the
-  // "now" bar "This week" only when it really is this week; otherwise show its date.
+  // The newest rating may not be the current week (a Sunday was skipped). Show a
+  // dated label on the "now" bar only when it isn't this week; for the current
+  // week we show nothing — the footer's "now ↑" already marks the bar.
   const newestRecord = (healthRecords ?? [])[0] ?? null;
   const nowLabel = newestRecord && newestRecord.week_start_date !== getCurrentWeekStartDate()
     ? `Wk of ${formatDate(newestRecord.week_start_date)}`
-    : 'This week';
+    : undefined;
 
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
@@ -124,11 +127,16 @@ export default function GoalDetail() {
         </TouchableOpacity>
         <Text style={styles.modalTitle}>Goal</Text>
         {isActive ? (
-          <TouchableOpacity
-            onPress={() => router.push({ pathname: '/add-goal', params: { goalId: goal.id } })}
-          >
-            <Text style={styles.editBtn}>Edit</Text>
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={() => router.push({ pathname: '/add-goal', params: { goalId: goal.id } })}
+            >
+              <Text style={styles.editBtn}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.iconBtn} onPress={() => setShowActions(true)}>
+              <Icon name="more" size={20} color={colors.text2} />
+            </TouchableOpacity>
+          </View>
         ) : (
           <View style={{ width: 40 }} />
         )}
@@ -136,7 +144,7 @@ export default function GoalDetail() {
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 20) + 90 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 20) + (isActive ? 20 : 90) }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Hero */}
@@ -171,10 +179,6 @@ export default function GoalDetail() {
             </View>
           )}
         </View>
-
-        <Text style={styles.healthCaption}>
-          Based on this week's answers and recent weekly patterns.
-        </Text>
 
         <View style={styles.hr} />
 
@@ -281,18 +285,10 @@ export default function GoalDetail() {
         )}
       </ScrollView>
 
-      {/* Footer actions */}
-      {isActive ? (
-        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-          <TouchableOpacity style={styles.footerPrimary} onPress={handleMarkGoalHit} activeOpacity={0.8}>
-            <Icon name="check" size={16} color="#1a1816" />
-            <Text style={styles.footerPrimaryText}>Mark goal as hit</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.footerDelete} onPress={handleDelete} activeOpacity={0.7}>
-            <Text style={styles.footerDeleteText}>Delete</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
+      {/* Footer — past goals get a single contextual Reactivate action.
+          Active goals have no permanent bar; their rare actions (mark hit,
+          delete) live in the header ⋮ menu. */}
+      {!isActive && (
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
           <TouchableOpacity
             style={[styles.footerPrimary, { backgroundColor: colors.accent }]}
@@ -304,6 +300,42 @@ export default function GoalDetail() {
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Goal actions menu (rare: mark hit / delete) */}
+      <Modal
+        visible={showActions}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowActions(false)}
+      >
+        <View style={styles.actionsBackdrop}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFillObject}
+            onPress={() => setShowActions(false)}
+            activeOpacity={1}
+          />
+          <View style={[styles.actionsSheet, { paddingBottom: Math.max(insets.bottom, 20) }]}>
+            <View style={styles.grip} />
+            <TouchableOpacity
+              style={styles.actionRow}
+              onPress={() => { setShowActions(false); handleMarkGoalHit(); }}
+              activeOpacity={0.7}
+            >
+              <Icon name="check" size={18} color={colors.sage} />
+              <Text style={styles.actionRowText}>Mark goal as hit</Text>
+            </TouchableOpacity>
+            <View style={styles.actionDivider} />
+            <TouchableOpacity
+              style={styles.actionRow}
+              onPress={() => { setShowActions(false); handleDelete(); }}
+              activeOpacity={0.7}
+            >
+              <Icon name="x" size={18} color={colors.brick} />
+              <Text style={[styles.actionRowText, { color: colors.brick }]}>Delete goal</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Set-next-milestone prompt */}
       <SetNextMilestone
@@ -424,12 +456,6 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginTop: 6,
   },
-  healthCaption: {
-    fontSize: 11.5,
-    color: colors.text3,
-    marginTop: -10,
-    marginBottom: 4,
-  },
   hr: {
     height: 1,
     backgroundColor: colors.hairline,
@@ -519,13 +545,53 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1a1816',
   },
-  footerDelete: {
-    paddingVertical: 13,
-    paddingHorizontal: 4,
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
-  footerDeleteText: {
-    fontSize: 14,
+  actionsBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(20,18,16,0.55)',
+    justifyContent: 'flex-end',
+  },
+  actionsSheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -10 },
+    shadowOpacity: 0.4,
+    shadowRadius: 40,
+    elevation: 20,
+  },
+  grip: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.text3,
+    opacity: 0.35,
+    alignSelf: 'center',
+    marginBottom: 10,
+    marginTop: 4,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 10,
+  },
+  actionRowText: {
+    fontSize: 15,
     fontWeight: '500',
-    color: colors.brick,
+    color: colors.text,
+  },
+  actionDivider: {
+    height: 1,
+    backgroundColor: colors.hairline,
+    marginHorizontal: 10,
   },
 });

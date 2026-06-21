@@ -27,6 +27,7 @@ const MAP: Record<string, string> = {
   refresh: 'refresh-cw',
   arrow: 'arrow-right',
   drag: 'menu',
+  more: 'more-vertical',
   waveform: 'activity',
   target2: 'target',
   inbox2: 'inbox',

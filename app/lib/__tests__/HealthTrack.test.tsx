@@ -40,9 +40,9 @@ describe('HealthDots', () => {
     expect(toJSON()).toBeTruthy();
   });
 
-  it('shows "This week" label when last week has a level', async () => {
-    const { getByText } = await render(<HealthDots weeks={weeks} />);
-    expect(getByText('This week')).toBeTruthy();
+  it('shows the level label (no "This week") when last week has a level', async () => {
+    const { getByText, queryByText } = await render(<HealthDots weeks={weeks} />);
+    expect(queryByText('This week')).toBeNull();
     expect(getByText('Well ahead')).toBeTruthy();
   });
 

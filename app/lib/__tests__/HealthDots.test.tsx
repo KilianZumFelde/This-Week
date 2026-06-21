@@ -11,9 +11,11 @@ describe('HealthDots — current bar label + level', () => {
     expect(getByText('Behind')).toBeTruthy();
   });
 
-  it('defaults the now label to "This week"', async () => {
-    const { getByText } = await render(<HealthDots weeks={weeksEndingBehind} />);
-    expect(getByText('This week')).toBeTruthy();
+  it('shows no now-bar label for the current week (level only)', async () => {
+    const { queryByText, getByText } = await render(<HealthDots weeks={weeksEndingBehind} />);
+    expect(queryByText('This week')).toBeNull();
+    // The colored level is still shown.
+    expect(getByText('Behind')).toBeTruthy();
   });
 
   it('renders a dated now label when the newest rating is not the current week — 9.2 honesty', async () => {
@@ -24,8 +26,8 @@ describe('HealthDots — current bar label + level', () => {
     expect(queryByText('This week')).toBeNull();
   });
 
-  it('renders no header when there is no current rating (all-null trend)', async () => {
+  it('renders no header level when there is no current rating (all-null trend)', async () => {
     const { queryByText } = await render(<HealthDots weeks={[null, null, null, null, null, null, null, null]} />);
-    expect(queryByText('This week')).toBeNull();
+    expect(queryByText('Behind')).toBeNull();
   });
 });
