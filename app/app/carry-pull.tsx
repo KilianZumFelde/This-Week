@@ -52,6 +52,7 @@ export default function CarryPull() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
+  const pendingRitualId = useRolloverStore((s) => s.pendingRitualId);
   const setPendingRitualId = useRolloverStore((s) => s.setPendingRitualId);
 
   const { data: tasks, isLoading } = useBacklogTasks();
@@ -79,6 +80,12 @@ export default function CarryPull() {
       await Promise.all(
         [...added].map((taskId) => api.post(`/tasks/${taskId}/promote`)),
       );
+      // Mark the ritual completed on the backend so it stops re-opening every
+      // session. Must succeed before we clear client state — if it throws we
+      // stay on this screen so the user can retry "Start week".
+      if (pendingRitualId) {
+        await api.post(`/carry-over/${pendingRitualId}/complete`);
+      }
       // Invalidate task queries so This Week loads fresh
       await qc.invalidateQueries({ queryKey: ['tasks'] });
       // Clear the ritual — unblocks tabs

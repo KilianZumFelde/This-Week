@@ -216,7 +216,10 @@ export async function carryOverRoutes(fastify: FastifyInstance) {
         .update({ decision, decided_at: new Date().toISOString() })
         .eq('id', decisionId);
 
-      // Check if all decisions are made — if so, complete the ritual
+      // Check whether all task decisions are made. This advances the triage
+      // step to the goal step on the client — it does NOT complete the ritual.
+      // The ritual is only completed at "Start week" (POST .../complete), so
+      // that goal-step-only rituals (no leftover tasks) also get marked done.
       const { data: remaining } = await supabase
         .from('carry_over_task_decisions')
         .select('id')
@@ -225,14 +228,33 @@ export async function carryOverRoutes(fastify: FastifyInstance) {
 
       const allDone = (remaining ?? []).length === 0;
 
-      if (allDone) {
-        await supabase
-          .from('carry_over_rituals')
-          .update({ status: 'completed', completed_at: new Date().toISOString() })
-          .eq('id', ritualId);
-      }
-
       return { ok: true, ritual_completed: allDone };
+    },
+  );
+
+  // POST /carry-over/:ritualId/complete — finish the ritual ("Start week").
+  // Idempotent: marks the user's ritual completed so it stops re-opening every
+  // session. This is the single completion point for ALL rituals, including
+  // those with no leftover tasks (which create no task decisions).
+  fastify.post<{ Params: { ritualId: string } }>(
+    '/carry-over/:ritualId/complete',
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const { ritualId } = request.params;
+      const userId = request.userId;
+
+      const { data, error } = await supabase
+        .from('carry_over_rituals')
+        .update({ status: 'completed', completed_at: new Date().toISOString() })
+        .eq('id', ritualId)
+        .eq('user_id', userId)
+        .select('id')
+        .maybeSingle();
+
+      if (error) return reply.status(500).send({ error: error.message });
+      if (!data) return reply.status(404).send({ error: 'Ritual not found' });
+
+      return { ok: true };
     },
   );
 }
