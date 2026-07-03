@@ -99,12 +99,16 @@ export async function performRollover(
     .is('archived_at', null);
 
   // Step 5: Update habit streaks + Step 6: create new habit_week_records
-  const { data: activeHabits } = await supabase
+  const { data: activeHabits, error: activeHabitsError } = await supabase
     .from('habits')
-    .select('id, target_count, current_streak, best_streak')
+    .select('id, weekly_target, current_streak, best_streak')
     .eq('user_id', userId)
     .eq('status', 'active')
     .is('deleted_at', null);
+
+  if (activeHabitsError) {
+    throw new Error(`Rollover: failed to load active habits — ${activeHabitsError.message}`);
+  }
 
   const habits = activeHabits ?? [];
 
@@ -136,7 +140,7 @@ export async function performRollover(
           user_id: userId,
           habit_id: habit.id,
           week_start_date: currentWeekStart,
-          target_count: habit.target_count,
+          target_count: habit.weekly_target,
           completed_count: 0,
         },
         { onConflict: 'habit_id,week_start_date' },
