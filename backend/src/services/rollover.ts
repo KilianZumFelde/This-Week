@@ -76,14 +76,37 @@ export async function performRollover(
       ).length
     : 0;
 
+  // Load active habits up front — the recap denominator is the number of habits
+  // the user is tracking, NOT the number of habit_week_records that happen to
+  // exist. A habit with zero increments last week may have no record row, so
+  // counting records would silently drop it from the total (mirrors the logic
+  // in GET /stats/current-week).
+  const { data: activeHabits, error: activeHabitsError } = await supabase
+    .from('habits')
+    .select('id, weekly_target, current_streak, best_streak')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .is('deleted_at', null);
+
+  if (activeHabitsError) {
+    throw new Error(`Rollover: failed to load active habits — ${activeHabitsError.message}`);
+  }
+
+  const habits = activeHabits ?? [];
+  const activeHabitIds = new Set(habits.map((h) => h.id));
+
+  const habitsMetCount = prevHabitRecords.filter(
+    (h) => h.target_met && activeHabitIds.has(h.habit_id),
+  ).length;
+
   await supabase.from('week_records').upsert(
     {
       user_id: userId,
       week_start_date: previousWeekStart,
       tasks_completed_count: donePrevTaskIds.length,
       tasks_total_count: allPrevTasks.length,
-      habits_met_count: prevHabitRecords.filter((h) => h.target_met).length,
-      habits_total_count: prevHabitRecords.length,
+      habits_met_count: habitsMetCount,
+      habits_total_count: habits.length,
       primary_goal_id: primaryGoal?.id ?? null,
       primary_goal_tasks_completed_count: primaryGoalDoneCount,
     },
@@ -99,18 +122,6 @@ export async function performRollover(
     .is('archived_at', null);
 
   // Step 5: Update habit streaks + Step 6: create new habit_week_records
-  const { data: activeHabits, error: activeHabitsError } = await supabase
-    .from('habits')
-    .select('id, weekly_target, current_streak, best_streak')
-    .eq('user_id', userId)
-    .eq('status', 'active')
-    .is('deleted_at', null);
-
-  if (activeHabitsError) {
-    throw new Error(`Rollover: failed to load active habits — ${activeHabitsError.message}`);
-  }
-
-  const habits = activeHabits ?? [];
 
   for (const habit of habits) {
     const prevRecord = prevHabitRecords.find((r) => r.habit_id === habit.id);
