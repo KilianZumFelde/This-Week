@@ -15,10 +15,21 @@ async function getUserTimezone(userId: string): Promise<string> {
 export async function statsRoutes(fastify: FastifyInstance) {
   // GET /stats/current-week — live counts for this week (not from week_records)
   fastify.get('/stats/current-week', { preHandler: [authenticate] }, async (request, reply) => {
-    const tz = await getUserTimezone(request.userId);
+    // The timezone lookup and the active-habits query don't depend on each
+    // other, so don't pay for them serially — this endpoint is the only one
+    // making several round-trips and it dominates its own latency.
+    const [tz, activeHabitsRes] = await Promise.all([
+      getUserTimezone(request.userId),
+      supabase
+        .from('habits')
+        .select('id')
+        .eq('user_id', request.userId)
+        .eq('status', 'active')
+        .is('deleted_at', null),
+    ]);
     const weekStart = getCurrentWeekStartDate(tz);
 
-    const [tasksRes, activeHabitsRes, habitRecordsRes] = await Promise.all([
+    const [tasksRes, habitRecordsRes] = await Promise.all([
       supabase
         .from('tasks')
         .select('status')
@@ -26,12 +37,6 @@ export async function statsRoutes(fastify: FastifyInstance) {
         .eq('week_assignment', 'this_week')
         .eq('week_start_date', weekStart)
         .neq('status', 'archived_done'),
-      supabase
-        .from('habits')
-        .select('id')
-        .eq('user_id', request.userId)
-        .eq('status', 'active')
-        .is('deleted_at', null),
       supabase
         .from('habit_week_records')
         .select('habit_id, target_met')

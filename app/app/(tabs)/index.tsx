@@ -184,7 +184,7 @@ export default function ThisWeek() {
         </TouchableOpacity>
       </View>
 
-      {tasksLoading || habitsLoading ? (
+      {tasksLoading && habitsLoading ? (
         <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 140 }}>
           <SkeletonCard height={140} />
           <SkeletonRow />
@@ -194,7 +194,7 @@ export default function ThisWeek() {
           <SkeletonRow />
           <SkeletonRow />
         </ScrollView>
-      ) : (tasksError || habitsError) ? (
+      ) : (tasksError && habitsError) ? (
         <ScreenError onRetry={() => { refetchTasks(); refetchHabits(); }} />
       ) : isEmpty ? (
         // Empty state
