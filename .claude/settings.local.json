@@ -22,7 +22,25 @@
       "Bash(node -e \"const r=require\\('@testing-library/react-native'\\); console.log\\('exports:', Object.keys\\(r\\).join\\(', '\\)\\);\")",
       "Bash(node -e \"const p=require\\('test-renderer/package.json'\\); console.log\\('v',p.version,'| main',p.main,'| peers',JSON.stringify\\(p.peerDependencies||{}\\),'| deps',JSON.stringify\\(p.dependencies||{}\\)\\)\")",
       "PowerShell(Get-Command *)",
-      "PowerShell(New-Item *)"
+      "PowerShell(New-Item *)",
+      "Bash(node -e \"const p=require\\('./package.json'\\);console.log\\(JSON.stringify\\(p.scripts,null,2\\)\\)\")",
+      "Bash(echo \"===TSC DONE \\(exit $?\\)===\")",
+      "Bash(echo \"===TSC exit $?===\")",
+      "PowerShell(git *)",
+      "PowerShell($root = \"C:\\\\Users\\\\kilia\\\\Documents\\\\Claude Code Projects\\\\This Week\"; git -C $root commit -F \"$root\\\\COMMIT_MSG.tmp\"; if \\($?\\) { Remove-Item \"$root\\\\COMMIT_MSG.tmp\" -Force; git -C $root log --oneline -1 })",
+      "PowerShell(cd backend; npx tsc --noEmit; Write-Output \"BACKEND_EXIT=$LASTEXITCODE\"; cd ../app; npx tsc --noEmit; Write-Output \"APP_EXIT=$LASTEXITCODE\")",
+      "PowerShell($conns = Get-NetTCPConnection -LocalPort 8081 -State Listen -ErrorAction SilentlyContinue; if \\(-not $conns\\) { Write-Output \"Nothing listening on port 8081.\" } else { $pids = $conns.OwningProcess | Select-Object -Unique; foreach \\($p in $pids\\) { $proc = Get-Process -Id $p -ErrorAction SilentlyContinue; Write-Output \"Killing PID $p \\($\\($proc.ProcessName\\)\\)\"; Stop-Process -Id $p -Force -ErrorAction SilentlyContinue }; Write-Output \"Done.\" })",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('deleted', len\\(d\\), 'records:', [r['week_start_date'] for r in d]\\)\")",
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -Last 20)",
+      "PowerShell(npx jest 2>&1 | Select-Object -Last 12)",
+      "Bash(npx vitest *#)",
+      "Bash(ipconfig)",
+      "Bash(tasklist)",
+      "Bash(echo \"---exit:$?---\")",
+      "PowerShell(curl.exe -s -o NUL -w \"status=%{http_code} time=%{time_total}s`n\" https://this-week.onrender.com/health --max-time 60)",
+      "Bash(node -e \"const t=require\\('/tmp/tok.json'\\);console.log\\('token minted:', !!t.access_token, '| user:', t.user&&t.user.email\\);\")",
+      "Read(//tmp/**)",
+      "Bash(echo \"build exit=$?\")"
     ]
   },
   "prefersReducedMotion": true
