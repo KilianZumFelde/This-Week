@@ -10,6 +10,7 @@ Packages successfully installed during development (in addition to initial scaff
 | `react-native-svg` | (latest) | SVG rendering — habit progress ring, decorative shapes |
 | `expo-speech-recognition` | (SDK 55) | Android built-in speech-to-text — voice capture overlay (P9-3) |
 | `expo-notifications` | ~55.0.23 | Push notifications — token registration, permission request, foreground handler (P10-2) |
+| `expo-updates` | ~55.0.27 | EAS Update — over-the-air JS updates to the standalone APK, so code changes reach the device without a rebuild |
 
 ## /backend
 

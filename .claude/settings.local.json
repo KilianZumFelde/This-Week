@@ -40,7 +40,14 @@
       "PowerShell(curl.exe -s -o NUL -w \"status=%{http_code} time=%{time_total}s`n\" https://this-week.onrender.com/health --max-time 60)",
       "Bash(node -e \"const t=require\\('/tmp/tok.json'\\);console.log\\('token minted:', !!t.access_token, '| user:', t.user&&t.user.email\\);\")",
       "Read(//tmp/**)",
-      "Bash(echo \"build exit=$?\")"
+      "Bash(echo \"build exit=$?\")",
+      "WebFetch(domain:docs.expo.dev)",
+      "Bash(node -e \"const j=require\\('./eas.json'\\); console.log\\('eas.json parses OK'\\); console.log\\('preview env:', JSON.stringify\\(j.build.preview.env,null,1\\)\\);\")",
+      "Bash(npx eas-cli *)",
+      "Bash(echo \"\\(exit $?\\)\")",
+      "Bash(npx expo *)",
+      "Bash(cd *)",
+      "Bash(node -e \"console.log\\(require\\('./package.json'\\).dependencies['expo-updates'] || 'NOT FOUND'\\)\")"
     ]
   },
   "prefersReducedMotion": true

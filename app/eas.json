@@ -8,18 +8,31 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
-      }
+      },
+      "channel": "development"
     },
     "preview": {
       "distribution": "internal",
       "android": {
         "buildType": "apk"
-      }
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://this-week.onrender.com",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://tmwhadppjrpoqytjcgfk.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_LRAi7DwGGnBbKyWOLBP4Ag_wDtwnwRj"
+      },
+      "channel": "preview"
     },
     "production": {
       "android": {
         "buildType": "app-bundle"
-      }
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://this-week.onrender.com",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://tmwhadppjrpoqytjcgfk.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_LRAi7DwGGnBbKyWOLBP4Ag_wDtwnwRj"
+      },
+      "channel": "production"
     }
   }
 }
