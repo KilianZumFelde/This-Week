@@ -88,6 +88,12 @@
 | Demoting primary when 2 secondaries already exist | Save fails. User abandons one secondary first. |
 | Goal target date passed | Prompt user: *Did you hit this? Extend? Drop?*. Goal moves to graveyard on "Mark as hit" or "Abandon"; "Extend" reopens the Edit form. Never silent deletion. |
 | Manually abandoning a goal | Always allowed. Goal → graveyard. Linked tasks/habits **keep their `goal_id` pointer** in v1 (see domain-lens.md — orphan chips are tolerated). |
+| Re-linking a task whose goal is in the graveyard | The picker still lists that past goal (labelled "Past goal") alongside active goals, so opening the picker can never silently drop a link the user didn't touch. |
+
+**Task ↔ goal link:**
+- A task's goal link is **editable for the whole life of the task** — set at capture, or set / switched / cleared later from the Task detail sheet's Goal row. It is **not** capture-only.
+- Clearing a link is **explicit user intent only** (picking "None"). The system never clears a `goal_id` on its own — notably not when the goal enters the graveyard (see the row above).
+- Backend enforces that a supplied `goal_id` **belongs to the requesting user** on both `POST /tasks` and `PATCH /tasks/:id` → `HTTP 400 "Goal not found"` otherwise. Required because these routes use the service-role client (RLS bypassed) and the FK alone only proves the goal exists, not whose it is. `goal_id: null` skips the check (intentional unlink).
 
 **Definition of done:**
 - **Task done** = user explicitly marks done (single tap, no confirm modal). Immediately reversible via the **general Undo snackbar** (see below); also re-openable any time within the same week by tapping the done task again. **Not reversible after Sunday flip** — preserves history integrity.

@@ -1139,14 +1139,27 @@ function TaskDetail() {
           <Icon name="chevDown" size={16} stroke={1.8} style={{ color: 'var(--text-3)', marginTop: 6, flex: '0 0 auto' }} />
         </div>
 
-        {/* Linked goal — tappable row that opens Goal detail (or "No goal" when unlinked).
-            Read-only link in v1: re-assigning a task's goal here is out of scope. */}
+        {/* Linked goal — the row body opens Goal detail; the trailing CHANGE opens an
+            inline goal picker below the row (same "None + active goals" list as quick-add),
+            so a task's goal can be set / switched / cleared for the life of the task.
+            When unlinked there is nothing to navigate to, so the whole row becomes the
+            picker trigger and reads "Link a goal" (see the commented variant below).
+            CHANGE uses the same small uppercase idiom as the Reminder row's EDIT. */}
         <div style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-3)', fontWeight: 600, marginBottom: 10 }}>Goal</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', marginBottom: 18, cursor: 'pointer' }}>
-          <Icon name="target" size={15} stroke={2} style={{ color: 'var(--accent-strong)' }}/>
-          <span style={{ flex: 1, fontSize: 13.5, fontWeight: 500, color: 'var(--text)' }}>First paid gig</span>
-          <Icon name="chevRight" size={14} stroke={2} style={{ color: 'var(--text-3)' }}/>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', marginBottom: 18 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, cursor: 'pointer' }}>
+            <Icon name="target" size={15} stroke={2} style={{ color: 'var(--accent-strong)' }}/>
+            <span style={{ flex: 1, fontSize: 13.5, fontWeight: 500, color: 'var(--text)' }}>First paid gig</span>
+            <Icon name="chevRight" size={14} stroke={2} style={{ color: 'var(--text-3)' }}/>
+          </div>
+          <span style={{ fontSize: 11, color: 'var(--accent-strong)', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600, cursor: 'pointer' }}>Change</span>
         </div>
+        {/* Unlinked variant — whole row is the picker trigger:
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', marginBottom: 18, cursor: 'pointer' }}>
+          <Icon name="target" size={15} stroke={2} style={{ color: 'var(--text-3)' }}/>
+          <span style={{ flex: 1, fontSize: 13, color: 'var(--text-3)' }}>Link a goal</span>
+          <Icon name="chevRight" size={14} stroke={2} style={{ color: 'var(--text-3)' }}/>
+        </div> */}
 
         {/* Field chips — same vocabulary as the draft card */}
         <div style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-3)', fontWeight: 600, marginBottom: 10 }}>Details</div>

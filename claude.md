@@ -320,7 +320,7 @@ Do NOT use the Bash `$(cat <<'EOF'...'EOF')` pattern — it fails in PowerShell.
 git push origin main
 ```
 
-Render auto-deploys on push to `main`. The backend is live at `https://this-week.onrender.com`.
+Render does **not** auto-deploy. Pushing to `main` only updates the repo — the user triggers the backend deploy **manually in the Render dashboard**. So after pushing a backend change, say that a manual Render deploy is still needed; never state or imply the deploy already happened. The backend is live at `https://this-week.onrender.com`.
 
 ---
 

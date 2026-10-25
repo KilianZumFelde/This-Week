@@ -533,7 +533,90 @@ Scan This Week + Backlog (goal-linked tasks carry a subtle marker), then tap a t
 
 ---
 
+## Phase 13 — Re-assign a task's goal (link / change / unlink after creation)
+
+**Outcome:** From the Task detail sheet, a task's goal can be **set, changed, or cleared** at any time after creation — not only in quick-add. The sheet's Goal row keeps its "open Goal Detail" tap target and gains a separate **Change** affordance that opens an inline goal picker; an unlinked task's row becomes the picker entry point. The goal survives a delete→Undo round-trip.
+
+**Why this phase exists:** quick-add has a full `GoalPicker` (`app/app/quick-add.tsx:256–287`, field list `:425`), but Phase 11.1 deliberately shipped the detail sheet's Goal row **read-only** (`TaskDetailSheet.tsx:436–450`; prototype comment `docs/ui/screens-modals.jsx:1143` "Read-only link in v1"; `ux-lens.md:61`). So a task created without a goal can never be linked afterwards. This phase reverses that scoping decision — the **backend already supports it** (see below), so the work is UI + docs + one data-loss fix.
+
+**Grounding — confirmed by reading the code (no backend/DB/schema work needed):**
+- `UpdateTaskRequestSchema.goal_id: uuid.nullable().optional()` — `backend/src/lib/request-schemas.ts:52` (mirrored in `packages/shared/src/api.ts:88`). Set **and** clear (`null`) are already accepted.
+- `PATCH /tasks/:id` (`backend/src/routes/tasks.ts:124–139`) spreads `parsed.data` straight into the update, scoped `.eq('user_id', request.userId)` — `goal_id` passes through with no extra code.
+- `useUpdateTask` takes `Partial<Task> & { id }` and forwards the body verbatim (`app/lib/hooks/useTasks.ts:129–135`); `Task.goal_id` already exists (`useTasks.ts:9`). It invalidates the `['tasks']` prefix, which covers `['tasks','goal',…]` → Goal Detail's lists refresh after a re-link.
+- `useGoals()` returns **all** goals incl. `completed`/`archived` (`routes/goals.ts:18` "list all goals") — so the picker must filter to `status === 'active'` (as quick-add does) **but still display** a currently-linked non-active goal, or re-linking would silently drop it.
+- **No migration, no new route, no schema change.** This is deliberately a frontend + docs phase.
+
+### Tasks
+
+- [x] **13.1 — Stage `goalId` in the Task detail sheet and persist it on dismiss**
+  - Build: in `app/app/components/TaskDetailSheet.tsx`, add `const [goalId, setGoalId] = useState<string | null>(null)` alongside the existing `themeId`/`effort`/`returnLevel`/`week` state (`:132–138`); seed it from `task.goal_id` in the `task?.id` reset effect (`:150–164`). Extend `handleClose()`'s `dirty` check and `updateTask.mutate` payload (`:174–193`) with `goal_id: goalId` — **same stage-then-save-on-dismiss semantics as every other field**, not an immediate per-tap mutation.
+  - Also: derive the displayed goal from the **staged** `goalId` rather than `task.goal_id` — `taskGoal` (`:195`) and `openGoal()` (`:197–202`) must both read `goalId`, otherwise the row shows the old goal until the sheet is reopened and `openGoal` navigates to the pre-edit goal.
+  - **Remove/replace:** the `task?.goal_id`-based `taskGoal` lookup and `openGoal`'s `if (!task?.goal_id) return` guard are replaced by the staged value — don't leave both.
+  - Collision to close: `handleMoveToBacklog()` (`:221–225`) mutates and closes **without** going through `handleClose`, so a staged goal change would be silently discarded. Include `goal_id: goalId` in that payload too (keeping its existing `week_assignment: 'backlog'`).
+  - Files: `app/app/components/TaskDetailSheet.tsx`.
+  - Based on: user request (2026-10-25); `request-schemas.ts:52`; `useTasks.ts:129`.
+  - Validate: 🤖 `tsc --noEmit`; 🤖 **live curl** against a locally-run backend with a test-user JWT (`test@weeklyfocus.dev`) — `PATCH /tasks/:id {"goal_id":"<goal>"}` links, `{"goal_id":null}` clears, a re-PATCH switches goals, and `GET /tasks?goal_id=` reflects each state. 👤 edit a task's goal, dismiss the sheet, reopen → the new goal stuck.
+
+- [x] **13.2 — Goal picker inside the sheet (link / change / unlink)**
+  - Build: add `'goal'` to the sheet's local `FieldKey` union (`TaskDetailSheet.tsx:49`) and a `goal` branch to `renderPicker()` (`:302–380`) built from the sheet's **own** `PickerCard` + `OptionRow` primitives (`:52–85`) — exactly the shape of the existing `theme` branch: a **"None"** row first (`onPress={() => { setGoalId(null); setOpenField(null); }}`), then `goals.filter(g => g.status === 'active')`, each `OptionRow` with `label={g.title}`, `sub={g.goal_type === 'primary' ? 'Primary goal' : 'Secondary goal'}`, and a `leading` target glyph or theme dot. Card title: **"Link to a goal"**, matching quick-add's wording.
+    - Edge case to handle explicitly: if the task's current `goalId` points at a **non-active** goal (completed/archived — `domain-lens.md:63` keeps the pointer after a goal hits the graveyard), append that goal to the option list with a `sub` of "Past goal" so it renders as selected instead of vanishing.
+  - **Do NOT extract/share quick-add's `GoalPicker`.** It is built on quick-add's *own* `PickerContainer`/`OptionRow` (`quick-add.tsx:256–287`), which are different components from the sheet's `PickerCard`/`OptionRow`. Sharing would mean refactoring quick-add's picker chrome — out of scope and a regression risk for the capture flow. ~15 lines of intentional duplication; recorded in Open questions.
+  - **Keep the Goal row where it is** (above `Details`, `:435–450`) — do **not** fold Goal into the `DetailChip` row. Rationale: the row is the design's goal *link* affordance (`screens-modals.jsx:1142–1150`) and must stay tappable-to-navigate.
+  - Affordance — **DECIDED 2026-10-25, build exactly this:** the row keeps `onPress={openGoal}` and gains a trailing **"Change"** text button (uppercase 11px `colors.accentStrong` — the exact idiom the prototype's Reminder row uses for "Edit", `screens-modals.jsx:1177`) that calls `toggle('goal')`. **When unlinked** there is no goal to navigate to, so the whole row becomes the picker trigger and reads **"Link a goal"** instead of today's dead, dimmed "No goal" `View` (`:445–448` — replace that non-interactive `View` with a `TouchableOpacity`). The picker renders directly beneath the Goal row (its own `{openField === 'goal' && renderPicker()}` slot), not down in the Details picker slot, so it opens where it was triggered.
+  - **Remove/replace:** today's unlinked-state dimmed `View` + `goalRowMuted` "No goal" copy (`:445–448`); `styles.goalRowMuted` survives only if the new "Link a goal" state still uses it.
+  - Files: `app/app/components/TaskDetailSheet.tsx`.
+  - Based on: user request; `quick-add.tsx:256–287` (option wording / sub-labels), `docs/ui/screens-modals.jsx:1142–1150` (the row), `:1177` (the Edit-affordance idiom).
+  - Validate: 🤖 `tsc --noEmit`; 🤖 new RNTL component test `app/lib/__tests__/TaskDetailGoalPicker.test.tsx` — (a) unlinked task renders "Link a goal" and pressing it opens the picker; (b) picker lists only active goals + "None"; (c) selecting a goal updates the row's title; (d) selecting "None" returns the row to "Link a goal"; (e) a task linked to an archived goal still shows that goal as selected. **`await` every `render`/`fireEvent`** (RNTL 14 — see "How to read this plan"). 👤 device check: the Change affordance is discoverable but quiet, the picker opens under the Goal row, and tapping the row still opens Goal Detail.
+
+- [x] **13.3 — Stop delete→Undo from dropping the goal link** *(pre-existing bug; in scope because 13.1/13.2 make it visible)*
+  - Build: `handleDelete()` (`TaskDetailSheet.tsx:204–219`) snapshots the task, then the Undo handler re-creates it via `createTask.mutate({ theme_id, title, effort_level, return_level, week_assignment })` — **`goal_id` is omitted**, so undoing a delete silently unlinks the task from its goal. Add `goal_id: snap.goal_id` to that payload (`useCreateTask` already accepts `goal_id?: string | null`, `useTasks.ts:110`; `CreateTaskRequestSchema.goal_id` accepts it, `request-schemas.ts:38`). While there, check `notes` / `reminder_spec` for the same omission and record findings rather than widening scope.
+  - Files: `app/app/components/TaskDetailSheet.tsx`.
+  - Based on: code read during Phase 13 planning; `useTasks.ts:102–118`.
+  - Validate: 🤖 `tsc`; 🤖 curl round-trip (delete a goal-linked test task, re-create with the snapshot payload, `GET /tasks?goal_id=` still returns it); 👤 delete a goal-linked task → Undo → the subtle goal marker is still on the row.
+
+- [x] **13.4 — Reject a `goal_id` the user doesn't own (backend hardening)** *(kept in scope per your 2026-10-25 decision)*
+  - Build: `PATCH /tasks/:id` and `POST /tasks` spread `parsed.data` straight into Supabase (`routes/tasks.ts:105–113`, `:128–135`) using the **service-role** client, which bypasses RLS. Zod validates that `goal_id` is *a* uuid; nothing checks it is *the caller's* goal, and the `tasks.goal_id` FK only requires the goal to exist — so a crafted id could link a task to another account's goal. Add a guard in both handlers: when `goal_id` is a non-null value, `select('id').from('goals').eq('id', goal_id).eq('user_id', request.userId).maybeSingle()` → `400 { error: 'Goal not found' }` if absent. `null` skips the check (that is an intentional unlink).
+  - Files: `backend/src/routes/tasks.ts`.
+  - Based on: code read during planning; the same parent-ownership pattern already used in `routes/milestones.ts`.
+  - Validate: 🤖 **live curl** with a test-user JWT — own goal → 200, random uuid → 400, `null` → 200 and clears. Low real-world risk in a single-user app; included because 13.2 makes `goal_id` a client-supplied value on an *existing* task for the first time.
+
+### 👤 User check-in (end of Phase 13)
+1. Open a task with **no** goal → the Goal row reads "Link a goal" and tapping it opens the picker; pick one, dismiss the sheet, reopen → it stuck (and the subtle row marker from 11.2 appeared in This Week / Backlog).
+2. Open a task **with** a goal → tapping the row still opens Goal Detail; tapping **Change** opens the picker; switch goals and confirm the task moves between goals in Goal Detail's "All tasks".
+3. Pick **None** on a linked task → the row returns to "Link a goal" and the row marker disappears.
+4. **Judge the affordance:** is a trailing "Change" the right call, or would you rather the whole row open the picker and a chevron-only hit target open Goal Detail? Easy to flip — one `onPress` swap.
+
+### End-of-phase admin ✅
+- [x] Marked 13.1–13.4 (all built; 13.4 kept in scope).
+- [x] **Docs done:** `docs/ui/screens-modals.jsx` (`TaskDetail`) — read-only comment removed, Goal row split into body + trailing **Change**, unlinked "Link a goal" variant added as a commented sibling. `docs/ux-lens.md` — the "Seeing a task's goal" row trimmed to visibility only, new **"Changing a task's goal"** row added (picker, None, staged-save, Past-goal listing). `docs/ui/NAVIGATION.md` screen 20 — three Goal-row rows added to the element table. `docs/requirements-lens.md` — new **"Task ↔ goal link"** block (editable for the life of the task; clearing is explicit intent only; backend ownership check → 400) + a graveyard-re-link row in the edge-case table. `docs/domain-lens.md`, `database_design.md`, `techstack.md`, `ai-architecture.md`, `libraries.md` — unchanged as planned (no schema, no dependency, no AI surface).
+- [x] **12.1 coherence grep re-run:** no stale `read-only` / `out of scope` phrasing left around task↔goal in the baseline docs or prototype. The three surviving "read-only" hits (`domain-lens.md:64`, `NAVIGATION.md:74`, `:140`) are about **graveyard Goal Detail**, unrelated and correctly left. The remaining "No goal" strings live only in this release archive's Phase 11 history — dated record, left as-is.
+
+**Validation — what actually ran:**
+- 🤖 `tsc --noEmit` clean in **both** `app/` and `backend/`.
+- 🤖 `app/` jest: **50/50 pass**, incl. the new `TaskDetailGoalPicker.test.tsx` (7/7) — unlinked row opens the picker; picker lists None + active goals only; selecting sets the row; CHANGE → None unlinks; a linked archived goal still appears as "Past goal"; row tap pushes `/goal-detail` with the **staged** goal; and a goal change is **not** mutated on tap but **is** in the payload when the sheet closes.
+- 🤖 `backend/` vitest: **69/69 pass** (unchanged).
+- 🤖 **Live curl**, backend run locally against the dev DB with a freshly minted `test@weeklyfocus.dev` JWT, on a throwaway task: link → 200 + `goal_id` set; switch to another owned goal → 200; `{"goal_id":null}` → 200 + `null`; `GET /tasks?goal_id=` returns the task once linked; **`PATCH` with a uuid that isn't the user's goal → 400 `{"error":"Goal not found"}`**; same on **`POST /tasks`** → 400; create-from-snapshot with `goal_id` (the 13.3 Undo path) → goal preserved. Throwaway rows deleted afterwards (verified 0 left), local server stopped, JWT discarded.
+
+**Implementation notes / deviations from the written plan:**
+- **13.2 — one deliberate deviation.** The plan said "add a `goal` branch to `renderPicker()`". That would have **double-rendered** the picker, because `renderPicker()` is also called unconditionally in the Details slot. Built as a dedicated **`renderGoalPicker()`** instead — same `PickerCard`/`OptionRow` primitives, rendered only under the Goal row. `'goal'` is in the `FieldKey` union but deliberately **absent from the `FIELDS` chip array**, so `FIELDS.indexOf('goal')` is `-1` → all Details chips keep rendering and the Details picker stays shut while the goal picker is open. Both facts are commented in the file so the next reader doesn't "fix" them.
+- **13.2 styling:** open state gets `goalRowOpen` (accent hairline + reduced bottom margin) so the picker reads as attached to the row, mirroring `chipOpen`. `CHANGE` reuses the Reminder row's exact type treatment and carries `hitSlop` since it's an 11px target.
+- **13.3 finding (recorded, not fixed):** the delete→Undo snapshot also drops **`notes`** and any **reminders** — `useCreateTask`'s body type has no `notes` field at all, so restoring it would mean widening the hook and the sheet has no notes editor today. Out of scope per the task; worth its own small task if notes ever become user-editable.
+
+- **Docs to update — the read-only decision is being reversed, and all its traces must move together:**
+  - `docs/ui/screens-modals.jsx` — the `TaskDetail` prototype's Goal row (`:1142–1150`): delete the "Read-only link in v1: re-assigning a task's goal here is out of scope" comment and add the **Change** affordance + the unlinked "Link a goal" state, so `/docs/ui` keeps describing the target design.
+  - `docs/ux-lens.md:61` ("Seeing a task's goal") — strike "Read-only in v1 — re-assigning a task's goal from here is out of scope" and describe link / change / unlink from the sheet.
+  - `docs/ui/NAVIGATION.md:278–291` (screen 20 · Task detail) — add a **Goal row** line to the element table (`row body → 07 · Goal detail`; `Change → inline goal picker`; unlinked row → picker) next to the existing Field-chip line.
+  - `docs/requirements-lens.md` — add one bullet to the task rules: a task's goal link is **editable for the life of the task** (set / changed / cleared), and clearing is explicit user intent, never automatic (distinct from `:90`, where a goal entering the graveyard *keeps* the pointer).
+  - `docs/releases/release-1/TASKS.md` — flip the Phase 11 open-question bullet about re-assignment being out of scope to "superseded by Phase 13" (done at planning time).
+  - `docs/domain-lens.md` — **no change** (`:16` / `:34` already model the optional 1:N Goal→Task link; this phase only adds a mutation surface). `database_design.md`, `techstack.md`, `ai-architecture.md`, `docs/libraries.md` — **no change** (no schema, no dependency, no AI surface, no new package).
+- Re-run **12.1**'s coherence grep for stale `read-only` / `out of scope` phrasing around task↔goal before committing.
+- **12.2 commit covers this phase** (still open) — PowerShell, quoted parenthesized paths, here-string message.
+
 ## Open questions (adjustments)
 
 - **9.1 root cause:** confirm during implementation whether the headline/trend mismatch you saw was stale pre-Phase-5 data or a non-current newest record; record the finding. Default fix (single-source the "now" cell + honest label) covers both regardless.
-- **11.2 scope:** marker is read-only visibility only; re-assigning a task's goal from the row/sheet is intentionally out of scope unless you ask for it.
+- **11.2 scope:** ~~marker is read-only visibility only; re-assigning a task's goal from the row/sheet is intentionally out of scope~~ — **superseded by Phase 13** (2026-10-25): re-assigning is now in scope, from the Task detail sheet's Goal row.
+- **13.1 save semantics — DECIDED (2026-10-25):** staged and saved on **sheet dismiss**, consistent with theme / effort / return / week. (Immediate-on-tap was the alternative; rejected as it would make Goal the only field in the sheet behaving differently.)
+- **13.2 affordance — DECIDED (2026-10-25):** trailing **"CHANGE"** label at the right end of the Goal row (the same small uppercase idiom as the Reminder row's "EDIT" directly below it). Row tap keeps opening Goal Detail; CHANGE opens the picker beneath the row. Unlinked tasks have no navigation target, so the whole row becomes the trigger and reads **"Link a goal"**. Alternatives considered and rejected: row-opens-picker with chevron-only navigation (small hit target, changes today's row behavior) and long-press-to-change (zero discoverability). One `onPress` swap if it feels wrong on device — judge at the check-in.
+- **13.2 duplication:** the sheet gets its own goal-picker branch rather than sharing quick-add's `GoalPicker`, because the two screens are built on different picker primitives (`PickerCard`/`OptionRow` vs `PickerContainer`/`OptionRow`). If a third surface ever needs a goal picker, unify the primitives first.
+- **13.4 scope — DECIDED (2026-10-25):** **in scope.** The backend ownership check on `goal_id` ships with the phase, so the diff includes `backend/src/routes/tasks.ts` and a Render deploy.

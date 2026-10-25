@@ -46,7 +46,9 @@ function formatReminderSpec(spec: ReminderSpec): string {
 type EffortValue = Task['effort_level'];
 type ReturnValue = Task['return_level'];
 type WeekValue = Task['week_assignment'];
-type FieldKey = 'theme' | 'effort' | 'return' | 'week';
+// 'goal' is an openField value but NOT a Details chip — its picker renders under
+// the Goal row via renderGoalPicker(), not in the Details picker slot.
+type FieldKey = 'theme' | 'effort' | 'return' | 'week' | 'goal';
 
 // ─── Shared picker primitives ─────────────────────────────────────────────────
 
@@ -136,6 +138,7 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
   const [effort, setEffort] = useState<EffortValue>('unknown');
   const [returnLevel, setReturnLevel] = useState<ReturnValue>('unknown');
   const [week, setWeek] = useState<WeekValue>('this_week');
+  const [goalId, setGoalId] = useState<string | null>(null);
   const [openField, setOpenField] = useState<FieldKey | null>(null);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
 
@@ -154,6 +157,7 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
       setEffort(task.effort_level);
       setReturnLevel(task.return_level);
       setWeek(task.week_assignment);
+      setGoalId(task.goal_id);
       setOpenField(null);
       setIsEditingTitle(false);
       setReminderEditing(false);
@@ -178,7 +182,8 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
       themeId !== task.theme_id ||
       effort !== task.effort_level ||
       returnLevel !== task.return_level ||
-      week !== task.week_assignment;
+      week !== task.week_assignment ||
+      goalId !== task.goal_id;
     if (dirty && title.trim()) {
       updateTask.mutate({
         id: task.id,
@@ -187,18 +192,19 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
         effort_level: effort,
         return_level: returnLevel,
         week_assignment: week,
+        goal_id: goalId,
       });
     }
     onClose();
   }
 
-  const taskGoal = task?.goal_id ? (goals ?? []).find((g) => g.id === task.goal_id) ?? null : null;
+  const taskGoal = goalId ? (goals ?? []).find((g) => g.id === goalId) ?? null : null;
 
   function openGoal() {
-    if (!task?.goal_id) return;
-    const goalId = task.goal_id;
+    if (!goalId) return;
+    const target = goalId;
     handleClose(); // persist any dirty edits + close the sheet
-    router.push({ pathname: '/goal-detail', params: { goalId } });
+    router.push({ pathname: '/goal-detail', params: { goalId: target } });
   }
 
   function handleDelete() {
@@ -214,6 +220,7 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
           effort_level: snap.effort_level,
           return_level: snap.return_level,
           week_assignment: snap.week_assignment,
+          goal_id: snap.goal_id,
         }),
     });
     onClose();
@@ -221,7 +228,8 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
 
   function handleMoveToBacklog() {
     if (!task) return;
-    updateTask.mutate({ id: task.id, week_assignment: 'backlog' });
+    // Closes without going through handleClose(), so carry the staged goal too.
+    updateTask.mutate({ id: task.id, week_assignment: 'backlog', goal_id: goalId });
     onClose();
   }
 
@@ -249,6 +257,8 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
   const toggle = (key: FieldKey) => setOpenField((o) => (o === key ? null : key));
   const activeTheme = themes.find((t) => t.id === themeId);
 
+  // Details chips only — 'goal' lives in its own row above, so it is absent here
+  // on purpose (indexOf returns -1 → all chips render, Details picker stays closed).
   const FIELDS: FieldKey[] = ['theme', 'effort', 'return', 'week'];
   const openIdx = openField ? FIELDS.indexOf(openField) : -1;
   const above = openIdx === -1 ? FIELDS : FIELDS.slice(0, openIdx + 1);
@@ -302,6 +312,48 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
       );
     }
     return null;
+  }
+
+  // Goal picker — own primitives (PickerCard/OptionRow), deliberately not shared
+  // with quick-add's GoalPicker, which is built on different picker chrome.
+  function renderGoalPicker() {
+    if (openField !== 'goal') return null;
+    const all = goals ?? [];
+    const options = all.filter((g) => g.status === 'active');
+    // A task keeps its goal_id after the goal hits the graveyard (domain-lens.md),
+    // so surface a linked non-active goal too or it would silently vanish.
+    const linkedPast = goalId && !options.some((g) => g.id === goalId)
+      ? all.find((g) => g.id === goalId) ?? null
+      : null;
+    return (
+      <PickerCard title="Link to a goal">
+        <OptionRow
+          selected={goalId === null}
+          onPress={() => { setGoalId(null); setOpenField(null); }}
+          label="None"
+        />
+        {options.map((g) => (
+          <OptionRow
+            key={g.id}
+            selected={g.id === goalId}
+            onPress={() => { setGoalId(g.id); setOpenField(null); }}
+            label={g.title}
+            sub={g.goal_type === 'primary' ? 'Primary goal' : 'Secondary goal'}
+            leading={<Icon name="target" size={14} color={colors.text3} />}
+          />
+        ))}
+        {linkedPast ? (
+          <OptionRow
+            key={linkedPast.id}
+            selected
+            onPress={() => setOpenField(null)}
+            label={linkedPast.title}
+            sub="Past goal"
+            leading={<Icon name="target" size={14} color={colors.text3} />}
+          />
+        ) : null}
+      </PickerCard>
+    );
   }
 
   function renderPicker() {
@@ -436,17 +488,36 @@ export function TaskDetailSheet({ task, themes, onClose }: Props) {
               {/* Linked goal */}
               <Text style={styles.sectionLabel}>Goal</Text>
               {taskGoal ? (
-                <TouchableOpacity style={styles.goalRow} onPress={openGoal} activeOpacity={0.7}>
-                  <Icon name="target" size={15} color={colors.accentStrong} />
-                  <Text style={styles.goalRowText} numberOfLines={1}>{taskGoal.title}</Text>
+                <View style={[styles.goalRow, openField === 'goal' && styles.goalRowOpen]}>
+                  <TouchableOpacity
+                    style={styles.goalRowMain}
+                    onPress={openGoal}
+                    activeOpacity={0.7}
+                  >
+                    <Icon name="target" size={15} color={colors.accentStrong} />
+                    <Text style={styles.goalRowText} numberOfLines={1}>{taskGoal.title}</Text>
+                    <Icon name="chevron-right" size={14} color={colors.text3} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => toggle('goal')}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+                  >
+                    <Text style={styles.goalRowChange}>CHANGE</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.goalRow, openField === 'goal' && styles.goalRowOpen]}
+                  onPress={() => toggle('goal')}
+                  activeOpacity={0.7}
+                >
+                  <Icon name="target" size={15} color={colors.text3} />
+                  <Text style={styles.goalRowMuted}>Link a goal</Text>
                   <Icon name="chevron-right" size={14} color={colors.text3} />
                 </TouchableOpacity>
-              ) : (
-                <View style={styles.goalRow}>
-                  <Icon name="target" size={15} color={colors.text3} />
-                  <Text style={styles.goalRowMuted}>No goal</Text>
-                </View>
               )}
+              {renderGoalPicker()}
 
               {/* Details label */}
               <Text style={styles.sectionLabel}>Details</Text>
@@ -652,6 +723,25 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface2,
     borderRadius: radius.md,
     marginBottom: 18,
+  },
+  goalRowOpen: {
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
+  goalRowMain: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  goalRowChange: {
+    fontSize: 11,
+    color: colors.accentStrong,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    fontWeight: '600',
   },
   goalRowText: {
     flex: 1,

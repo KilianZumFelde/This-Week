@@ -282,6 +282,9 @@ Bottom sheet. Opened by tapping the body of any task card (on This Week or Backl
 | Element | Destination |
 |---|---|
 | Title | inline edit (tap to enter edit mode) |
+| Goal row · **body** | → 07 · Goal detail (for the currently staged goal) |
+| Goal row · **CHANGE** | inline goal picker opens directly below the row (None + active goals; a linked past goal is listed as "Past goal") |
+| Goal row when **unlinked** ("Link a goal") | whole row opens the same goal picker (nothing to navigate to) |
 | Field chip (Theme / Effort / Return / Week) | inline picker opens below the chip; tap an option to set |
 | Reminder row | inline edit — text field + mic button (long-press mic → Voice reminder modal); confirm sends text to `/ai/parse-reminder` and saves the spec |
 | Move to backlog | inline change `week=backlog`; × back to caller |

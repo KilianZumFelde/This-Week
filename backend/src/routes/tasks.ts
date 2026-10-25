@@ -10,6 +10,19 @@ import {
 } from '../lib/request-schemas.js';
 import { getCurrentWeekStartDate } from '../lib/week.js';
 
+// A client-supplied goal_id is only Zod-checked as "a uuid". These routes use the
+// service-role client (RLS bypassed) and the tasks.goal_id FK only requires the
+// goal to exist — so verify ownership before linking. null = intentional unlink.
+async function goalIsOwnedBy(userId: string, goalId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from('goals')
+    .select('id')
+    .eq('id', goalId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  return !!data;
+}
+
 async function createReminderForTask(
   userId: string,
   taskId: string,
@@ -93,6 +106,10 @@ export async function tasksRoutes(fastify: FastifyInstance) {
 
     const { reminder_spec, ...rest } = parsed.data;
 
+    if (rest.goal_id && !(await goalIsOwnedBy(request.userId, rest.goal_id))) {
+      return reply.status(400).send({ error: 'Goal not found' });
+    }
+
     // Resolve week_start_date when assigning to this_week
     let weekStartDate = rest.week_start_date ?? null;
     const weekAssignment = rest.week_assignment ?? 'this_week';
@@ -125,6 +142,10 @@ export async function tasksRoutes(fastify: FastifyInstance) {
     const { id } = request.params as { id: string };
     const parsed = UpdateTaskRequestSchema.safeParse(request.body);
     if (!parsed.success) return reply.status(400).send({ error: parsed.error.flatten() });
+
+    if (parsed.data.goal_id && !(await goalIsOwnedBy(request.userId, parsed.data.goal_id))) {
+      return reply.status(400).send({ error: 'Goal not found' });
+    }
 
     const { data, error } = await supabase
       .from('tasks')
