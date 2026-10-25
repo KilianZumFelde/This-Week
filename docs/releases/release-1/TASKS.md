@@ -523,9 +523,10 @@ Scan This Week + Backlog (goal-linked tasks carry a subtle marker), then tap a t
   - Build: re-read the touched main lenses (`product-lens`, `ux-lens`, `requirements-lens`, `domain-lens`, `ai-architecture`, `database_design`) + `NAVIGATION.md` for dangling references (no lingering "4 tabs", "Coach me button present", "+ to add new", old milestone presets). Confirm `/docs/ui` prototype matches the shipped adjustments.
   - Validate: 🤖 grep the lenses + prototype for the stale phrases above; 👤 quick sanity read.
 
-- [ ] **12.2 — Commit + push** *(on your go-ahead)*
-  - Build: PowerShell git — quote parenthesized paths (`"app/app/(tabs)/goals.tsx"`, `"app/app/(tabs)/_layout.tsx"`), here-string commit message. Push to `main` (Render auto-deploys backend — no backend change here, so deploy is a no-op).
-  - Validate: 🤖 `git status` clean after; 👤 confirm.
+- [x] **12.2 — Commit + push** *(done 2026-10-25 — commit `007fce3`, pushed to `main`)*
+  - Build: PowerShell git — quote parenthesized paths, commit message from a file. Phases 9–13 shipped together in `007fce3` (9 files, +407/−23); `git status` clean afterwards.
+  - **Render does NOT auto-deploy** (corrected in `CLAUDE.md` 2026-10-25): the push only updates the repo. Phase 13 changed `backend/src/routes/tasks.ts` (the `goal_id` ownership check), so that guard is **live only after a manual deploy in the Render dashboard**. The app-side goal picker works against the current backend regardless — `PATCH /tasks/:id` already accepted `goal_id`.
+  - Validate: 🤖 `git status` clean after push ✅; 👤 trigger the Render deploy, then confirm.
 
 ### End-of-phase admin
 - Mark 12.1–12.2 and all adjustment tasks complete.
